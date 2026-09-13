@@ -1,0 +1,19 @@
+{
+  "total_sutras": 6,
+  "processed_count": 6,
+  "failed_count": 0,
+  "total_tokens": 76,
+  "avg_tokens_per_passage": 12.67,
+  "tamil_passage_count": 6,
+  "verse_line_count": 19,
+  "unique_tokens": 68,
+  "processing_time_ms": 0,
+  "output_file": "M:\\Dharun\\summer-intern\\backend\\data\\processed\\preprocessed_corpus.json",
+  "passages_by_chapter": {
+    "Poruḷatikāram/Akattiṇaiyiyal": 5,
+    "Poruḷatikāram/Meyppāṭṭiyal": 1
+  },
+  "pipeline_version": "1.0.0",
+  "processed_at": "2026-09-12T11:02:32.099570+00:00",
+  "failures": []
+}

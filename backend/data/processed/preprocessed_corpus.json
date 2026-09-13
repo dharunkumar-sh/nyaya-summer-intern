@@ -1,0 +1,897 @@
+[
+  {
+    "document_id": "tol-porul-akam-003",
+    "work": "Tolkāppiyam",
+    "section": "Poruḷatikāram",
+    "chapter": "Akattiṇaiyiyal",
+    "passage_id": "tol-porul-akam-003",
+    "original_text": "முதல்கரு உரிப்பொருள் என்ற மூன்றே\nநுவலும் காலை முறைசிறந் தனவே\nபாடலுட் பயின்றவை நாடும் காலை.",
+    "normalized_text": "முதல்கரு உரிப்பொருள் என்ற மூன்றே\nநுவலும் காலை முறைசிறந் தனவே\nபாடலுட் பயின்றவை நாடும் காலை.",
+    "tokens": [
+      "முதல்கரு",
+      "உரிப்பொருள்",
+      "என்ற",
+      "மூன்றே",
+      "நுவலும்",
+      "காலை",
+      "முறைசிறந்",
+      "தனவே",
+      "பாடலுட்",
+      "பயின்றவை",
+      "நாடும்",
+      "காலை"
+    ],
+    "lemmas": [
+      "முதல்கரு",
+      "உரிப்பொருள்",
+      "என்ற",
+      "மூன்றே",
+      "நுவலும்",
+      "காலை",
+      "முறைசிறந்",
+      "தனவே",
+      "பாடலுட்",
+      "பயின்றவை",
+      "நாடும்",
+      "காலை"
+    ],
+    "content_tokens": [
+      "முதல்கரு",
+      "உரிப்பொருள்",
+      "மூன்றே",
+      "நுவலும்",
+      "முறைசிறந்",
+      "தனவே",
+      "பாடலுட்",
+      "பயின்றவை",
+      "நாடும்"
+    ],
+    "token_count": 12,
+    "sentences": [
+      "முதல்கரு உரிப்பொருள் என்ற மூன்றே\nநுவலும் காலை முறைசிறந் தனவே\nபாடலுட் பயின்றவை நாடும் காலை"
+    ],
+    "verse_lines": [
+      "முதல்கரு உரிப்பொருள் என்ற மூன்றே",
+      "நுவலும் காலை முறைசிறந் தனவே",
+      "பாடலுட் பயின்றவை நாடும் காலை."
+    ],
+    "verse_structure": {
+      "total_lines": 3,
+      "total_cir": 12,
+      "lines": [
+        {
+          "line_number": 1,
+          "text": "முதல்கரு உரிப்பொருள் என்ற மூன்றே",
+          "cir_count": 4,
+          "cir_tokens": [
+            "முதல்கரு",
+            "உரிப்பொருள்",
+            "என்ற",
+            "மூன்றே"
+          ]
+        },
+        {
+          "line_number": 2,
+          "text": "நுவலும் காலை முறைசிறந் தனவே",
+          "cir_count": 4,
+          "cir_tokens": [
+            "நுவலும்",
+            "காலை",
+            "முறைசிறந்",
+            "தனவே"
+          ]
+        },
+        {
+          "line_number": 3,
+          "text": "பாடலுட் பயின்றவை நாடும் காலை.",
+          "cir_count": 4,
+          "cir_tokens": [
+            "பாடலுட்",
+            "பயின்றவை",
+            "நாடும்",
+            "காலை"
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "tinai": "General",
+      "sutra_number": 3,
+      "category": "Epistemic Tripartite Semioc",
+      "entities": [
+        "Mutalporuḷ",
+        "Karupporuḷ",
+        "Uripporuḷ",
+        "Pāṭal",
+        "Ceyyuḷ"
+      ],
+      "triples": [
+        {
+          "subject": "Akattiṇai",
+          "predicate": "hasConstituent",
+          "object": "Mutalporuḷ"
+        },
+        {
+          "subject": "Akattiṇai",
+          "predicate": "hasConstituent",
+          "object": "Karupporuḷ"
+        },
+        {
+          "subject": "Akattiṇai",
+          "predicate": "hasConstituent",
+          "object": "Uripporuḷ"
+        },
+        {
+          "subject": "Mutalporuḷ",
+          "predicate": "deterministicallyGrounds",
+          "object": "Uripporuḷ"
+        },
+        {
+          "subject": "Karupporuḷ",
+          "predicate": "manifestsSignifierFor",
+          "object": "Uripporuḷ"
+        }
+      ],
+      "nyaya_mapping": {
+        "member": "Hetu",
+        "pramana": "Śabda Pramāṇa",
+        "axiom": "InvariantOntologicalDependency(Uripporuḷ, Mutalporuḷ)"
+      },
+      "is_tamil": true,
+      "has_transliteration": true,
+      "english_translation": "Mutalporuḷ (spatio-temporal habitat), Karupporuḷ (biotic constituents), and Uripporuḷ (psychological mood)—these three are of superior order in verse composition when closely investigated.",
+      "script": "tamil",
+      "processed_at": "2026-09-12T11:02:32.099045+00:00"
+    }
+  },
+  {
+    "document_id": "tol-porul-akam-004",
+    "work": "Tolkāppiyam",
+    "section": "Poruḷatikāram",
+    "chapter": "Akattiṇaiyiyal",
+    "passage_id": "tol-porul-akam-004",
+    "original_text": "முதல்எனப் படுவது நிலம்பொழுது இரண்டின்\nஇயல்பென மொழிப இயல்புணர்ந் தோரே.",
+    "normalized_text": "முதல்எனப் படுவது நிலம்பொழுது இரண்டின்\nஇயல்பென மொழிப இயல்புணர்ந் தோரே.",
+    "tokens": [
+      "முதல்எனப்",
+      "படுவது",
+      "நிலம்பொழுது",
+      "இரண்டின்",
+      "இயல்பென",
+      "மொழிப",
+      "இயல்புணர்ந்",
+      "தோரே"
+    ],
+    "lemmas": [
+      "முதல்எனப்",
+      "படு",
+      "நிலம்பொழுது",
+      "இரண்டின்",
+      "இயல்பென",
+      "மொழிப",
+      "இயல்புணர்ந்",
+      "தோரே"
+    ],
+    "content_tokens": [
+      "முதல்எனப்",
+      "நிலம்பொழுது",
+      "இரண்டின்",
+      "இயல்பென",
+      "இயல்புணர்ந்",
+      "தோரே"
+    ],
+    "token_count": 8,
+    "sentences": [
+      "முதல்எனப் படுவது நிலம்பொழுது இரண்டின்\nஇயல்பென மொழிப இயல்புணர்ந் தோரே"
+    ],
+    "verse_lines": [
+      "முதல்எனப் படுவது நிலம்பொழுது இரண்டின்",
+      "இயல்பென மொழிப இயல்புணர்ந் தோரே."
+    ],
+    "verse_structure": {
+      "total_lines": 2,
+      "total_cir": 8,
+      "lines": [
+        {
+          "line_number": 1,
+          "text": "முதல்எனப் படுவது நிலம்பொழுது இரண்டின்",
+          "cir_count": 4,
+          "cir_tokens": [
+            "முதல்எனப்",
+            "படுவது",
+            "நிலம்பொழுது",
+            "இரண்டின்"
+          ]
+        },
+        {
+          "line_number": 2,
+          "text": "இயல்பென மொழிப இயல்புணர்ந் தோரே.",
+          "cir_count": 4,
+          "cir_tokens": [
+            "இயல்பென",
+            "மொழிப",
+            "இயல்புணர்ந்",
+            "தோரே"
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "tinai": "General",
+      "sutra_number": 4,
+      "category": "Ontological Definition",
+      "entities": [
+        "Mutalporuḷ",
+        "Nilam",
+        "Poḻutu",
+        "Kālam"
+      ],
+      "triples": [
+        {
+          "subject": "Mutalporuḷ",
+          "predicate": "consistsOf",
+          "object": "Nilam"
+        },
+        {
+          "subject": "Mutalporuḷ",
+          "predicate": "consistsOf",
+          "object": "Poḻutu"
+        },
+        {
+          "subject": "Nilam",
+          "predicate": "isSpaceDimensionOf",
+          "object": "Tiṇai"
+        },
+        {
+          "subject": "Poḻutu",
+          "predicate": "isTimeDimensionOf",
+          "object": "Tiṇai"
+        }
+      ],
+      "nyaya_mapping": {
+        "member": "Pratijñā",
+        "pramana": "Śabda Pramāṇa",
+        "axiom": "Mutalporuḷ(x) ↔ SpatialLocus(x) ∧ TemporalLocus(x)"
+      },
+      "is_tamil": true,
+      "has_transliteration": true,
+      "english_translation": "What is termed Mutalporuḷ (primary ground) is the dual nature of Nilam (spatial landscape) and Poḻutu (temporal season/hour), as declared by those who know natural orders.",
+      "script": "tamil",
+      "processed_at": "2026-09-12T11:02:32.099112+00:00"
+    }
+  },
+  {
+    "document_id": "tol-porul-akam-005",
+    "work": "Tolkāppiyam",
+    "section": "Poruḷatikāram",
+    "chapter": "Akattiṇaiyiyal",
+    "passage_id": "tol-porul-akam-005",
+    "original_text": "மாயோன் மேய காடுறை உலகமும்\nசேயோன் மேய மைவரை உலகமும்\nவேந்தன் மேய தீம்புனல் உலகமும்\nவருணன் மேய பெருமணல் உலகமும்\nமுல்லை குறிஞ்சி மருதம் நெய்தல்எனச்\nசொல்லிய முறையால் சொல்லவும் படுமே.",
+    "normalized_text": "மாயோன் மேய காடுறை உலகமும்\nசேயோன் மேய மைவரை உலகமும்\nவேந்தன் மேய தீம்புனல் உலகமும்\nவருணன் மேய பெருமணல் உலகமும்\nமுல்லை குறிஞ்சி மருதம் நெய்தல்எனச்\nசொல்லிய முறையால் சொல்லவும் படுமே.",
+    "tokens": [
+      "மாயோன்",
+      "மேய",
+      "காடுறை",
+      "உலகமும்",
+      "சேயோன்",
+      "மேய",
+      "மைவரை",
+      "உலகமும்",
+      "வேந்தன்",
+      "மேய",
+      "தீம்புனல்",
+      "உலகமும்",
+      "வருணன்",
+      "மேய",
+      "பெருமணல்",
+      "உலகமும்",
+      "முல்லை",
+      "குறிஞ்சி",
+      "மருதம்",
+      "நெய்தல்எனச்",
+      "சொல்லிய",
+      "முறையால்",
+      "சொல்லவும்",
+      "படுமே"
+    ],
+    "lemmas": [
+      "மாயோன்",
+      "மேய",
+      "காடுறை",
+      "உலகமும்",
+      "சேயோன்",
+      "மேய",
+      "மைவரை",
+      "உலகமும்",
+      "வேந்தன்",
+      "மேய",
+      "தீம்புனல்",
+      "உலகமும்",
+      "வருணன்",
+      "மேய",
+      "பெருமணல்",
+      "உலகமும்",
+      "முல்லை",
+      "குறிஞ்சி",
+      "மருதம்",
+      "நெய்தல்எனச்",
+      "சொல்லிய",
+      "முறையால்",
+      "சொல்லவும்",
+      "படுமே"
+    ],
+    "content_tokens": [
+      "மாயோன்",
+      "மேய",
+      "காடுறை",
+      "உலகமும்",
+      "சேயோன்",
+      "மேய",
+      "மைவரை",
+      "உலகமும்",
+      "வேந்தன்",
+      "மேய",
+      "தீம்புனல்",
+      "உலகமும்",
+      "வருணன்",
+      "மேய",
+      "பெருமணல்",
+      "உலகமும்",
+      "முல்லை",
+      "குறிஞ்சி",
+      "மருதம்",
+      "நெய்தல்எனச்",
+      "சொல்லிய",
+      "முறையால்",
+      "சொல்லவும்"
+    ],
+    "token_count": 24,
+    "sentences": [
+      "மாயோன் மேய காடுறை உலகமும்\nசேயோன் மேய மைவரை உலகமும்\nவேந்தன் மேய தீம்புனல் உலகமும்\nவருணன் மேய பெருமணல் உலகமும்\nமுல்லை குறிஞ்சி மருதம் நெய்தல்எனச்\nசொல்லிய முறையால் சொல்லவும் படுமே"
+    ],
+    "verse_lines": [
+      "மாயோன் மேய காடுறை உலகமும்",
+      "சேயோன் மேய மைவரை உலகமும்",
+      "வேந்தன் மேய தீம்புனல் உலகமும்",
+      "வருணன் மேய பெருமணல் உலகமும்",
+      "முல்லை குறிஞ்சி மருதம் நெய்தல்எனச்",
+      "சொல்லிய முறையால் சொல்லவும் படுமே."
+    ],
+    "verse_structure": {
+      "total_lines": 6,
+      "total_cir": 24,
+      "lines": [
+        {
+          "line_number": 1,
+          "text": "மாயோன் மேய காடுறை உலகமும்",
+          "cir_count": 4,
+          "cir_tokens": [
+            "மாயோன்",
+            "மேய",
+            "காடுறை",
+            "உலகமும்"
+          ]
+        },
+        {
+          "line_number": 2,
+          "text": "சேயோன் மேய மைவரை உலகமும்",
+          "cir_count": 4,
+          "cir_tokens": [
+            "சேயோன்",
+            "மேய",
+            "மைவரை",
+            "உலகமும்"
+          ]
+        },
+        {
+          "line_number": 3,
+          "text": "வேந்தன் மேய தீம்புனல் உலகமும்",
+          "cir_count": 4,
+          "cir_tokens": [
+            "வேந்தன்",
+            "மேய",
+            "தீம்புனல்",
+            "உலகமும்"
+          ]
+        },
+        {
+          "line_number": 4,
+          "text": "வருணன் மேய பெருமணல் உலகமும்",
+          "cir_count": 4,
+          "cir_tokens": [
+            "வருணன்",
+            "மேய",
+            "பெருமணல்",
+            "உலகமும்"
+          ]
+        },
+        {
+          "line_number": 5,
+          "text": "முல்லை குறிஞ்சி மருதம் நெய்தல்எனச்",
+          "cir_count": 4,
+          "cir_tokens": [
+            "முல்லை",
+            "குறிஞ்சி",
+            "மருதம்",
+            "நெய்தல்எனச்"
+          ]
+        },
+        {
+          "line_number": 6,
+          "text": "சொல்லிய முறையால் சொல்லவும் படுமே.",
+          "cir_count": 4,
+          "cir_tokens": [
+            "சொல்லிய",
+            "முறையால்",
+            "சொல்லவும்",
+            "படுமே"
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "tinai": "Kuṟiñci",
+      "sutra_number": 5,
+      "category": "Ecological Deity & Habitat Concordance",
+      "entities": [
+        "Cēyōṉ",
+        "Kuṟiñci",
+        "Maivarai",
+        "Māyōṉ",
+        "Mullai",
+        "Vēntan",
+        "Marutam",
+        "Varuṇaṉ",
+        "Neytal"
+      ],
+      "triples": [
+        {
+          "subject": "Cēyōṉ",
+          "predicate": "presidesOver",
+          "object": "Kuṟiñci"
+        },
+        {
+          "subject": "Kuṟiñci",
+          "predicate": "hasHabitat",
+          "object": "Maivarai (Mountain)"
+        },
+        {
+          "subject": "Māyōṉ",
+          "predicate": "presidesOver",
+          "object": "Mullai"
+        },
+        {
+          "subject": "Mullai",
+          "predicate": "hasHabitat",
+          "object": "Kāṭu (Forest)"
+        },
+        {
+          "subject": "Vēntan",
+          "predicate": "presidesOver",
+          "object": "Marutam"
+        },
+        {
+          "subject": "Marutam",
+          "predicate": "hasHabitat",
+          "object": "Tīmpuṉal (River Plains)"
+        },
+        {
+          "subject": "Varuṇaṉ",
+          "predicate": "presidesOver",
+          "object": "Neytal"
+        },
+        {
+          "subject": "Neytal",
+          "predicate": "hasHabitat",
+          "object": "Perumaṇal (Littoral Coast)"
+        }
+      ],
+      "nyaya_mapping": {
+        "member": "Udāharaṇa",
+        "pramana": "Upamāna + Pratyakṣa",
+        "axiom": "∀x [MountainTerrain(x) ∧ CēyōṉHabitat(x) ⇒ KuṟiñciTiṇai(x)]"
+      },
+      "is_tamil": true,
+      "has_transliteration": true,
+      "english_translation": "The forested realm overseen by Māyōṉ (Mullai), the misty dark mountain realm overseen by Cēyōṉ (Kuṟiñci), the sweet-water riverine realm overseen by Vēntan (Marutam), and the vast sand realm overseen by Varuṇaṉ (Neytal)—are thus named in exact ordained order.",
+      "script": "tamil",
+      "processed_at": "2026-09-12T11:02:32.099277+00:00"
+    }
+  },
+  {
+    "document_id": "tol-porul-akam-014",
+    "work": "Tolkāppiyam",
+    "section": "Poruḷatikāram",
+    "chapter": "Akattiṇaiyiyal",
+    "passage_id": "tol-porul-akam-014",
+    "original_text": "புணர்தல் பிரிதல் இருத்தல் இரங்கல்\nஊடல் இவற்றின் நிமித்தம்என்று இவை\nதேருங் காலைத் திணைக்குரிப் பொருளே.",
+    "normalized_text": "புணர்தல் பிரிதல் இருத்தல் இரங்கல்\nஊடல் இவற்றின் நிமித்தம்என்று இவை\nதேருங் காலைத் திணைக்குரிப் பொருளே.",
+    "tokens": [
+      "புணர்தல்",
+      "பிரிதல்",
+      "இருத்தல்",
+      "இரங்கல்",
+      "ஊடல்",
+      "இவற்றின்",
+      "நிமித்தம்என்று",
+      "இவை",
+      "தேருங்",
+      "காலைத்",
+      "திணைக்குரிப்",
+      "பொருளே"
+    ],
+    "lemmas": [
+      "புணர்",
+      "பிரி",
+      "இருத்",
+      "இரங்கல்",
+      "ஊடல்",
+      "இவற்றின்",
+      "நிமித்தம்என்று",
+      "இவை",
+      "தேருங்",
+      "காலைத்",
+      "திணைக்குரிப்",
+      "பொருளே"
+    ],
+    "content_tokens": [
+      "புணர்தல்",
+      "பிரிதல்",
+      "இருத்தல்",
+      "இரங்கல்",
+      "ஊடல்",
+      "இவற்றின்",
+      "நிமித்தம்என்று",
+      "தேருங்",
+      "காலைத்",
+      "திணைக்குரிப்",
+      "பொருளே"
+    ],
+    "token_count": 12,
+    "sentences": [
+      "புணர்தல் பிரிதல் இருத்தல் இரங்கல்\nஊடல் இவற்றின் நிமித்தம்என்று இவை\nதேருங் காலைத் திணைக்குரிப் பொருளே"
+    ],
+    "verse_lines": [
+      "புணர்தல் பிரிதல் இருத்தல் இரங்கல்",
+      "ஊடல் இவற்றின் நிமித்தம்என்று இவை",
+      "தேருங் காலைத் திணைக்குரிப் பொருளே."
+    ],
+    "verse_structure": {
+      "total_lines": 3,
+      "total_cir": 12,
+      "lines": [
+        {
+          "line_number": 1,
+          "text": "புணர்தல் பிரிதல் இருத்தல் இரங்கல்",
+          "cir_count": 4,
+          "cir_tokens": [
+            "புணர்தல்",
+            "பிரிதல்",
+            "இருத்தல்",
+            "இரங்கல்"
+          ]
+        },
+        {
+          "line_number": 2,
+          "text": "ஊடல் இவற்றின் நிமித்தம்என்று இவை",
+          "cir_count": 4,
+          "cir_tokens": [
+            "ஊடல்",
+            "இவற்றின்",
+            "நிமித்தம்என்று",
+            "இவை"
+          ]
+        },
+        {
+          "line_number": 3,
+          "text": "தேருங் காலைத் திணைக்குரிப் பொருளே.",
+          "cir_count": 4,
+          "cir_tokens": [
+            "தேருங்",
+            "காலைத்",
+            "திணைக்குரிப்",
+            "பொருளே"
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "tinai": "Kuṟiñci",
+      "sutra_number": 14,
+      "category": "Affective Mood Invariance",
+      "entities": [
+        "Puṇartal",
+        "Pirital",
+        "Iruttal",
+        "Iraṅkal",
+        "Ūṭal",
+        "Uripporuḷ"
+      ],
+      "triples": [
+        {
+          "subject": "Kuṟiñci",
+          "predicate": "hasUripporuḷ",
+          "object": "Puṇartal (Intimate Union)"
+        },
+        {
+          "subject": "Pālai",
+          "predicate": "hasUripporuḷ",
+          "object": "Pirital (Separation)"
+        },
+        {
+          "subject": "Mullai",
+          "predicate": "hasUripporuḷ",
+          "object": "Iruttal (Patient Endurance)"
+        },
+        {
+          "subject": "Neytal",
+          "predicate": "hasUripporuḷ",
+          "object": "Iraṅkal (Anxious Pining)"
+        },
+        {
+          "subject": "Marutam",
+          "predicate": "hasUripporuḷ",
+          "object": "Ūṭal (Feigned Sulking)"
+        }
+      ],
+      "nyaya_mapping": {
+        "member": "Upanaya",
+        "pramana": "Anumāna",
+        "axiom": "Subsume(TargetPassage, Kuṟiñci_Semiotic_Axioms)"
+      },
+      "is_tamil": true,
+      "has_transliteration": true,
+      "english_translation": "Union (Puṇartal), separation (Pirital), patient endurance (Iruttal), melancholic pining (Iraṅkal), and lovers' feigned estrangement (Ūṭal), along with their proximate conditions—these constitute the essential Uripporuḷ (affective moods) of the respective Tiṇais.",
+      "script": "tamil",
+      "processed_at": "2026-09-12T11:02:32.099374+00:00"
+    }
+  },
+  {
+    "document_id": "tol-porul-mey-001",
+    "work": "Tolkāppiyam",
+    "section": "Poruḷatikāram",
+    "chapter": "Meyppāṭṭiyal",
+    "passage_id": "tol-porul-mey-001",
+    "original_text": "பண்ணைத் தோன்றிய எண்வகை பொருளும்\nகண்ணிய புறனே நானான்கு என்ப.",
+    "normalized_text": "பண்ணைத் தோன்றிய எண்வகை பொருளும்\nகண்ணிய புறனே நானான்கு என்ப.",
+    "tokens": [
+      "பண்ணைத்",
+      "தோன்றிய",
+      "எண்வகை",
+      "பொருளும்",
+      "கண்ணிய",
+      "புறனே",
+      "நானான்கு",
+      "என்ப"
+    ],
+    "lemmas": [
+      "பண்ணைத்",
+      "தோன்றிய",
+      "எண்வகை",
+      "பொருளும்",
+      "கண்ணிய",
+      "புறனே",
+      "நானான்கு",
+      "என்ப"
+    ],
+    "content_tokens": [
+      "பண்ணைத்",
+      "தோன்றிய",
+      "எண்வகை",
+      "பொருளும்",
+      "கண்ணிய",
+      "புறனே",
+      "நானான்கு"
+    ],
+    "token_count": 8,
+    "sentences": [
+      "பண்ணைத் தோன்றிய எண்வகை பொருளும்\nகண்ணிய புறனே நானான்கு என்ப"
+    ],
+    "verse_lines": [
+      "பண்ணைத் தோன்றிய எண்வகை பொருளும்",
+      "கண்ணிய புறனே நானான்கு என்ப."
+    ],
+    "verse_structure": {
+      "total_lines": 2,
+      "total_cir": 8,
+      "lines": [
+        {
+          "line_number": 1,
+          "text": "பண்ணைத் தோன்றிய எண்வகை பொருளும்",
+          "cir_count": 4,
+          "cir_tokens": [
+            "பண்ணைத்",
+            "தோன்றிய",
+            "எண்வகை",
+            "பொருளும்"
+          ]
+        },
+        {
+          "line_number": 2,
+          "text": "கண்ணிய புறனே நானான்கு என்ப.",
+          "cir_count": 4,
+          "cir_tokens": [
+            "கண்ணிய",
+            "புறனே",
+            "நானான்கு",
+            "என்ப"
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "tinai": "General",
+      "sutra_number": 248,
+      "category": "Aesthetic Realization",
+      "entities": [
+        "Meyppāṭu",
+        "AestheticRealization",
+        "EightRasas",
+        "Poruḷ"
+      ],
+      "triples": [
+        {
+          "subject": "Meyppāṭṭiyal",
+          "predicate": "formulates",
+          "object": "EightEmotionalAesthetics"
+        },
+        {
+          "subject": "Uripporuḷ",
+          "predicate": "manifestsAs",
+          "object": "Meyppāṭu"
+        }
+      ],
+      "nyaya_mapping": {
+        "member": "Nigamana",
+        "pramana": "Abādhita Pramāṇa",
+        "axiom": "∴ EpistemicSoundness(Tolkāppiyam) = 1.0"
+      },
+      "is_tamil": true,
+      "has_transliteration": true,
+      "english_translation": "The eightfold emotional manifestations (Meyppāṭu) appearing in dramatic and poetic contexts each generate four distinct causes, yielding thirty-two empirical manifestations.",
+      "script": "tamil",
+      "processed_at": "2026-09-12T11:02:32.099438+00:00"
+    }
+  },
+  {
+    "document_id": "tol-porul-akam-018",
+    "work": "Tolkāppiyam",
+    "section": "Poruḷatikāram",
+    "chapter": "Akattiṇaiyiyal",
+    "passage_id": "tol-porul-akam-018",
+    "original_text": "தெய்வம் உணாவே மாமரம் புட்பறை\nசெய்தி யாழின் பகுதியொடு தொகைஇ\nஅவ்வகை பிறவும் கருவென மொழிப.",
+    "normalized_text": "தெய்வம் உணாவே மாமரம் புட்பறை\nசெய்தி யாழின் பகுதியொடு தொகைஇ\nஅவ்வகை பிறவும் கருவென மொழிப.",
+    "tokens": [
+      "தெய்வம்",
+      "உணாவே",
+      "மாமரம்",
+      "புட்பறை",
+      "செய்தி",
+      "யாழின்",
+      "பகுதியொடு",
+      "தொகைஇ",
+      "அவ்வகை",
+      "பிறவும்",
+      "கருவென",
+      "மொழிப"
+    ],
+    "lemmas": [
+      "தெய்வம்",
+      "உணாவே",
+      "மாமரம்",
+      "புட்பறை",
+      "செய்தி",
+      "யாழின்",
+      "பகுதியொடு",
+      "தொகைஇ",
+      "அவ்வகை",
+      "பிறவும்",
+      "கருவென",
+      "மொழிப"
+    ],
+    "content_tokens": [
+      "தெய்வம்",
+      "உணாவே",
+      "மாமரம்",
+      "புட்பறை",
+      "யாழின்",
+      "கருவென"
+    ],
+    "token_count": 12,
+    "sentences": [
+      "தெய்வம் உணாவே மாமரம் புட்பறை\nசெய்தி யாழின் பகுதியொடு தொகைஇ\nஅவ்வகை பிறவும் கருவென மொழிப"
+    ],
+    "verse_lines": [
+      "தெய்வம் உணாவே மாமரம் புட்பறை",
+      "செய்தி யாழின் பகுதியொடு தொகைஇ",
+      "அவ்வகை பிறவும் கருவென மொழிப."
+    ],
+    "verse_structure": {
+      "total_lines": 3,
+      "total_cir": 12,
+      "lines": [
+        {
+          "line_number": 1,
+          "text": "தெய்வம் உணாவே மாமரம் புட்பறை",
+          "cir_count": 4,
+          "cir_tokens": [
+            "தெய்வம்",
+            "உணாவே",
+            "மாமரம்",
+            "புட்பறை"
+          ]
+        },
+        {
+          "line_number": 2,
+          "text": "செய்தி யாழின் பகுதியொடு தொகைஇ",
+          "cir_count": 4,
+          "cir_tokens": [
+            "செய்தி",
+            "யாழின்",
+            "பகுதியொடு",
+            "தொகைஇ"
+          ]
+        },
+        {
+          "line_number": 3,
+          "text": "அவ்வகை பிறவும் கருவென மொழிப.",
+          "cir_count": 4,
+          "cir_tokens": [
+            "அவ்வகை",
+            "பிறவும்",
+            "கருவென",
+            "மொழிப"
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "tinai": "General",
+      "sutra_number": 18,
+      "category": "Biotic Constituents",
+      "entities": [
+        "Teyvam",
+        "Uṇā",
+        "Mā",
+        "Maram",
+        "Puḷ",
+        "Paṟai",
+        "Ceyti",
+        "Yāḻ",
+        "Karupporuḷ"
+      ],
+      "triples": [
+        {
+          "subject": "Karupporuḷ",
+          "predicate": "includesComponent",
+          "object": "Deity (Teyvam)"
+        },
+        {
+          "subject": "Karupporuḷ",
+          "predicate": "includesComponent",
+          "object": "Flora (Maram)"
+        },
+        {
+          "subject": "Karupporuḷ",
+          "predicate": "includesComponent",
+          "object": "Fauna (Mā & Puḷ)"
+        },
+        {
+          "subject": "Karupporuḷ",
+          "predicate": "includesComponent",
+          "object": "Music (Yāḻ & Paṟai)"
+        }
+      ],
+      "nyaya_mapping": {
+        "member": "Hetu",
+        "pramana": "Pratyakṣa Pramāṇa",
+        "axiom": "Karupporuḷ(x) → ConcreteBioticSignifier(x)"
+      },
+      "is_tamil": true,
+      "has_transliteration": true,
+      "english_translation": "Deity, sustenance, animals, trees, birds, drums, occupational activity, lute varieties, and other such regional flora, fauna, and implements are designated as Karupporuḷ.",
+      "script": "tamil",
+      "processed_at": "2026-09-12T11:02:32.099523+00:00"
+    }
+  }
+]

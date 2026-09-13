@@ -1,0 +1,479 @@
+{
+  "version": "1.0.0-canonical",
+  "ingested_at": "2026-09-13T03:30:05.238029+00:00",
+  "overall_status": "valid",
+  "datasets": {
+    "ontology": {
+      "dataset_name": "ontology",
+      "rows": 1000,
+      "columns": [
+        "ID",
+        "Main Theme",
+        "English_Label",
+        "Tamil_Label",
+        "Synonyms_Tamil",
+        "Synonyms_English",
+        "Category",
+        "Parent_Concept",
+        "Child_Concepts",
+        "Relation_Type",
+        "Description",
+        "Domain",
+        "Source_Text",
+        "Keywords",
+        "Notes"
+      ],
+      "columns_count": 15,
+      "missing_values": {
+        "ID": 0,
+        "Main Theme": 0,
+        "English_Label": 0,
+        "Tamil_Label": 0,
+        "Synonyms_Tamil": 66,
+        "Synonyms_English": 0,
+        "Category": 0,
+        "Parent_Concept": 3,
+        "Child_Concepts": 122,
+        "Relation_Type": 0,
+        "Description": 0,
+        "Domain": 0,
+        "Source_Text": 0,
+        "Keywords": 0,
+        "Notes": 127
+      },
+      "duplicates": 0,
+      "id_duplicates": 0,
+      "validation_status": "valid",
+      "schema_validation": {
+        "is_schema_valid": true,
+        "missing_required_fields": []
+      },
+      "tamil_unicode_validation": {
+        "columns": {
+          "Tamil_Label": {
+            "total_non_null": 1000,
+            "tamil_glyph_records": 1000,
+            "tamil_percentage": 100.0,
+            "is_valid_tamil": true
+          },
+          "Synonyms_Tamil": {
+            "total_non_null": 934,
+            "tamil_glyph_records": 934,
+            "tamil_percentage": 100.0,
+            "is_valid_tamil": true
+          },
+          "Keywords": {
+            "total_non_null": 1000,
+            "tamil_glyph_records": 588,
+            "tamil_percentage": 58.8,
+            "is_valid_tamil": true
+          }
+        },
+        "total_tamil_glyph_records": 2522,
+        "tamil_char_count": 2522,
+        "is_valid": true
+      },
+      "column_profiles": [
+        {
+          "column_name": "ID",
+          "data_type": "int64",
+          "non_null_count": 1000,
+          "null_count": 0,
+          "null_percentage": 0.0,
+          "unique_count": 1000,
+          "sample_values": [
+            "1",
+            "2",
+            "3"
+          ]
+        },
+        {
+          "column_name": "Main Theme",
+          "data_type": "str",
+          "non_null_count": 1000,
+          "null_count": 0,
+          "null_percentage": 0.0,
+          "unique_count": 9,
+          "sample_values": [
+            "Grammar",
+            "Porul",
+            "Akam"
+          ]
+        },
+        {
+          "column_name": "English_Label",
+          "data_type": "str",
+          "non_null_count": 1000,
+          "null_count": 0,
+          "null_percentage": 0.0,
+          "unique_count": 978,
+          "sample_values": [
+            "Ezhuthu",
+            "Uyir Ezhuthu",
+            "Mei Ezhuthu"
+          ]
+        },
+        {
+          "column_name": "Tamil_Label",
+          "data_type": "str",
+          "non_null_count": 1000,
+          "null_count": 0,
+          "null_percentage": 0.0,
+          "unique_count": 977,
+          "sample_values": [
+            "எழுத்து",
+            "உயிர் எழுத்து",
+            "மெய் எழுத்து"
+          ]
+        },
+        {
+          "column_name": "Synonyms_Tamil",
+          "data_type": "str",
+          "non_null_count": 934,
+          "null_count": 66,
+          "null_percentage": 6.6,
+          "unique_count": 908,
+          "sample_values": [
+            "எழுத்துக்கள்",
+            "உயிரெழுத்து",
+            "மெய்யெழுத்து"
+          ]
+        },
+        {
+          "column_name": "Synonyms_English",
+          "data_type": "str",
+          "non_null_count": 1000,
+          "null_count": 0,
+          "null_percentage": 0.0,
+          "unique_count": 947,
+          "sample_values": [
+            "Letters",
+            "Vowels",
+            "Consonants"
+          ]
+        },
+        {
+          "column_name": "Category",
+          "data_type": "str",
+          "non_null_count": 1000,
+          "null_count": 0,
+          "null_percentage": 0.0,
+          "unique_count": 125,
+          "sample_values": [
+            "Grammar",
+            "Porul",
+            "Akam"
+          ]
+        },
+        {
+          "column_name": "Parent_Concept",
+          "data_type": "str",
+          "non_null_count": 997,
+          "null_count": 3,
+          "null_percentage": 0.3,
+          "unique_count": 211,
+          "sample_values": [
+            "Ilakkanam",
+            "Ezhuthu",
+            "Uyir"
+          ]
+        },
+        {
+          "column_name": "Child_Concepts",
+          "data_type": "str",
+          "non_null_count": 878,
+          "null_count": 122,
+          "null_percentage": 12.2,
+          "unique_count": 554,
+          "sample_values": [
+            "Uyir,Mei,Uyirmei",
+            "Kuril,Nedil",
+            "Otru"
+          ]
+        },
+        {
+          "column_name": "Relation_Type",
+          "data_type": "str",
+          "non_null_count": 1000,
+          "null_count": 0,
+          "null_percentage": 0.0,
+          "unique_count": 93,
+          "sample_values": [
+            "foundation_of",
+            "part_of",
+            "classified_as"
+          ]
+        },
+        {
+          "column_name": "Description",
+          "data_type": "str",
+          "non_null_count": 1000,
+          "null_count": 0,
+          "null_percentage": 0.0,
+          "unique_count": 982,
+          "sample_values": [
+            "Rules governing Tamil letters and sounds",
+            "Tamil vowels",
+            "Tamil consonants"
+          ]
+        },
+        {
+          "column_name": "Domain",
+          "data_type": "str",
+          "non_null_count": 1000,
+          "null_count": 0,
+          "null_percentage": 0.0,
+          "unique_count": 8,
+          "sample_values": [
+            "Grammar",
+            "Porul",
+            "Akam"
+          ]
+        },
+        {
+          "column_name": "Source_Text",
+          "data_type": "str",
+          "non_null_count": 1000,
+          "null_count": 0,
+          "null_percentage": 0.0,
+          "unique_count": 1,
+          "sample_values": [
+            "Tolkappiyam"
+          ]
+        },
+        {
+          "column_name": "Keywords",
+          "data_type": "str",
+          "non_null_count": 1000,
+          "null_count": 0,
+          "null_percentage": 0.0,
+          "unique_count": 926,
+          "sample_values": [
+            "எழுத்து,letter,tamil",
+            "உயிர்,vowel",
+            "மெய்,consonant"
+          ]
+        },
+        {
+          "column_name": "Notes",
+          "data_type": "str",
+          "non_null_count": 873,
+          "null_count": 127,
+          "null_percentage": 12.7,
+          "unique_count": 717,
+          "sample_values": [
+            "Base of Sol & Porul",
+            "Depends on Ezhuthu",
+            "Connects grammar with broader linguistic usage"
+          ]
+        }
+      ],
+      "raw_file_path": "M:\\Dharun\\summer-intern\\backend\\data\\raw\\Ontology.csv",
+      "processed_file_path": "M:\\Dharun\\summer-intern\\backend\\data\\processed\\ontology_processed.csv",
+      "sha256_hash": "4515a01f536d8da47f0f67a16fd2ff4a5e710de19d6f84e5456171d7ae8ab2a3"
+    },
+    "query_mapping": {
+      "dataset_name": "query_mapping",
+      "rows": 2640,
+      "columns": [
+        "Thinai / Type",
+        "Landscape",
+        "Emotional / Cultural Meaning",
+        "Associated Context",
+        "Example User Query",
+        "Canonical Query Form",
+        "Difficulty_Level",
+        "Language_Level",
+        "Related_Concepts",
+        "Source_Reference"
+      ],
+      "columns_count": 10,
+      "missing_values": {
+        "Thinai / Type": 0,
+        "Landscape": 0,
+        "Emotional / Cultural Meaning": 0,
+        "Associated Context": 0,
+        "Example User Query": 0,
+        "Canonical Query Form": 0,
+        "Difficulty_Level": 0,
+        "Language_Level": 0,
+        "Related_Concepts": 0,
+        "Source_Reference": 0
+      },
+      "duplicates": 0,
+      "validation_status": "valid",
+      "schema_validation": {
+        "is_schema_valid": true,
+        "missing_required_fields": []
+      },
+      "referential_integrity": {
+        "foreign_key_column": "Thinai / Type",
+        "target_ontology_column": "English_Label",
+        "unique_foreign_keys": 528,
+        "matched_in_ontology": 528,
+        "unmatched_count": 0,
+        "integrity_percentage": 100.0,
+        "valid": true
+      },
+      "tamil_unicode_validation": {
+        "columns": {
+          "Emotional / Cultural Meaning": {
+            "total_non_null": 2640,
+            "tamil_glyph_records": 2125,
+            "tamil_percentage": 80.49,
+            "is_valid_tamil": true
+          },
+          "Example User Query": {
+            "total_non_null": 2640,
+            "tamil_glyph_records": 2411,
+            "tamil_percentage": 91.33,
+            "is_valid_tamil": true
+          },
+          "Canonical Query Form": {
+            "total_non_null": 2640,
+            "tamil_glyph_records": 250,
+            "tamil_percentage": 9.47,
+            "is_valid_tamil": true
+          }
+        },
+        "total_tamil_glyph_records": 4786,
+        "tamil_char_count": 4786,
+        "is_valid": true
+      },
+      "column_profiles": [
+        {
+          "column_name": "Thinai / Type",
+          "data_type": "str",
+          "non_null_count": 2640,
+          "null_count": 0,
+          "null_percentage": 0.0,
+          "unique_count": 528,
+          "sample_values": [
+            "Ezhuthu",
+            "Uyir Ezhuthu",
+            "Mei Ezhuthu"
+          ]
+        },
+        {
+          "column_name": "Landscape",
+          "data_type": "str",
+          "non_null_count": 2640,
+          "null_count": 0,
+          "null_percentage": 0.0,
+          "unique_count": 17,
+          "sample_values": [
+            "Grammar",
+            "Porul",
+            "—"
+          ]
+        },
+        {
+          "column_name": "Emotional / Cultural Meaning",
+          "data_type": "str",
+          "non_null_count": 2640,
+          "null_count": 0,
+          "null_percentage": 0.0,
+          "unique_count": 528,
+          "sample_values": [
+            "Rules governing Tamil letters and sounds; keywords: எழுத்து,letter,tamil",
+            "Tamil vowels; keywords: உயிர்,vowel",
+            "Tamil consonants; keywords: மெய்,consonant"
+          ]
+        },
+        {
+          "column_name": "Associated Context",
+          "data_type": "str",
+          "non_null_count": 2640,
+          "null_count": 0,
+          "null_percentage": 0.0,
+          "unique_count": 1900,
+          "sample_values": [
+            "Grammar – Ilakkanam context; relation: foundation_of",
+            "Grammar – Ezhuthu context; relation: part_of",
+            "Grammar – Uyir context; relation: classified_as"
+          ]
+        },
+        {
+          "column_name": "Example User Query",
+          "data_type": "str",
+          "non_null_count": 2640,
+          "null_count": 0,
+          "null_percentage": 0.0,
+          "unique_count": 2640,
+          "sample_values": [
+            "Explain Ezhuthu (எழுத்து) in Tolkappiyam and its foundation_of relation",
+            "Explain Uyir Ezhuthu (உயிர் எழுத்து) in Tolkappiyam and its part_of relation",
+            "Explain Mei Ezhuthu (மெய் எழுத்து) in Tolkappiyam and its part_of relation"
+          ]
+        },
+        {
+          "column_name": "Canonical Query Form",
+          "data_type": "str",
+          "non_null_count": 2640,
+          "null_count": 0,
+          "null_percentage": 0.0,
+          "unique_count": 2640,
+          "sample_values": [
+            "Grammar → Ilakkanam → Ezhuthu → foundation_of",
+            "Grammar → Ezhuthu → Uyir Ezhuthu → part_of",
+            "Grammar → Ezhuthu → Mei Ezhuthu → part_of"
+          ]
+        },
+        {
+          "column_name": "Difficulty_Level",
+          "data_type": "str",
+          "non_null_count": 2640,
+          "null_count": 0,
+          "null_percentage": 0.0,
+          "unique_count": 4,
+          "sample_values": [
+            "Intermediate",
+            "Student",
+            "Advanced"
+          ]
+        },
+        {
+          "column_name": "Language_Level",
+          "data_type": "str",
+          "non_null_count": 2640,
+          "null_count": 0,
+          "null_percentage": 0.0,
+          "unique_count": 2,
+          "sample_values": [
+            "Tamil + English",
+            "Simple Tamil"
+          ]
+        },
+        {
+          "column_name": "Related_Concepts",
+          "data_type": "str",
+          "non_null_count": 2640,
+          "null_count": 0,
+          "null_percentage": 0.0,
+          "unique_count": 355,
+          "sample_values": [
+            "Ilakkanam",
+            "Ezhuthu, Kuril, Nedil",
+            "Ezhuthu, Otru"
+          ]
+        },
+        {
+          "column_name": "Source_Reference",
+          "data_type": "str",
+          "non_null_count": 2640,
+          "null_count": 0,
+          "null_percentage": 0.0,
+          "unique_count": 10,
+          "sample_values": [
+            "Tolkappiyam – Grammar",
+            "Tolkappiyam – Porul",
+            "Tolkappiyam – Porul Athikaram"
+          ]
+        }
+      ],
+      "raw_file_path": "M:\\Dharun\\summer-intern\\backend\\data\\raw\\Query_Mapping.csv",
+      "processed_file_path": "M:\\Dharun\\summer-intern\\backend\\data\\processed\\query_mapping_processed.csv",
+      "sha256_hash": "70fd37306a359c9be5f588772f9d4fb297c1ed2a640c27b60dadeb71cdaa8454"
+    }
+  }
+}

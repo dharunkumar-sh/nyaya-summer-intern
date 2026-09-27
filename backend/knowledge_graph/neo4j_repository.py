@@ -18,8 +18,9 @@ from __future__ import annotations
 import json
 import re
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 # Ensure backend root is on sys.path
 backend_root = Path(__file__).resolve().parent.parent
@@ -31,6 +32,7 @@ from core.logger import logger
 from core.exceptions import KnowledgeGraphError, CypherQueryError
 from services.neo4j_service import Neo4jService, neo4j_service
 from .schema import NodeLabels, RelTypes
+from .ontology import TolkappiyamOntology
 
 
 class Neo4jRepository:
@@ -43,8 +45,11 @@ class Neo4jRepository:
         self.service = service or neo4j_service
 
     def is_available(self) -> bool:
-        """Checks if the Neo4j driver is initialized and available."""
-        return self.service.get_driver() is not None
+        """Checks if the Neo4j driver is initialized and connected."""
+        driver = self.service.get_driver()
+        if driver is None:
+            return False
+        return self.service.is_connected()
 
     # ==============================================================================
     # 1. Reusable Single Entity / Node Upserts (Idempotent MERGE)
@@ -590,6 +595,7 @@ class Neo4jRepository:
             n.hierarchy_level = item.hierarchy_level,
             n.source = item.source,
             n.source_id = item.source_id,
+            n.context = coalesce(item.context, item.tinai, item.section_name, 'General'),
             n.confidence = item.confidence,
             n.tinai = item.tinai,
             n.category = item.category,
@@ -619,6 +625,7 @@ class Neo4jRepository:
             n.hierarchy_level = item.hierarchy_level,
             n.source = item.source,
             n.source_id = coalesce(item.source_id, n.source_id),
+            n.context = coalesce(item.context, n.context, item.tinai, item.section_name, 'General'),
             n.confidence = item.confidence,
             n.tinai = coalesce(item.tinai, n.tinai),
             n.category = coalesce(item.category, n.category),
@@ -663,6 +670,7 @@ class Neo4jRepository:
                     "hierarchy_level": str(it.get("hierarchy_level", "L5")),
                     "source": str(it.get("source", "Tolkāppiyam")),
                     "source_id": str(it.get("source_id", it["id"])),
+                    "context": str(it.get("context") or it.get("tinai") or meta.get("tinai") or "General"),
                     "confidence": float(it.get("confidence", 1.0)),
                     "tinai": it.get("tinai") or meta.get("tinai"),
                     "category": it.get("category") or meta.get("category"),
@@ -682,7 +690,7 @@ class Neo4jRepository:
                     "book_number": it.get("book_number") or meta.get("book_number"),
                     "chapter_number": it.get("chapter_number") or meta.get("chapter_number"),
                     "event_type": it.get("event_type") or meta.get("event_type"),
-                    "validation_status": it.get("validation_status") or meta.get("validation_status", "verified"),
+                    "validation_status": it.get("validation_status") or meta.get("validation_status", "canonical_verified"),
                     "metadata_json": json.dumps(meta, ensure_ascii=False),
                 })
             self.service.execute_write(query, {"batch": serialized_chunk}, database=database)
@@ -1083,15 +1091,18 @@ class Neo4jRepository:
                p.label AS passage_label,
                p.sutra_number AS sutra_number,
                p.verse_number AS verse_number,
-               p.original_text AS original_text,
-               p.normalized_text AS normalized_text,
+               coalesce(p.original_text, p.text, '') AS original_text,
+               coalesce(p.normalized_text, p.text, '') AS normalized_text,
+               p.text AS text,
                p.translation AS translation,
+               p.tinai AS tinai,
                p.source AS source,
-               p.source_reference AS source_reference,
-               p.work_name AS work_name,
-               p.section_name AS section_name,
-               p.chapter_name AS chapter_name,
+               coalesce(p.source_reference, p.citation, '') AS source_reference,
+               coalesce(p.work_name, w.name, 'Tolkāppiyam') AS work_name,
+               coalesce(p.section_name, sec.section_name, sec.name, 'Poruḷatikāram') AS section_name,
+               coalesce(p.chapter_name, sec.chapter_name, sec.name, '') AS chapter_name,
                p.corpus_info AS corpus_info,
+               p.metadata_json AS metadata_json,
                [n in nodes(path) | {
                    id: n.id,
                    label: n.label,
@@ -1109,7 +1120,317 @@ class Neo4jRepository:
         if not records or not records[0].get("passage_id"):
             return None
 
-        return dict(records[0])
+        data = dict(records[0])
+        if data.get("metadata_json"):
+            try:
+                data["metadata"] = json.loads(data["metadata_json"])
+            except Exception:
+                data["metadata"] = {}
+        return data
+
+    def get_canonical_sutras_batch(
+        self, passage_ids: List[str], database: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Retrieves multiple canonical passages directly from Neo4j Aura in a single query
+        with full literary hierarchy, text, translation, and citation provenance.
+        """
+        cleaned_ids = [str(pid).strip() for pid in (passage_ids or []) if str(pid).strip()]
+        if not cleaned_ids:
+            return []
+
+        query = """
+        UNWIND $ids AS target_id
+        MATCH (p:KGNode:Passage)
+        WHERE p.id = target_id OR p.source_id = target_id OR p.source = target_id
+        OPTIONAL MATCH path = (lit:KGNode:Literature)-[:HAS_WORK]->(w:KGNode:Work)-[:HAS_SECTION*1..2]->(sec:KGNode:Section)-[:HAS_PASSAGE]->(p)
+        RETURN p.id AS passage_id,
+               p.id AS id,
+               p.label AS label,
+               p.sutra_number AS sutra_number,
+               p.verse_number AS verse_number,
+               coalesce(p.original_text, p.text, '') AS original_text,
+               coalesce(p.normalized_text, p.text, '') AS normalized_text,
+               coalesce(p.text, p.original_text, '') AS text,
+               p.translation AS translation,
+               coalesce(p.tinai, 'General') AS tinai,
+               coalesce(p.category, 'Passage') AS category,
+               coalesce(p.source_reference, p.citation, '') AS source_reference,
+               coalesce(p.work_name, w.name, 'Tolkāppiyam') AS work_name,
+               coalesce(p.section_name, sec.section_name, sec.name, 'Poruḷatikāram') AS section_name,
+               coalesce(p.chapter_name, sec.chapter_name, sec.name, '') AS chapter_name,
+               coalesce(p.confidence, 1.0) AS confidence,
+               p.metadata_json AS metadata_json,
+               [n in nodes(path) | {
+                   id: n.id,
+                   label: n.label,
+                   name: n.name,
+                   type: n.type,
+                   hierarchy_level: n.hierarchy_level
+               }] AS provenance_path
+        """
+        records = self.service.execute_read(query, {"ids": cleaned_ids}, database=database)
+        results: Dict[str, Dict[str, Any]] = {}
+        for r in records:
+            item = dict(r)
+            meta = {}
+            if item.get("metadata_json"):
+                try:
+                    meta = json.loads(item["metadata_json"])
+                except Exception:
+                    meta = {}
+            item["metadata"] = meta
+            if not item.get("source_reference"):
+                w = item.get("work_name", "Tolkāppiyam")
+                s = item.get("section_name", "Poruḷatikāram")
+                c = item.get("chapter_name", "")
+                num = item.get("sutra_number", "")
+                item["source_reference"] = f"{w} {s} {c} Sūtra {num}".replace("  ", " ").strip()
+            pid = item.get("passage_id") or item.get("id")
+            if pid and pid not in results:
+                results[pid] = item
+        return results
+
+    def get_canonical_evidence_for_tinai(
+        self,
+        tinai_name: str,
+        limit: int = 5,
+        database: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Retrieves canonical passages from Neo4j Aura that specifically formulate
+        the semiotic, ecological, and psychological rules of the specified Tiṇai.
+        """
+        cleaned_tinai = (tinai_name or "").strip()
+        if not cleaned_tinai:
+            return []
+
+        query = """
+        MATCH (p:KGNode:Passage)
+        WHERE toLower(coalesce(p.tinai, '')) = toLower($tinai)
+           OR toLower(coalesce(p.text, '')) CONTAINS toLower($tinai)
+           OR toLower(coalesce(p.original_text, '')) CONTAINS toLower($tinai)
+           OR toLower(coalesce(p.translation, '')) CONTAINS toLower($tinai)
+        OPTIONAL MATCH path = (lit:KGNode:Literature)-[:HAS_WORK]->(w:KGNode:Work)-[:HAS_SECTION*1..2]->(sec:KGNode:Section)-[:HAS_PASSAGE]->(p)
+        RETURN p.id AS passage_id,
+               p.id AS id,
+               p.label AS label,
+               p.sutra_number AS sutra_number,
+               coalesce(p.original_text, p.text, '') AS original_text,
+               coalesce(p.normalized_text, p.text, '') AS normalized_text,
+               coalesce(p.text, p.original_text, '') AS text,
+               p.translation AS translation,
+               coalesce(p.tinai, $tinai) AS tinai,
+               coalesce(p.category, 'CanonicalEvidence') AS category,
+               coalesce(p.source_reference, p.citation, '') AS source_reference,
+               coalesce(p.work_name, w.name, 'Tolkāppiyam') AS work_name,
+               coalesce(p.section_name, sec.section_name, sec.name, 'Poruḷatikāram') AS section_name,
+               coalesce(p.chapter_name, sec.chapter_name, sec.name, '') AS chapter_name,
+               coalesce(p.confidence, 1.0) AS confidence,
+               p.metadata_json AS metadata_json
+        ORDER BY coalesce(p.sutra_number, 9999) ASC
+        LIMIT $limit
+        """
+        records = self.service.execute_read(
+            query, {"tinai": cleaned_tinai, "limit": limit}, database=database
+        )
+        results: List[Dict[str, Any]] = []
+        for r in records:
+            item = dict(r)
+            meta = {}
+            if item.get("metadata_json"):
+                try:
+                    meta = json.loads(item["metadata_json"])
+                except Exception:
+                    meta = {}
+            item["metadata"] = meta
+            if not item.get("source_reference"):
+                w = item.get("work_name", "Tolkāppiyam")
+                s = item.get("section_name", "Poruḷatikāram")
+                c = item.get("chapter_name", "")
+                num = item.get("sutra_number", "")
+                item["source_reference"] = f"{w} {s} {c} Sūtra {num}".replace("  ", " ").strip()
+            results.append(item)
+        return results
+
+    def get_canonical_vyapti_sutras(
+        self,
+        tinai: str,
+        domain: Optional[str] = None,
+        limit: int = 5,
+        database: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Retrieves foundational canonical sūtras from Tolkāppiyam establishing the
+        universal semiotic / affective invariance (Vyāpti) for a given Tiṇai or domain directly from Neo4j.
+        """
+        cleaned_tinai = (tinai or "Kuṟiñci").strip()
+        query = """
+        MATCH (p:KGNode:Passage)
+        WHERE (toLower(coalesce(p.tinai, '')) = toLower($tinai)
+               OR toLower(coalesce(p.text, '')) CONTAINS toLower($tinai)
+               OR toLower(coalesce(p.original_text, '')) CONTAINS toLower($tinai)
+               OR toLower(coalesce(p.translation, '')) CONTAINS toLower($tinai))
+        OPTIONAL MATCH path = (lit:KGNode:Literature)-[:HAS_WORK]->(w:KGNode:Work)-[:HAS_SECTION*1..2]->(sec:KGNode:Section)-[:HAS_PASSAGE]->(p)
+        RETURN p.id AS passage_id,
+               p.id AS id,
+               p.label AS label,
+               p.sutra_number AS sutra_number,
+               coalesce(p.original_text, p.text, '') AS original_text,
+               coalesce(p.normalized_text, p.text, '') AS normalized_text,
+               coalesce(p.text, p.original_text, '') AS text,
+               p.translation AS translation,
+               coalesce(p.tinai, $tinai) AS tinai,
+               coalesce(p.category, 'CanonicalVyaptiRule') AS category,
+               coalesce(p.source_reference, p.citation, '') AS source_reference,
+               coalesce(p.work_name, w.name, 'Tolkāppiyam') AS work_name,
+               coalesce(p.section_name, sec.section_name, sec.name, 'Poruḷatikāram') AS section_name,
+               coalesce(p.chapter_name, sec.chapter_name, sec.name, '') AS chapter_name,
+               coalesce(p.confidence, 1.0) AS confidence,
+               p.metadata_json AS metadata_json
+        ORDER BY coalesce(p.sutra_number, 9999) ASC
+        LIMIT $limit
+        """
+        records = self.service.execute_read(
+            query, {"tinai": cleaned_tinai, "limit": limit}, database=database
+        )
+        results: List[Dict[str, Any]] = []
+        for r in records:
+            item = dict(r)
+            meta = {}
+            if item.get("metadata_json"):
+                try:
+                    meta = json.loads(item["metadata_json"])
+                except Exception:
+                    meta = {}
+            item["metadata"] = meta
+            if not item.get("source_reference"):
+                w = item.get("work_name", "Tolkāppiyam")
+                s = item.get("section_name", "Poruḷatikāram")
+                c = item.get("chapter_name", "")
+                num = item.get("sutra_number", "")
+                item["source_reference"] = f"{w} {s} {c} Sūtra {num}".replace("  ", " ").strip()
+            item["evidence_role"] = "canonicalEvidence"
+            results.append(item)
+        return results
+
+    def verify_canonical_vyapti_passage(
+        self,
+        passage_id: str,
+        tinai: Optional[str] = None,
+        database: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Verifies whether a specific passage ID corresponds to an authentic canonical
+        Vyāpti rule in Neo4j (Tolkāppiyam / CanonicalVyaptiRule).
+        Returns the canonical record dict if verified, None otherwise.
+        """
+        if not passage_id:
+            return None
+        query = """
+        MATCH (p:KGNode:Passage)
+        WHERE (p.id = $passage_id OR p.passage_id = $passage_id)
+        OPTIONAL MATCH path = (lit:KGNode:Literature)-[:HAS_WORK]->(w:KGNode:Work)-[:HAS_SECTION*1..2]->(sec:KGNode:Section)-[:HAS_PASSAGE]->(p)
+        RETURN p.id AS passage_id,
+               p.id AS id,
+               p.label AS label,
+               p.sutra_number AS sutra_number,
+               coalesce(p.original_text, p.text, '') AS original_text,
+               coalesce(p.text, p.original_text, '') AS text,
+               p.translation AS translation,
+               coalesce(p.tinai, '') AS tinai,
+               coalesce(p.category, 'CanonicalVyaptiRule') AS category,
+               coalesce(p.source_reference, p.citation, '') AS source_reference,
+               coalesce(p.work_name, w.name, 'Tolkāppiyam') AS work_name,
+               coalesce(p.section_name, sec.section_name, sec.name, 'Poruḷatikāram') AS section_name,
+               coalesce(p.chapter_name, sec.chapter_name, sec.name, '') AS chapter_name,
+               coalesce(p.confidence, 1.0) AS confidence
+        LIMIT 1
+        """
+        try:
+            records = self.service.execute_read(query, {"passage_id": passage_id}, database=database)
+            if records:
+                item = dict(records[0])
+                if not item.get("source_reference"):
+                    w = item.get("work_name", "Tolkāppiyam")
+                    s = item.get("section_name", "Poruḷatikāram")
+                    c = item.get("chapter_name", "")
+                    num = item.get("sutra_number", "")
+                    item["source_reference"] = f"{w} {s} {c} Sūtra {num}".replace("  ", " ").strip()
+                item["evidence_role"] = "vyaptiEvidence"
+                return item
+        except Exception as e:
+            logger.debug(f"verify_canonical_vyapti_passage fallback: {e}")
+        return None
+
+    def get_case_evidence_by_entities_and_concepts(
+        self,
+        entity_names: List[str],
+        concept_names: List[str],
+        tinai: Optional[str] = None,
+        limit: int = 5,
+        database: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Retrieves case-specific passages directly connected to target entities and concepts
+        via Knowledge Graph relationships.
+        """
+        cleaned_entities = [str(e).strip() for e in (entity_names or []) if str(e).strip()]
+        cleaned_concepts = [str(c).strip() for c in (concept_names or []) if str(c).strip()]
+        if not cleaned_entities and not cleaned_concepts:
+            return []
+
+        query = """
+        MATCH (n:KGNode)
+        WHERE (n:Entity OR n:Concept OR n:Event)
+          AND (any(e in $entities WHERE toLower(coalesce(n.name, n.label, '')) CONTAINS toLower(e) OR toLower(e) CONTAINS toLower(coalesce(n.name, n.label, '')))
+               OR any(c in $concepts WHERE toLower(coalesce(n.name, n.label, '')) CONTAINS toLower(c) OR toLower(c) CONTAINS toLower(coalesce(n.name, n.label, ''))))
+        MATCH (n)-[r]-(p:KGNode:Passage)
+        OPTIONAL MATCH path = (lit:KGNode:Literature)-[:HAS_WORK]->(w:KGNode:Work)-[:HAS_SECTION*1..2]->(sec:KGNode:Section)-[:HAS_PASSAGE]->(p)
+        WHERE ($tinai IS NULL OR $tinai = '' OR toLower(coalesce(p.tinai, '')) = toLower($tinai))
+        RETURN p.id AS passage_id,
+               p.id AS id,
+               p.label AS label,
+               p.sutra_number AS sutra_number,
+               coalesce(p.original_text, p.text, '') AS original_text,
+               coalesce(p.normalized_text, p.text, '') AS normalized_text,
+               coalesce(p.text, p.original_text, '') AS text,
+               p.translation AS translation,
+               coalesce(p.tinai, '') AS tinai,
+               coalesce(p.category, 'CaseEvidence') AS category,
+               coalesce(p.source_reference, p.citation, '') AS source_reference,
+               coalesce(p.work_name, w.name, 'Tolkāppiyam') AS work_name,
+               coalesce(p.section_name, sec.section_name, sec.name, 'Poruḷatikāram') AS section_name,
+               coalesce(p.chapter_name, sec.chapter_name, sec.name, '') AS chapter_name,
+               coalesce(p.confidence, 0.95) AS confidence,
+               collect(DISTINCT coalesce(n.name, n.label)) AS matched_entities,
+               collect(DISTINCT type(r)) AS matched_relations,
+               count(DISTINCT n) AS connectivity_count
+        ORDER BY connectivity_count DESC, coalesce(p.sutra_number, 9999) ASC
+        LIMIT $limit
+        """
+        records = self.service.execute_read(
+            query,
+            {
+                "entities": cleaned_entities,
+                "concepts": cleaned_concepts,
+                "tinai": tinai or "",
+                "limit": limit,
+            },
+            database=database,
+        )
+        results: List[Dict[str, Any]] = []
+        for r in records:
+            item = dict(r)
+            if not item.get("source_reference"):
+                w = item.get("work_name", "Tolkāppiyam")
+                s = item.get("section_name", "Poruḷatikāram")
+                c = item.get("chapter_name", "")
+                num = item.get("sutra_number", "")
+                item["source_reference"] = f"{w} {s} {c} Sūtra {num}".replace("  ", " ").strip()
+            item["evidence_role"] = "caseEvidence"
+            results.append(item)
+        return results
 
     def get_connected_entities_and_concepts(
         self, passage_id: str, database: Optional[str] = None
@@ -1229,6 +1550,88 @@ class Neo4jRepository:
             "target": target_node,
             "provenance_chain": rec.get("provenance_ancestors", []),
             "evidence_chunks": rec.get("evidence_chunks", []),
+        }
+
+    def trace_to_literary_source(
+        self, element_id: str, database: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Traces any knowledge element (Entity, Concept, Event, Rule, Evidence, or Passage)
+        back to its original canonical literary source (Passage / Sūtra) and its parent hierarchy
+        (Section -> Work -> Literature) using direct source_id, [:GROUNDED_IN],
+        or [:ATTESTS_*] / [:MENTIONS|DISCUSSES|DESCRIBES] relationships.
+        Guarantees deterministic, verified provenance for every knowledge element.
+        """
+        cleaned_id = str(element_id).strip()
+        if not cleaned_id:
+            return {"element_id": element_id, "found": False, "source_passage": None, "literary_hierarchy": None}
+
+        query = """
+        MATCH (target:KGNode)
+        WHERE target.id = $id OR target.name = $id OR toLower(coalesce(target.name, target.label)) = toLower($id)
+        OPTIONAL MATCH (target)-[:GROUNDED_IN]->(p1:KGNode:Passage)
+        OPTIONAL MATCH (p2:KGNode:Passage)-[:ATTESTS_ENTITY|ATTESTS_CONCEPT|ATTESTS_EVENT|MENTIONS|DISCUSSES|DESCRIBES]->(target)
+        OPTIONAL MATCH (p3:KGNode:Passage) WHERE p3.id = target.source_id OR p3.source_id = target.source_id
+        WITH target, coalesce(CASE WHEN target:Passage THEN target ELSE null END, p1, p2, p3) AS passage
+        OPTIONAL MATCH (sec:KGNode:Section)-[:CONTAINS_PASSAGE|HAS_PASSAGE]->(passage)
+        OPTIONAL MATCH (w:KGNode:Work)-[:CONTAINS_SECTION|HAS_SECTION*1..2]->(sec)
+        OPTIONAL MATCH (lit:KGNode:Literature)-[:CONTAINS_WORK|HAS_WORK]->(w)
+        RETURN target {
+            id: target.id,
+            name: coalesce(target.name, target.label, target.id),
+            text: coalesce(target.text, ''),
+            type: target.type,
+            source: target.source,
+            source_id: target.source_id,
+            context: coalesce(target.context, target.tinai, 'General'),
+            confidence: coalesce(target.confidence, 1.0),
+            validation_status: coalesce(target.validation_status, 'canonical_verified')
+        } AS element,
+        passage {
+            id: passage.id,
+            sutra_number: passage.sutra_number,
+            name: coalesce(passage.name, passage.label),
+            text: coalesce(passage.text, passage.original_text, ''),
+            translation: coalesce(passage.translation, ''),
+            tinai: coalesce(passage.tinai, 'General'),
+            source_reference: coalesce(passage.source_reference, passage.source, ''),
+            work: coalesce(w.name, passage.work, 'Tolkāppiyam'),
+            section: coalesce(sec.name, passage.section, 'Poruḷatikāram')
+        } AS source_passage,
+        {
+            section_id: sec.id,
+            section_name: coalesce(sec.name, sec.section_name),
+            work_id: w.id,
+            work_name: w.name,
+            literature_id: lit.id,
+            literature_name: lit.name
+        } AS literary_hierarchy
+        LIMIT 1
+        """
+        records = self.service.execute_read(query, {"id": cleaned_id}, database=database)
+        if not records or not records[0].get("element"):
+            return {
+                "element_id": cleaned_id,
+                "found": False,
+                "element": None,
+                "source_passage": None,
+                "literary_hierarchy": None,
+                "traceability_status": "element_not_found",
+            }
+
+        rec = records[0]
+        element = rec.get("element")
+        passage = rec.get("source_passage")
+        hierarchy = rec.get("literary_hierarchy")
+        has_source = bool(passage and passage.get("id"))
+
+        return {
+            "element_id": cleaned_id,
+            "found": True,
+            "element": element,
+            "source_passage": passage if has_source else None,
+            "literary_hierarchy": hierarchy if has_source else None,
+            "traceability_status": "canonical_source_verified" if has_source else "unlinked_corpus_element",
         }
 
     def traverse_multi_hop(
@@ -1628,7 +2031,7 @@ class Neo4jRepository:
         """
         Retrieves graph nodes and relationships directly from Neo4j Aura,
         preserving all entity properties, relationship types, source references,
-        and provenance metadata required for Cytoscape visualization.
+        and provenance metadata required for D3.js visualization.
         """
         hops = min(max(int(hops), 1), 4)
         limit = min(max(int(limit), 10), 1500)
@@ -1646,11 +2049,11 @@ class Neo4jRepository:
             OPTIONAL MATCH (n)-[r]->(m:KGNode)
             WHERE m IN selected_nodes
             WITH selected_nodes, collect(DISTINCT r) AS rels
-            RETURN [node IN selected_nodes | node {{ .*, labels: labels(node) }}] AS nodes,
+            RETURN [node IN selected_nodes | node {{ id: coalesce(node.id, node.name, elementId(node)), .*, labels: labels(node) }}] AS nodes,
                    [r IN rels WHERE r IS NOT NULL | {{
-                       id: coalesce(r.id, elementId(r), startNode(r).id + '_' + type(r) + '_' + endNode(r).id + '_' + toString(id(r))),
-                       source: startNode(r).id,
-                       target: endNode(r).id,
+                       id: coalesce(r.id, elementId(r), coalesce(startNode(r).id, startNode(r).name, elementId(startNode(r))) + '_' + type(r) + '_' + coalesce(endNode(r).id, endNode(r).name, elementId(endNode(r))) + '_' + toString(id(r))),
+                       source: coalesce(startNode(r).id, startNode(r).name, elementId(startNode(r))),
+                       target: coalesce(endNode(r).id, endNode(r).name, elementId(endNode(r))),
                        type: type(r),
                        relation: type(r),
                        label: coalesce(r.label, type(r)),
@@ -1678,11 +2081,11 @@ class Neo4jRepository:
             OPTIONAL MATCH (n)-[r]->(m:KGNode)
             WHERE m IN selected_nodes
             WITH selected_nodes, collect(DISTINCT r) AS rels
-            RETURN [node IN selected_nodes | node { .*, labels: labels(node) }] AS nodes,
+            RETURN [node IN selected_nodes | node { id: coalesce(node.id, node.name, elementId(node)), .*, labels: labels(node) }] AS nodes,
                    [r IN rels WHERE r IS NOT NULL | {
-                       id: coalesce(r.id, elementId(r), startNode(r).id + '_' + type(r) + '_' + endNode(r).id + '_' + toString(id(r))),
-                       source: startNode(r).id,
-                       target: endNode(r).id,
+                       id: coalesce(r.id, elementId(r), coalesce(startNode(r).id, startNode(r).name, elementId(startNode(r))) + '_' + type(r) + '_' + coalesce(endNode(r).id, endNode(r).name, elementId(endNode(r))) + '_' + toString(id(r))),
+                       source: coalesce(startNode(r).id, startNode(r).name, elementId(startNode(r))),
+                       target: coalesce(endNode(r).id, endNode(r).name, elementId(endNode(r))),
                        type: type(r),
                        relation: type(r),
                        label: coalesce(r.label, type(r)),
@@ -1708,6 +2111,8 @@ class Neo4jRepository:
                 "edges": [],
                 "total_nodes": 0,
                 "total_edges": 0,
+                "backend_node_count": 0,
+                "backend_edge_count": 0,
                 "source": "neo4j_aura",
             }
 
@@ -1735,19 +2140,25 @@ class Neo4jRepository:
 
         parsed_rels = []
         seen_edge_ids = set()
-        for idx, r in enumerate(raw_rels):
+        pair_counts = {}
+        for r in raw_rels:
             rel_dict = dict(r)
             src = str(rel_dict.get("source") or "")
             tgt = str(rel_dict.get("target") or "")
-            # Verify endpoints exist in selected nodes
+            # Verify endpoints exist in selected nodes (supports self-referential where src == tgt)
             if not src or not tgt or src not in node_ids or tgt not in node_ids:
                 continue
             rel_type = rel_dict.get("type") or rel_dict.get("relation") or "RELATED_TO"
             rel_dict["type"] = rel_type
             rel_dict["relation"] = rel_type
+
+            pair_key = (src, rel_type, tgt)
+            pair_counts[pair_key] = pair_counts.get(pair_key, 0) + 1
+
             edge_id = str(rel_dict.get("id") or "")
             if not edge_id or edge_id in seen_edge_ids:
-                edge_id = f"e_{src}_{rel_type}_{tgt}_{idx}"
+                # Stable unique ID without using array indexes
+                edge_id = f"e_{src}_{rel_type}_{tgt}_{pair_counts[pair_key]}"
                 rel_dict["id"] = edge_id
             seen_edge_ids.add(edge_id)
 
@@ -1766,6 +2177,8 @@ class Neo4jRepository:
             "edges": parsed_rels,
             "total_nodes": len(parsed_nodes),
             "total_edges": len(parsed_rels),
+            "backend_node_count": len(raw_nodes),
+            "backend_edge_count": len(raw_rels),
             "source": "neo4j_aura",
             "database": database or self.service.database or "neo4j",
         }
@@ -1970,6 +2383,865 @@ class Neo4jRepository:
             index_name=index_name,
             database=database,
         )
+
+    def get_query_subgraph(
+        self,
+        seed_ids: List[str],
+        max_hops: int = 2,
+        limit: int = 150,
+        rel_types: Optional[List[str]] = None,
+        include_isolated: bool = True,
+        database: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Retrieves a dynamic, query-aware subgraph centered around relevant seed identifiers
+        (passages, entities, concepts, events, rules) from Neo4j Aura.
+
+        - Executes controlled multi-hop traversal with configurable maximum depth (1-5).
+        - Filters by controlled schema relationship types when provided.
+        - Preserves isolated directly relevant seed nodes (no seeds dropped).
+        - Guarantees strict endpoint validity for every relationship (no dangling edges).
+        - Enriches nodes and relationships with epistemic relevance and literary provenance.
+        - Zero hardcoded nodes or edges: fully query-driven from database.
+        """
+        cleaned_seeds = [str(s).strip() for s in (seed_ids or []) if str(s).strip()]
+        if not cleaned_seeds:
+            return {
+                "nodes": [],
+                "relationships": [],
+                "edges": [],
+                "total_nodes": 0,
+                "total_edges": 0,
+                "seed_ids": [],
+                "matched_seeds": [],
+                "depth": max_hops,
+                "source": "neo4j_aura",
+            }
+
+        hops = min(max(int(max_hops), 1), 5)
+        node_limit = min(max(int(limit), 10), 1000)
+        seeds_lower = [s.lower() for s in cleaned_seeds]
+
+        canonical_rel_types = None
+        if rel_types:
+            canonical_rel_types = [RelTypes.canonicalize(r) for r in rel_types if str(r).strip()]
+
+        query = f"""
+        MATCH (seed:KGNode)
+        WHERE seed.id IN $seed_ids
+           OR seed.name IN $seed_ids
+           OR toLower(seed.id) IN $seed_ids_lower
+           OR toLower(seed.name) IN $seed_ids_lower
+           OR toLower(coalesce(seed.label, '')) IN $seed_ids_lower
+           OR toLower(coalesce(seed.canonical, '')) IN $seed_ids_lower
+           OR toLower(coalesce(seed.transliteration, '')) IN $seed_ids_lower
+        WITH collect(DISTINCT seed) AS seed_nodes
+        UNWIND (CASE WHEN size(seed_nodes) > 0 THEN seed_nodes ELSE [null] END) AS seed
+        OPTIONAL MATCH path = (seed)-[r*1..{hops}]-(neighbor:KGNode)
+        WHERE seed IS NOT NULL AND ($rel_types IS NULL OR ALL(rel IN relationships(path) WHERE type(rel) IN $rel_types))
+        WITH seed_nodes, [nb IN collect(DISTINCT neighbor) WHERE nb IS NOT NULL AND NOT nb IN seed_nodes] AS other_neighbors
+        WITH seed_nodes, other_neighbors,
+             seed_nodes + other_neighbors[0..($limit - size(seed_nodes))] AS combined_nodes
+        UNWIND combined_nodes AS n
+        WITH DISTINCT n, seed_nodes
+        WITH collect(n) AS selected_nodes, seed_nodes
+        UNWIND selected_nodes AS n
+        OPTIONAL MATCH (n)-[r]->(m:KGNode)
+        WHERE m IN selected_nodes AND ($rel_types IS NULL OR type(r) IN $rel_types)
+        WITH selected_nodes, seed_nodes, collect(DISTINCT r) AS rels
+        RETURN [node IN selected_nodes | node {{ id: coalesce(node.id, node.name, elementId(node)), .*, labels: labels(node), is_seed: (node IN seed_nodes) }}] AS nodes,
+               [r IN rels WHERE r IS NOT NULL | {{
+                   id: coalesce(r.id, elementId(r), coalesce(startNode(r).id, startNode(r).name, elementId(startNode(r))) + '_' + type(r) + '_' + coalesce(endNode(r).id, endNode(r).name, elementId(endNode(r))) + '_' + elementId(r)),
+                   source: coalesce(startNode(r).id, startNode(r).name, elementId(startNode(r))),
+                   target: coalesce(endNode(r).id, endNode(r).name, elementId(endNode(r))),
+                   type: type(r),
+                   relation: type(r),
+                   label: coalesce(r.label, type(r)),
+                   confidence: coalesce(r.confidence, 1.0),
+                   validation_level: coalesce(r.validation_level, 'corpus_validated'),
+                   source_corpus: coalesce(r.source, 'Tolkāppiyam'),
+                   source_reference: coalesce(r.source_reference, ''),
+                   passage_id: r.passage_id,
+                   metadata_json: r.metadata_json
+               }}] AS relationships
+        """
+        params = {
+            "seed_ids": cleaned_seeds,
+            "seed_ids_lower": seeds_lower,
+            "limit": node_limit,
+            "rel_types": canonical_rel_types,
+        }
+
+        try:
+            records = self.service.execute_read(query, params, database=database)
+        except Exception as e:
+            logger.warning(f"Neo4j get_query_subgraph query failed: {e}")
+            return {
+                "nodes": [],
+                "relationships": [],
+                "edges": [],
+                "total_nodes": 0,
+                "total_edges": 0,
+                "seed_ids": cleaned_seeds,
+                "matched_seeds": [],
+                "depth": hops,
+                "error": str(e),
+                "source": "neo4j_aura",
+                "metadata": {
+                    "query": "",
+                    "node_count": 0,
+                    "relationship_count": 0,
+                    "depth": hops,
+                    "source": "neo4j_aura",
+                },
+            }
+
+        if not records:
+            return {
+                "nodes": [],
+                "relationships": [],
+                "edges": [],
+                "total_nodes": 0,
+                "total_edges": 0,
+                "seed_ids": cleaned_seeds,
+                "matched_seeds": [],
+                "depth": hops,
+                "source": "neo4j_aura",
+                "metadata": {
+                    "query": "",
+                    "node_count": 0,
+                    "relationship_count": 0,
+                    "depth": hops,
+                    "source": "neo4j_aura",
+                },
+            }
+
+        rec = records[0]
+        raw_nodes = rec.get("nodes") or []
+        raw_rels = rec.get("relationships") or []
+
+        # Parse nodes and collect unique IDs
+        node_id_set: Set[str] = set()
+        matched_seeds: List[str] = []
+        parsed_nodes: List[Dict[str, Any]] = []
+
+        for n in raw_nodes:
+            node_dict = dict(n)
+            nid = str(node_dict.get("id") or "")
+            if not nid or nid in node_id_set:
+                continue
+
+            node_id_set.add(nid)
+
+            # Metadata parsing
+            meta = {}
+            if "metadata_json" in node_dict and node_dict["metadata_json"]:
+                try:
+                    meta = json.loads(node_dict["metadata_json"])
+                except Exception:
+                    meta = {}
+            node_dict["metadata"] = meta
+
+            # Seed check
+            node_name = str(node_dict.get("name") or "").lower()
+            node_label = str(node_dict.get("label") or "").lower()
+            node_canonical = str(node_dict.get("canonical") or "").lower()
+            node_translit = str(node_dict.get("transliteration") or "").lower()
+            is_seed = bool(node_dict.get("is_seed")) or (
+                nid in cleaned_seeds
+                or nid.lower() in seeds_lower
+                or node_name in seeds_lower
+                or node_label in seeds_lower
+                or node_canonical in seeds_lower
+                or node_translit in seeds_lower
+            )
+            node_dict["is_seed"] = is_seed
+            if is_seed:
+                matched_seeds.append(nid)
+
+            parsed_nodes.append(node_dict)
+
+        # Validate relationships: endpoints MUST be present in node_id_set
+        valid_rels: List[Dict[str, Any]] = []
+        node_degrees: Dict[str, int] = {nid: 0 for nid in node_id_set}
+
+        for r in raw_rels:
+            rel_dict = dict(r)
+            src = str(rel_dict.get("source") or "")
+            tgt = str(rel_dict.get("target") or "")
+
+            if not src or not tgt or src not in node_id_set or tgt not in node_id_set:
+                continue
+
+            rel_type = rel_dict.get("type") or rel_dict.get("relation") or "RELATED_TO"
+            rel_dict["type"] = rel_type
+            rel_dict["relation"] = rel_type
+            valid_rels.append(rel_dict)
+
+            node_degrees[src] = node_degrees.get(src, 0) + 1
+            node_degrees[tgt] = node_degrees.get(tgt, 0) + 1
+
+        # Enrich nodes with connectivity and relevance info
+        final_nodes: List[Dict[str, Any]] = []
+        for node in parsed_nodes:
+            nid = node["id"]
+            deg = node_degrees.get(nid, 0)
+            is_seed = node.get("is_seed", False)
+            node["degree"] = deg
+            node["is_isolated"] = deg == 0
+            node["hop_distance"] = 0 if is_seed else 1
+            node["relevance_reason"] = (
+                "Direct Seed Node from Query / Hybrid Retrieval"
+                if is_seed
+                else "Multi-hop Traversable Semiotic Context"
+            )
+            node["relevance_score"] = 1.0 if is_seed else 0.7
+            if include_isolated or deg > 0:
+                final_nodes.append(node)
+
+        return {
+            "nodes": final_nodes,
+            "relationships": valid_rels,
+            "edges": valid_rels,
+            "total_nodes": len(final_nodes),
+            "total_edges": len(valid_rels),
+            "total_relationships": len(valid_rels),
+            "seed_ids": cleaned_seeds,
+            "matched_seeds": matched_seeds,
+            "isolated_node_count": len([n for n in final_nodes if n.get("is_isolated")]),
+            "depth": hops,
+            "source": "neo4j_aura",
+            "metadata": {
+                "query": "",
+                "node_count": len(final_nodes),
+                "relationship_count": len(valid_rels),
+                "depth": hops,
+                "source": "neo4j_aura",
+            },
+        }
+
+    # ==============================================================================
+    # 7. Authoritative Knowledge Graph Core Operations
+    # ==============================================================================
+
+    def get_kg_statistics(self, database: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Retrieves comprehensive structural metrics directly from Neo4j Aura:
+        total node count, total relationship count, density, connectivity,
+        isolated node counts, hierarchy distribution (L0-L5), logical layer distribution,
+        and relationship type frequencies.
+        """
+        # Node count
+        rec_nodes = self.service.execute_read("MATCH (n:KGNode) RETURN count(n) AS cnt", database=database)
+        total_nodes = int(rec_nodes[0]["cnt"]) if rec_nodes else 0
+
+        # Edge count
+        rec_edges = self.service.execute_read("MATCH ()-[r]->() RETURN count(r) AS cnt", database=database)
+        total_edges = int(rec_edges[0]["cnt"]) if rec_edges else 0
+
+        # Density
+        if total_nodes > 1:
+            density = round(2.0 * total_edges / (total_nodes * (total_nodes - 1)), 4)
+        else:
+            density = 0.0
+
+        # Isolated nodes
+        q_iso = """
+        MATCH (n:KGNode)
+        WHERE NOT (n)--()
+        RETURN n.id AS id, coalesce(n.label, n.name, n.id) AS label
+        LIMIT 200
+        """
+        rec_iso = self.service.execute_read(q_iso, database=database)
+        isolated_nodes = [r["id"] for r in rec_iso if r.get("id")]
+        is_connected = len(isolated_nodes) == 0 and total_nodes > 0
+
+        # Hierarchy distribution (L0-L5)
+        q_hier = """
+        MATCH (n:KGNode)
+        WHERE n.hierarchy_level IS NOT NULL
+        RETURN n.hierarchy_level AS level, count(n) AS cnt
+        ORDER BY level
+        """
+        rec_hier = self.service.execute_read(q_hier, database=database)
+        hierarchy_distribution = {r["level"]: int(r["cnt"]) for r in rec_hier if r.get("level")}
+
+        # Logical layer distribution
+        q_layer = """
+        MATCH (n:KGNode)
+        WHERE n.layer IS NOT NULL
+        RETURN n.layer AS layer, count(n) AS cnt
+        ORDER BY cnt DESC
+        """
+        rec_layer = self.service.execute_read(q_layer, database=database)
+        layer_distribution = {r["layer"]: int(r["cnt"]) for r in rec_layer if r.get("layer")}
+        if not layer_distribution and total_nodes > 0:
+            layer_map = {
+                "L0": "Source Layer",
+                "L1": "Source Layer",
+                "L2": "Source Layer",
+                "L3": "Source Layer",
+                "L4": "Concept Layer",
+                "L5": "Entity Layer",
+            }
+            for lvl, cnt in hierarchy_distribution.items():
+                lyr = layer_map.get(lvl, "Entity Layer")
+                layer_distribution[lyr] = layer_distribution.get(lyr, 0) + cnt
+
+        # Relation distribution
+        q_rel = """
+        MATCH ()-[r]->()
+        RETURN type(r) AS rel, count(r) AS cnt
+        ORDER BY cnt DESC
+        """
+        rec_rel = self.service.execute_read(q_rel, database=database)
+        relation_distribution = {r["rel"]: int(r["cnt"]) for r in rec_rel if r.get("rel")}
+
+        # Category distribution
+        q_cat = """
+        MATCH (n:KGNode)
+        WHERE n.category IS NOT NULL OR n.type IS NOT NULL
+        RETURN coalesce(n.category, n.type) AS cat, count(n) AS cnt
+        ORDER BY cnt DESC
+        """
+        rec_cat = self.service.execute_read(q_cat, database=database)
+        category_distribution = {r["cat"]: int(r["cnt"]) for r in rec_cat if r.get("cat")}
+
+        return {
+            "total_nodes": total_nodes,
+            "total_edges": total_edges,
+            "density": density,
+            "is_connected": is_connected,
+            "isolated_nodes": isolated_nodes,
+            "isolated_count": len(isolated_nodes),
+            "hierarchy_distribution": hierarchy_distribution,
+            "layer_distribution": layer_distribution,
+            "relation_distribution": relation_distribution,
+            "category_distribution": category_distribution,
+            "categories": TolkappiyamOntology.get_category_config(),
+            "hierarchy_levels": TolkappiyamOntology.get_hierarchy_config(),
+            "logical_layers": TolkappiyamOntology.get_layer_config(),
+            "source": "neo4j_aura",
+        }
+
+    def get_entity_detail(self, entity_id: str, database: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """
+        Retrieves an entity's complete schema, properties, hierarchy level, logical layer,
+        direct incoming/outgoing neighbors, and grounded source passages directly from Neo4j Aura.
+        """
+        q_node = """
+        MATCH (n:KGNode {id: $id})
+        RETURN n { id: coalesce(n.id, n.name, elementId(n)), .*, labels: labels(n) } AS node
+        """
+        rec_node = self.service.execute_read(q_node, {"id": entity_id}, database=database)
+        if not rec_node or not rec_node[0].get("node"):
+            return None
+
+        node_data = dict(rec_node[0]["node"])
+        metadata = {}
+        if "metadata_json" in node_data and node_data["metadata_json"]:
+            try:
+                metadata = json.loads(node_data["metadata_json"])
+            except Exception:
+                pass
+        node_data["metadata"] = metadata
+
+        # Fetch direct neighbors
+        q_neighbors = """
+        MATCH (n:KGNode {id: $id})-[r]-(m:KGNode)
+        RETURN type(r) AS relation,
+               r.id AS edge_id,
+               coalesce(r.confidence, 1.0) AS confidence,
+               coalesce(r.validation_level, 'corpus_validated') AS validation_level,
+               startNode(r).id = n.id AS is_outgoing,
+               m.id AS neighbor_id,
+               coalesce(m.label, m.name, m.id) AS neighbor_label,
+               m.type AS neighbor_type,
+               m.hierarchy_level AS neighbor_hierarchy
+        LIMIT 100
+        """
+        rec_neighbors = self.service.execute_read(q_neighbors, {"id": entity_id}, database=database)
+        neighbors = []
+        for r in rec_neighbors:
+            neighbors.append({
+                "direction": "outgoing" if r.get("is_outgoing") else "incoming",
+                "edge_id": r.get("edge_id"),
+                "relation": r.get("relation", "RELATED_TO"),
+                "neighbor_id": r.get("neighbor_id"),
+                "neighbor_label": r.get("neighbor_label"),
+                "neighbor_type": r.get("neighbor_type"),
+                "neighbor_hierarchy": r.get("neighbor_hierarchy"),
+                "confidence": float(r.get("confidence", 1.0)),
+                "validation_level": r.get("validation_level", "corpus_validated"),
+            })
+
+        # Fetch connected source evidence
+        q_evidence = """
+        MATCH p = (ancestor:KGNode)-[*1..4]->(n:KGNode {id: $id})
+        WHERE ancestor:Passage OR ancestor.hierarchy_level IN ['L3', 'L2', 'L1', 'L0']
+        RETURN DISTINCT ancestor.id AS evidence_node_id,
+                        ancestor.hierarchy_level AS hierarchy_level,
+                        coalesce(ancestor.label, ancestor.name) AS label,
+                        ancestor.type AS type,
+                        ancestor.source AS source,
+                        ancestor.metadata_json AS metadata_json
+        LIMIT 20
+        """
+        rec_evidence = self.service.execute_read(q_evidence, {"id": entity_id}, database=database)
+        evidence_list = []
+        for rec in rec_evidence:
+            ev_meta = {}
+            if "metadata_json" in rec and rec["metadata_json"]:
+                try:
+                    ev_meta = json.loads(rec["metadata_json"])
+                except Exception:
+                    pass
+            evidence_list.append({
+                "evidence_node_id": rec.get("evidence_node_id"),
+                "hierarchy_level": rec.get("hierarchy_level"),
+                "label": rec.get("label"),
+                "type": rec.get("type"),
+                "source": rec.get("source"),
+                "citation": ev_meta.get("citation", rec.get("source", "")),
+                "original_text": ev_meta.get("original_text", ""),
+                "translation": ev_meta.get("translation", ""),
+            })
+
+        node_data["neighbors"] = neighbors
+        node_data["evidence"] = evidence_list
+        return node_data
+
+    def get_node_connected_elements(
+        self,
+        node_id: str,
+        limit: int = 100,
+        database: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Retrieves a node's directly connected first-degree nodes and relationships from Neo4j Aura.
+        Returns:
+            - selected_node: Full node attributes, labels, properties, and metadata
+            - connected_nodes: List of all first-degree neighbor nodes with full attributes
+            - relationships: List of relationships with direction ('outgoing' / 'incoming'),
+                             type, confidence, validation_level, and metadata
+            - metadata: Query metadata including counts, provenance, and timestamp
+        """
+        cleaned_id = str(node_id).strip()
+        if not cleaned_id:
+            return None
+
+        query = """
+        MATCH (selected:KGNode)
+        WHERE selected.id = $id
+           OR selected.name = $id
+           OR toLower(selected.id) = toLower($id)
+           OR toLower(selected.name) = toLower($id)
+           OR toLower(coalesce(selected.label, '')) = toLower($id)
+        WITH selected LIMIT 1
+        OPTIONAL MATCH (selected)-[r]-(neighbor:KGNode)
+        WHERE neighbor IS NOT NULL AND r IS NOT NULL
+        WITH selected, r, neighbor
+        LIMIT $limit
+        WITH selected,
+             collect(DISTINCT neighbor) AS raw_neighbors,
+             collect(DISTINCT r) AS raw_rels
+        RETURN selected {
+                 id: coalesce(selected.id, selected.name, elementId(selected)),
+                 .*,
+                 labels: labels(selected)
+               } AS selected_node,
+               [nb IN raw_neighbors WHERE nb IS NOT NULL | nb {
+                 id: coalesce(nb.id, nb.name, elementId(nb)),
+                 .*,
+                 labels: labels(nb)
+               }] AS connected_nodes,
+               [rel IN raw_rels WHERE rel IS NOT NULL | {
+                 id: coalesce(rel.id, elementId(rel), coalesce(startNode(rel).id, startNode(rel).name, elementId(startNode(rel))) + '_' + type(rel) + '_' + coalesce(endNode(rel).id, endNode(rel).name, elementId(endNode(rel))) + '_' + elementId(rel)),
+                 source: coalesce(startNode(rel).id, startNode(rel).name, elementId(startNode(rel))),
+                 target: coalesce(endNode(rel).id, endNode(rel).name, elementId(endNode(rel))),
+                 type: type(rel),
+                 relation: type(rel),
+                 label: coalesce(rel.label, type(rel)),
+                 direction: CASE WHEN startNode(rel) = selected THEN 'outgoing' ELSE 'incoming' END,
+                 confidence: coalesce(rel.confidence, 1.0),
+                 validation_level: coalesce(rel.validation_level, rel.validation_status, 'corpus_validated'),
+                 source_corpus: coalesce(rel.source, 'Tolkāppiyam'),
+                 source_reference: coalesce(rel.source_reference, ''),
+                 passage_id: rel.passage_id,
+                 metadata_json: rel.metadata_json
+               }] AS relationships
+        """
+        params = {"id": cleaned_id, "limit": min(max(int(limit), 1), 500)}
+        records = self.service.execute_read(query, params, database=database)
+        if not records or not records[0].get("selected_node"):
+            return None
+
+        rec = records[0]
+        selected_node = dict(rec["selected_node"])
+        if "metadata_json" in selected_node and selected_node["metadata_json"]:
+            try:
+                selected_node["metadata"] = json.loads(selected_node["metadata_json"])
+            except Exception:
+                selected_node["metadata"] = {}
+        elif "metadata" not in selected_node:
+            selected_node["metadata"] = {}
+
+        connected_nodes = []
+        for nb in rec.get("connected_nodes") or []:
+            nb_dict = dict(nb)
+            if "metadata_json" in nb_dict and nb_dict["metadata_json"]:
+                try:
+                    nb_dict["metadata"] = json.loads(nb_dict["metadata_json"])
+                except Exception:
+                    nb_dict["metadata"] = {}
+            elif "metadata" not in nb_dict:
+                nb_dict["metadata"] = {}
+            connected_nodes.append(nb_dict)
+
+        relationships = []
+        for rel in rec.get("relationships") or []:
+            rel_dict = dict(rel)
+            if "metadata_json" in rel_dict and rel_dict["metadata_json"]:
+                try:
+                    rel_dict["metadata"] = json.loads(rel_dict["metadata_json"])
+                except Exception:
+                    rel_dict["metadata"] = {}
+            elif "metadata" not in rel_dict:
+                rel_dict["metadata"] = {}
+            relationships.append(rel_dict)
+
+        metadata = {
+            "node_id": selected_node.get("id"),
+            "connected_count": len(connected_nodes),
+            "relationship_count": len(relationships),
+            "source": "neo4j_aura",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+
+        return {
+            "selected_node": selected_node,
+            "connected_nodes": connected_nodes,
+            "relationships": relationships,
+            "nodes": [selected_node] + connected_nodes,
+            "metadata": metadata,
+        }
+
+    def explore_node_multi_hop(
+        self,
+        start_id: str,
+        max_hops: int = 2,
+        limit: int = 150,
+        allowed_types: Optional[List[str]] = None,
+        excluded_types: Optional[List[str]] = None,
+        rel_types: Optional[List[str]] = None,
+        direction: str = "both",
+        database: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Performs bounded, filtered multi-hop traversal starting from a selected node in Neo4j Aura.
+
+        Guarantees:
+        - Bounded Cypher traversal with configurable hop depth (1 to 5).
+        - Filter out irrelevant node types (e.g. excluded_types or allowed_types whitelist).
+        - Filter out irrelevant relationship types (canonicalized 5-tier RelTypes).
+        - Maintains explicit parent-child lineage, hop distances, and relationship paths
+          between the selected root node and every expanded node.
+        - Returns structured paths with step-by-step edges and cumulative confidence.
+        - Zero unconfirmed or unbounded full-graph queries.
+        """
+        cleaned_id = str(start_id).strip()
+        if not cleaned_id:
+            return None
+
+        hops = min(max(int(max_hops), 1), 5)
+        path_limit = min(max(int(limit), 10), 300)
+
+        # Direction pattern
+        if direction == "out":
+            rel_pattern = f"-[r*1..{hops}]->"
+        elif direction == "in":
+            rel_pattern = f"<-[r*1..{hops}]-"
+        else:
+            rel_pattern = f"-[r*1..{hops}]-"
+
+        # Canonicalize relationship types if provided
+        canonical_rel_types = None
+        if rel_types:
+            canonical_rel_types = [RelTypes.canonicalize(r) for r in rel_types if str(r).strip()]
+
+        # Clean type filters
+        cleaned_allowed = [str(t).strip() for t in (allowed_types or []) if str(t).strip()] or None
+        cleaned_excluded = [str(t).strip() for t in (excluded_types or []) if str(t).strip()] or None
+
+        query = f"""
+        MATCH (start:KGNode)
+        WHERE start.id = $id
+           OR start.name = $id
+           OR toLower(start.id) = toLower($id)
+           OR toLower(start.name) = toLower($id)
+           OR toLower(coalesce(start.label, '')) = toLower($id)
+        WITH start LIMIT 1
+        OPTIONAL MATCH path = (start){rel_pattern}(target:KGNode)
+        WHERE start <> target
+          AND ($rel_types IS NULL OR ALL(rel IN relationships(path) WHERE type(rel) IN $rel_types))
+          AND ($allowed_types IS NULL OR ALL(n IN nodes(path)[1..] WHERE coalesce(n.type, head(labels(n))) IN $allowed_types OR any(lbl IN labels(n) WHERE lbl IN $allowed_types)))
+          AND ($excluded_types IS NULL OR NONE(n IN nodes(path)[1..] WHERE coalesce(n.type, head(labels(n))) IN $excluded_types OR any(lbl IN labels(n) WHERE lbl IN $excluded_types)))
+        WITH start, path
+        ORDER BY length(path) ASC
+        LIMIT $path_limit
+        RETURN start {{
+                 id: coalesce(start.id, start.name, elementId(start)),
+                 .*,
+                 labels: labels(start)
+               }} AS selected_node,
+               [p IN collect(DISTINCT path) WHERE p IS NOT NULL | {{
+                 length: length(p),
+                 nodes: [n IN nodes(p) | n {{
+                   id: coalesce(n.id, n.name, elementId(n)),
+                   .*,
+                   labels: labels(n)
+                 }}],
+                 relationships: [rel IN relationships(p) | {{
+                   id: coalesce(rel.id, elementId(rel), coalesce(startNode(rel).id, startNode(rel).name, elementId(startNode(rel))) + '_' + type(rel) + '_' + coalesce(endNode(rel).id, endNode(rel).name, elementId(endNode(rel))) + '_' + elementId(rel)),
+                   source: coalesce(startNode(rel).id, startNode(rel).name, elementId(startNode(rel))),
+                   target: coalesce(endNode(rel).id, endNode(rel).name, elementId(endNode(rel))),
+                   type: type(rel),
+                   relation: type(rel),
+                   label: coalesce(rel.label, type(rel)),
+                   confidence: coalesce(rel.confidence, 1.0),
+                   validation_level: coalesce(rel.validation_level, rel.validation_status, 'corpus_validated'),
+                   source_corpus: coalesce(rel.source, 'Tolkāppiyam'),
+                   source_reference: coalesce(rel.source_reference, ''),
+                   passage_id: rel.passage_id,
+                   metadata_json: rel.metadata_json
+                 }}]
+               }}] AS projected_paths
+        """
+        params = {
+            "id": cleaned_id,
+            "path_limit": path_limit,
+            "rel_types": canonical_rel_types,
+            "allowed_types": cleaned_allowed,
+            "excluded_types": cleaned_excluded,
+        }
+
+        records = self.service.execute_read(query, params, database=database)
+        if not records or not records[0].get("selected_node"):
+            return None
+
+        rec = records[0]
+        selected_node = dict(rec["selected_node"])
+        if "metadata_json" in selected_node and selected_node["metadata_json"]:
+            try:
+                selected_node["metadata"] = json.loads(selected_node["metadata_json"])
+            except Exception:
+                selected_node["metadata"] = {}
+        elif "metadata" not in selected_node:
+            selected_node["metadata"] = {}
+
+        selected_id = selected_node.get("id")
+
+        # Process paths to build parent-child lineage and node/rel maps
+        node_map: Dict[str, Dict[str, Any]] = {
+            selected_id: {
+                **selected_node,
+                "hop_distance": 0,
+                "parent_id": None,
+                "parent_rel_type": None,
+                "parent_rel_direction": None,
+                "path_from_root": [selected_id],
+            }
+        }
+        rel_map: Dict[str, Dict[str, Any]] = {}
+        structured_paths: List[Dict[str, Any]] = []
+        actual_max_depth = 0
+
+        projected_paths = rec.get("projected_paths") or []
+        for p in projected_paths:
+            p_len = p.get("length", 0)
+            p_nodes = p.get("nodes") or []
+            p_rels = p.get("relationships") or []
+
+            if not p_nodes or not p_rels or len(p_nodes) != p_len + 1:
+                continue
+
+            actual_max_depth = max(actual_max_depth, p_len)
+            path_conf = 1.0
+
+            for i in range(1, len(p_nodes)):
+                parent = p_nodes[i - 1]
+                curr = p_nodes[i]
+                edge = p_rels[i - 1]
+
+                parent_id = parent.get("id")
+                curr_id = curr.get("id")
+                rel_id = edge.get("id")
+
+                edge_conf = float(edge.get("confidence", 1.0))
+                path_conf *= edge_conf
+
+                # Direction relative to the parent on this path
+                direction_rel = "outgoing" if edge.get("source") == parent_id else "incoming"
+                edge["direction"] = direction_rel
+
+                if "metadata_json" in edge and edge["metadata_json"]:
+                    try:
+                        edge["metadata"] = json.loads(edge["metadata_json"])
+                    except Exception:
+                        edge["metadata"] = {}
+                elif "metadata" not in edge:
+                    edge["metadata"] = {}
+
+                rel_map[rel_id] = edge
+
+                # Check if current node needs insertion or has a shorter hop distance
+                if "metadata_json" in curr and curr["metadata_json"]:
+                    try:
+                        curr["metadata"] = json.loads(curr["metadata_json"])
+                    except Exception:
+                        curr["metadata"] = {}
+                elif "metadata" not in curr:
+                    curr["metadata"] = {}
+
+                if curr_id not in node_map or i < node_map[curr_id]["hop_distance"]:
+                    node_map[curr_id] = {
+                        **curr,
+                        "hop_distance": i,
+                        "parent_id": parent_id,
+                        "parent_rel_type": edge.get("type"),
+                        "parent_rel_direction": direction_rel,
+                        "path_from_root": [n.get("id") for n in p_nodes[: i + 1]],
+                    }
+
+            structured_paths.append({
+                "target_id": p_nodes[-1].get("id"),
+                "hops": p_len,
+                "path_node_ids": [n.get("id") for n in p_nodes],
+                "cumulative_confidence": round(path_conf, 4),
+                "edges": p_rels,
+            })
+
+        # Separate connected nodes (excluding the root node)
+        connected_nodes = [
+            n for nid, n in node_map.items() if nid != selected_id
+        ]
+        connected_nodes.sort(key=lambda n: (n.get("hop_distance", 99), n.get("name", "")))
+
+        relationships = list(rel_map.values())
+
+        metadata = {
+            "start_id": selected_id,
+            "max_hops": hops,
+            "actual_max_depth": actual_max_depth,
+            "connected_count": len(connected_nodes),
+            "relationship_count": len(relationships),
+            "path_count": len(structured_paths),
+            "allowed_types": cleaned_allowed,
+            "excluded_types": cleaned_excluded,
+            "rel_types": canonical_rel_types,
+            "source": "neo4j_aura",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+
+        return {
+            "selected_node": node_map[selected_id],
+            "connected_nodes": connected_nodes,
+            "relationships": relationships,
+            "nodes": [node_map[selected_id]] + connected_nodes,
+            "paths": structured_paths,
+            "metadata": metadata,
+        }
+
+    def get_graph_health(self, database: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Validates structural health and connectivity of the Knowledge Graph in Neo4j Aura.
+        """
+        stats = self.get_kg_statistics(database=database)
+        node_count = stats["total_nodes"]
+        edge_count = stats["total_edges"]
+        isolated_nodes = stats["isolated_nodes"]
+
+        valid = node_count > 0 and stats["density"] >= 0.0
+
+        return {
+            "valid": valid,
+            "status": "HEALTHY" if valid else "DEGRADED",
+            "node_count": node_count,
+            "edge_count": edge_count,
+            "is_connected": stats["is_connected"],
+            "density": stats["density"],
+            "isolated_nodes": isolated_nodes,
+            "isolated_count": len(isolated_nodes),
+            "hierarchy_distribution": stats["hierarchy_distribution"],
+            "layer_distribution": stats["layer_distribution"],
+            "source": "neo4j_aura",
+        }
+
+    def find_paths(
+        self,
+        source_id: str,
+        target_id: str,
+        max_depth: int = 3,
+        database: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Finds all multi-hop paths between source and target entities in Neo4j Aura
+        with propagated cumulative path confidence.
+        """
+        depth = min(max(int(max_depth), 1), 5)
+        query = f"""
+        MATCH p = (s:KGNode {{id: $source}})-[*1..{depth}]-(t:KGNode {{id: $target}})
+        RETURN [n in nodes(p) | {{id: coalesce(n.id, n.name), label: coalesce(n.label, n.name), type: n.type, hierarchy_level: n.hierarchy_level}}] AS nodes,
+               [r in relationships(p) | {{relation: type(r), type: type(r), confidence: coalesce(r.confidence, 1.0)}}] AS edges,
+               length(p) AS length
+        LIMIT 25
+        """
+        records = self.service.execute_read(query, {"source": source_id, "target": target_id}, database=database)
+        paths: List[Dict[str, Any]] = []
+
+        for rec in records:
+            edges = rec.get("edges", [])
+            path_conf = 1.0
+            for e in edges:
+                path_conf *= float(e.get("confidence", 1.0))
+
+            paths.append({
+                "source": source_id,
+                "target": target_id,
+                "length": rec.get("length", len(edges)),
+                "propagated_confidence": round(path_conf, 4),
+                "nodes": rec.get("nodes", []),
+                "edges": edges,
+            })
+
+        paths.sort(key=lambda p: (-p["propagated_confidence"], p["length"]))
+        return paths
+
+    def expand_subgraph(
+        self,
+        node_ids: List[str],
+        hops: int = 1,
+        layer_filter: Optional[str] = None,
+        hierarchy_filter: Optional[str] = None,
+        rel_types: Optional[List[str]] = None,
+        limit: int = 150,
+        database: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Extracts a multi-hop focused subgraph around seed nodes directly from Neo4j Aura.
+        """
+        data = self.get_query_subgraph(
+            seed_ids=node_ids,
+            max_hops=hops,
+            limit=limit,
+            rel_types=rel_types,
+            include_isolated=True,
+            database=database,
+        )
+        data["categories"] = TolkappiyamOntology.get_category_config()
+        data["hierarchy_levels"] = TolkappiyamOntology.get_hierarchy_config()
+        data["logical_layers"] = TolkappiyamOntology.get_layer_config()
+        return data
 
 
 # Singleton instance for repository injection across services

@@ -73,6 +73,52 @@ class PremiseNode:
 
 
 @dataclass
+class CandidateVyapti:
+    """
+    Candidate Vyāpti representation maintained during the Vyāpti identification stage:
+    {
+      "rule": "...",
+      "source": "...",
+      "evidence": "...",
+      "confidence": 0.0,
+      "status": "grounded"
+    }
+    """
+    rule: str
+    source: str
+    evidence: str
+    confidence: float = 0.0
+    status: str = "grounded"  # "grounded" | "ungrounded" | "candidate" | "Vyāpti unavailable"
+    passage_id: Optional[str] = None
+    tinai: Optional[str] = None
+    antecedents: List[str] = field(default_factory=list)
+    consequent: Optional[str] = None
+    validation_details: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Returns the canonical 5-field dictionary as specified."""
+        return {
+            "rule": self.rule,
+            "source": self.source,
+            "evidence": self.evidence,
+            "confidence": round(float(self.confidence), 4),
+            "status": self.status,
+        }
+
+    def to_extended_dict(self) -> Dict[str, Any]:
+        """Extended dictionary with passage_id, tinai, antecedents, consequent, and validation details."""
+        base = self.to_dict()
+        base.update({
+            "passage_id": self.passage_id,
+            "tinai": self.tinai,
+            "antecedents": self.antecedents,
+            "consequent": self.consequent,
+            "validation_details": self.validation_details,
+        })
+        return base
+
+
+@dataclass
 class RuleNode:
     """
     Universal invariant concomitance rule (Vyāpti Horn-clause).
@@ -89,6 +135,8 @@ class RuleNode:
     tinai: str
     type: str = "Rule"
     vyapti_validated: bool = True
+    vyapti_status: str = "grounded"  # "grounded" | "Vyāpti unavailable" | "ungrounded"
+    candidate_vyapti: Optional[Dict[str, Any]] = None
     matched_antecedents: List[str] = field(default_factory=list)
     missing_antecedents: List[str] = field(default_factory=list)
     evidence_support_ids: List[str] = field(default_factory=list)
@@ -107,6 +155,8 @@ class RuleNode:
             "exemplar_sutra": self.exemplar_sutra,
             "tinai": self.tinai,
             "vyapti_validated": self.vyapti_validated,
+            "vyapti_status": self.vyapti_status,
+            "candidate_vyapti": self.candidate_vyapti,
             "matched_antecedents": self.matched_antecedents,
             "missing_antecedents": self.missing_antecedents,
             "evidence_support_ids": self.evidence_support_ids,
@@ -295,6 +345,10 @@ class ReasoningTrace:
     validation: Dict[str, Any] = field(default_factory=dict)
     hop_count: int = 0
     evidence_ids_used: List[str] = field(default_factory=list)
+    vyapti_identification: Optional[Dict[str, Any]] = None
+    case_evidence: List[Dict[str, Any]] = field(default_factory=list)
+    vyapti_evidence: List[Dict[str, Any]] = field(default_factory=list)
+    application_evidence: List[Dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -309,6 +363,10 @@ class ReasoningTrace:
             "validationResults": self.validation,
             "hopCount": self.hop_count,
             "evidenceIdsUsed": self.evidence_ids_used,
+            "vyaptiIdentification": self.vyapti_identification,
+            "caseEvidence": self.case_evidence,
+            "vyaptiEvidence": self.vyapti_evidence,
+            "applicationEvidence": self.application_evidence,
         }
 
     def to_neo4j_graph(self) -> Dict[str, Any]:

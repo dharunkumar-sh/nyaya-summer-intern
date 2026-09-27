@@ -417,6 +417,99 @@ class TestNeo4jRepositoryRetrieval:
         assert ev_paths[0]["ground_type"] == "Passage"
         assert ev_paths[0]["confidence"] == 0.98
 
+    def test_get_kg_statistics(self, repo, mock_service):
+        mock_service.execute_read.side_effect = [
+            [{"cnt": 33}],  # nodes
+            [{"cnt": 46}],  # edges
+            [{"id": "iso_1", "label": "Isolated Node"}],  # isolated
+            [{"level": "L0", "cnt": 1}, {"level": "L4", "cnt": 10}, {"level": "L5", "cnt": 22}],  # hierarchy
+            [{"layer": "Source Layer", "cnt": 5}, {"layer": "Concept Layer", "cnt": 10}],  # layer
+            [{"rel": "SUBSECTION_OF", "cnt": 20}, {"rel": "GROUNDED_IN", "cnt": 26}],  # rel
+            [{"cat": "Flora", "cnt": 8}, {"cat": "Fauna", "cnt": 6}],  # category
+        ]
+        stats = repo.get_kg_statistics()
+        assert stats["total_nodes"] == 33
+        assert stats["total_edges"] == 46
+        assert stats["density"] > 0
+        assert stats["isolated_nodes"] == ["iso_1"]
+        assert stats["source"] == "neo4j_aura"
+        assert "categories" in stats
+        assert "hierarchy_levels" in stats
+
+    def test_get_entity_detail(self, repo, mock_service):
+        mock_service.execute_read.side_effect = [
+            # Node query
+            [{"node": {
+                "id": "ceyon",
+                "label": "Cēyōṉ",
+                "type": "Deity",
+                "hierarchy_level": "L5",
+                "metadata_json": json.dumps({"tinai": "Kuṟiñci"}),
+            }}],
+            # Neighbors query
+            [{
+                "relation": "DEITY_OF_TINAI",
+                "edge_id": "e_ceyon_kurinci",
+                "confidence": 1.0,
+                "validation_level": "corpus_validated",
+                "is_outgoing": True,
+                "neighbor_id": "kurinci",
+                "neighbor_label": "Kuṟiñci",
+                "neighbor_type": "Tiṇai",
+                "neighbor_hierarchy": "L4",
+            }],
+            # Evidence query
+            [{
+                "evidence_node_id": "tol-porul-akam-005",
+                "hierarchy_level": "L3",
+                "label": "Sūtra 5",
+                "type": "Passage",
+                "source": "Tolkāppiyam",
+                "metadata_json": json.dumps({"citation": "Tolkāppiyam Poruḷatikāram 5"}),
+            }],
+        ]
+        detail = repo.get_entity_detail("ceyon")
+        assert detail is not None
+        assert detail["id"] == "ceyon"
+        assert detail["label"] == "Cēyōṉ"
+        assert len(detail["neighbors"]) == 1
+        assert detail["neighbors"][0]["neighbor_id"] == "kurinci"
+        assert len(detail["evidence"]) == 1
+        assert detail["evidence"][0]["evidence_node_id"] == "tol-porul-akam-005"
+
+    def test_get_graph_health(self, repo, mock_service):
+        mock_service.execute_read.side_effect = [
+            [{"cnt": 20}],  # nodes
+            [{"cnt": 30}],  # edges
+            [],  # isolated
+            [{"level": "L0", "cnt": 1}],  # hierarchy
+            [{"layer": "Source Layer", "cnt": 20}],  # layer
+            [{"rel": "RELATED_TO", "cnt": 30}],  # rel
+            [{"cat": "Concept", "cnt": 20}],  # cat
+        ]
+        health = repo.get_graph_health()
+        assert health["valid"] is True
+        assert health["status"] == "HEALTHY"
+        assert health["node_count"] == 20
+        assert health["edge_count"] == 30
+        assert health["is_connected"] is True
+
+    def test_find_paths(self, repo, mock_service):
+        mock_service.execute_read.return_value = [{
+            "nodes": [
+                {"id": "ceyon", "label": "Cēyōṉ", "type": "Deity", "hierarchy_level": "L5"},
+                {"id": "kurinci", "label": "Kuṟiñci", "type": "Tiṇai", "hierarchy_level": "L4"},
+            ],
+            "edges": [{"relation": "DEITY_OF_TINAI", "type": "DEITY_OF_TINAI", "confidence": 0.95}],
+            "length": 1,
+        }]
+        paths = repo.find_paths("ceyon", "kurinci", max_depth=2)
+        assert len(paths) == 1
+        assert paths[0]["source"] == "ceyon"
+        assert paths[0]["target"] == "kurinci"
+        assert paths[0]["propagated_confidence"] == 0.95
+
+
 
 # ==============================================================================
 # 4. Live Neo4j Aura Integration & Idempotency Tests

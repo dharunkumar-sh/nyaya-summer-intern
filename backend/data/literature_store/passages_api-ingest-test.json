@@ -1,0 +1,30 @@
+[
+  {
+    "id": "api-ingest-test-001",
+    "work_id": "api-ingest-test",
+    "section_id": "api-ingest-test-sec",
+    "order_index": 1,
+    "passage_number": 1,
+    "original_text": "கழனி மாத்து விளைந்துகு தீம்பழம்\nபழன வாளை கதூஉம் ஊரன்",
+    "normalized_search_text": "கழனி மாத்து விளைந்துகு தீம்பழம்\nபழன வாளை கதூஉம் ஊரன்",
+    "transliteration": null,
+    "english_translation": "The sweet mango fruit falling into the field...",
+    "category": null,
+    "tinai": "Marutam",
+    "lines": [],
+    "commentaries": [],
+    "entities": [],
+    "triples": [],
+    "metadata": {},
+    "provenance": {
+      "source_filename": "payload.json",
+      "file_format": "json",
+      "checksum": "2571ffe6026c6d059561c1c129fb3ad5e88cb8ec8de2de7ae8ad4fe6a6565d4c",
+      "ingested_at": "2026-09-25T06:12:28.648624+00:00",
+      "editor_or_compiler": null,
+      "edition": null,
+      "source_url": null,
+      "raw_content_length": 650
+    }
+  }
+]

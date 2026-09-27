@@ -401,6 +401,305 @@ _LEXICON: Dict[str, Dict[str, Any]] = {
         "tinai":           "General",
         "attributes":      {"domain": "Liberation / moksha"},
     },
+
+    # -----------------------------------------------------------------------
+    # BILINGUAL & TRANSLITERATED ENTITIES (English & ISO 15919 support)
+    # -----------------------------------------------------------------------
+    # Deities
+    "ceyon": {
+        "canonical_form": "Cēyōṉ", "transliteration": "Cēyōṉ",
+        "category": EntityCategory.PERSON, "tinai": "Kuṟiñci",
+        "attributes": {"role": "Deity", "epithet": "Murukaṉ"},
+    },
+    "cēyōṉ": {
+        "canonical_form": "Cēyōṉ", "transliteration": "Cēyōṉ",
+        "category": EntityCategory.PERSON, "tinai": "Kuṟiñci",
+        "attributes": {"role": "Deity", "epithet": "Murukaṉ"},
+    },
+    "murugan": {
+        "canonical_form": "Cēyōṉ", "transliteration": "Cēyōṉ",
+        "category": EntityCategory.PERSON, "tinai": "Kuṟiñci",
+        "attributes": {"role": "Deity", "epithet": "Murukaṉ"},
+    },
+    "murukan": {
+        "canonical_form": "Cēyōṉ", "transliteration": "Cēyōṉ",
+        "category": EntityCategory.PERSON, "tinai": "Kuṟiñci",
+        "attributes": {"role": "Deity", "epithet": "Murukaṉ"},
+    },
+    "mayon": {
+        "canonical_form": "Māyōṉ", "transliteration": "Māyōṉ",
+        "category": EntityCategory.PERSON, "tinai": "Mullai",
+        "attributes": {"role": "Deity", "epithet": "Tirumāl"},
+    },
+    "māyōṉ": {
+        "canonical_form": "Māyōṉ", "transliteration": "Māyōṉ",
+        "category": EntityCategory.PERSON, "tinai": "Mullai",
+        "attributes": {"role": "Deity", "epithet": "Tirumāl"},
+    },
+    "tirumal": {
+        "canonical_form": "Māyōṉ", "transliteration": "Māyōṉ",
+        "category": EntityCategory.PERSON, "tinai": "Mullai",
+        "attributes": {"role": "Deity", "epithet": "Tirumāl"},
+    },
+    "thirumal": {
+        "canonical_form": "Māyōṉ", "transliteration": "Māyōṉ",
+        "category": EntityCategory.PERSON, "tinai": "Mullai",
+        "attributes": {"role": "Deity", "epithet": "Tirumāl"},
+    },
+    "vishnu": {
+        "canonical_form": "Māyōṉ", "transliteration": "Māyōṉ",
+        "category": EntityCategory.PERSON, "tinai": "Mullai",
+        "attributes": {"role": "Deity", "epithet": "Tirumāl"},
+    },
+    "ventan": {
+        "canonical_form": "Vēntan", "transliteration": "Vēntan",
+        "category": EntityCategory.PERSON, "tinai": "Marutam",
+        "attributes": {"role": "Deity", "epithet": "Indra"},
+    },
+    "vēntan": {
+        "canonical_form": "Vēntan", "transliteration": "Vēntan",
+        "category": EntityCategory.PERSON, "tinai": "Marutam",
+        "attributes": {"role": "Deity", "epithet": "Indra"},
+    },
+    "indra": {
+        "canonical_form": "Vēntan", "transliteration": "Vēntan",
+        "category": EntityCategory.PERSON, "tinai": "Marutam",
+        "attributes": {"role": "Deity", "epithet": "Indra"},
+    },
+    "indran": {
+        "canonical_form": "Vēntan", "transliteration": "Vēntan",
+        "category": EntityCategory.PERSON, "tinai": "Marutam",
+        "attributes": {"role": "Deity", "epithet": "Indra"},
+    },
+    "varunan": {
+        "canonical_form": "Varuṇaṉ", "transliteration": "Varuṉaṉ",
+        "category": EntityCategory.PERSON, "tinai": "Neytal",
+        "attributes": {"role": "Deity", "epithet": "Sea-god", "tamil_term": "வருணன்"},
+    },
+    "varuṇaṉ": {
+        "canonical_form": "Varuṇaṉ", "transliteration": "Varuṉaṉ",
+        "category": EntityCategory.PERSON, "tinai": "Neytal",
+        "attributes": {"role": "Deity", "epithet": "Sea-god", "tamil_term": "வருணன்"},
+    },
+    "kotravai": {
+        "canonical_form": "Koṟṟavai", "transliteration": "Koṟṟavai",
+        "category": EntityCategory.PERSON, "tinai": "Pālai",
+        "attributes": {"role": "Deity", "gender": "Female"},
+    },
+    "koṟṟavai": {
+        "canonical_form": "Koṟṟavai", "transliteration": "Koṟṟavai",
+        "category": EntityCategory.PERSON, "tinai": "Pālai",
+        "attributes": {"role": "Deity", "gender": "Female"},
+    },
+    "korravai": {
+        "canonical_form": "Koṟṟavai", "transliteration": "Koṟṟavai",
+        "category": EntityCategory.PERSON, "tinai": "Pālai",
+        "attributes": {"role": "Deity", "gender": "Female"},
+    },
+    # Landscapes (Aintiṇai)
+    "kurinci": {
+        "canonical_form": "Kuṟiñci", "transliteration": "Kuṟiñci",
+        "category": EntityCategory.PLACE, "tinai": "Kuṟiñci",
+        "attributes": {"terrain": "Mountain"},
+    },
+    "kuṟiñci": {
+        "canonical_form": "Kuṟiñci", "transliteration": "Kuṟiñci",
+        "category": EntityCategory.PLACE, "tinai": "Kuṟiñci",
+        "attributes": {"terrain": "Mountain"},
+    },
+    "kurinji": {
+        "canonical_form": "Kuṟiñci", "transliteration": "Kuṟiñci",
+        "category": EntityCategory.PLACE, "tinai": "Kuṟiñci",
+        "attributes": {"terrain": "Mountain"},
+    },
+    "mullai": {
+        "canonical_form": "Mullai", "transliteration": "Mullai",
+        "category": EntityCategory.PLACE, "tinai": "Mullai",
+        "attributes": {"terrain": "Forest"},
+    },
+    "marutam": {
+        "canonical_form": "Marutam", "transliteration": "Marutam",
+        "category": EntityCategory.PLACE, "tinai": "Marutam",
+        "attributes": {"terrain": "Riverine plains"},
+    },
+    "marudham": {
+        "canonical_form": "Marutam", "transliteration": "Marutam",
+        "category": EntityCategory.PLACE, "tinai": "Marutam",
+        "attributes": {"terrain": "Riverine plains"},
+    },
+    "neytal": {
+        "canonical_form": "Neytal", "transliteration": "Neytal",
+        "category": EntityCategory.PLACE, "tinai": "Neytal",
+        "attributes": {"terrain": "Littoral coast"},
+    },
+    "neithal": {
+        "canonical_form": "Neytal", "transliteration": "Neytal",
+        "category": EntityCategory.PLACE, "tinai": "Neytal",
+        "attributes": {"terrain": "Littoral coast"},
+    },
+    "palai": {
+        "canonical_form": "Pālai", "transliteration": "Pālai",
+        "category": EntityCategory.PLACE, "tinai": "Pālai",
+        "attributes": {"terrain": "Arid wasteland"},
+    },
+    "pālai": {
+        "canonical_form": "Pālai", "transliteration": "Pālai",
+        "category": EntityCategory.PLACE, "tinai": "Pālai",
+        "attributes": {"terrain": "Arid wasteland"},
+    },
+    # Tripartite Semiotics & Poetic Concepts
+    "mutalporul": {
+        "canonical_form": "Mutalporuḷ", "transliteration": "Mutalporuḷ",
+        "category": EntityCategory.CONCEPT, "tinai": "General",
+        "attributes": {"domain": "Space-time ground"},
+    },
+    "mutalporuḷ": {
+        "canonical_form": "Mutalporuḷ", "transliteration": "Mutalporuḷ",
+        "category": EntityCategory.CONCEPT, "tinai": "General",
+        "attributes": {"domain": "Space-time ground"},
+    },
+    "karupporul": {
+        "canonical_form": "Karupporuḷ", "transliteration": "Karupporuḷ",
+        "category": EntityCategory.CONCEPT, "tinai": "General",
+        "attributes": {"domain": "Biotic signifiers"},
+    },
+    "karupporuḷ": {
+        "canonical_form": "Karupporuḷ", "transliteration": "Karupporuḷ",
+        "category": EntityCategory.CONCEPT, "tinai": "General",
+        "attributes": {"domain": "Biotic signifiers"},
+    },
+    "uriporul": {
+        "canonical_form": "Uripporuḷ", "transliteration": "Uripporuḷ",
+        "category": EntityCategory.CONCEPT, "tinai": "General",
+        "attributes": {"domain": "Affective interiority"},
+    },
+    "uripporuḷ": {
+        "canonical_form": "Uripporuḷ", "transliteration": "Uripporuḷ",
+        "category": EntityCategory.CONCEPT, "tinai": "General",
+        "attributes": {"domain": "Affective interiority"},
+    },
+    "tinai": {
+        "canonical_form": "Tiṇai", "transliteration": "Tiṇai",
+        "category": EntityCategory.LITERARY_CONCEPT, "tinai": "General",
+        "attributes": {"domain": "Poetic genre / landscape"},
+    },
+    "tiṇai": {
+        "canonical_form": "Tiṇai", "transliteration": "Tiṇai",
+        "category": EntityCategory.LITERARY_CONCEPT, "tinai": "General",
+        "attributes": {"domain": "Poetic genre / landscape"},
+    },
+    "meyppatu": {
+        "canonical_form": "Meyppāṭu", "transliteration": "Meyppāṭu",
+        "category": EntityCategory.LITERARY_CONCEPT, "tinai": "General",
+        "attributes": {"domain": "Aesthetic sentiment / rasa"},
+    },
+    "meyppāṭu": {
+        "canonical_form": "Meyppāṭu", "transliteration": "Meyppāṭu",
+        "category": EntityCategory.LITERARY_CONCEPT, "tinai": "General",
+        "attributes": {"domain": "Aesthetic sentiment / rasa"},
+    },
+    "meyppadu": {
+        "canonical_form": "Meyppāṭu", "transliteration": "Meyppāṭu",
+        "category": EntityCategory.LITERARY_CONCEPT, "tinai": "General",
+        "attributes": {"domain": "Aesthetic sentiment / rasa"},
+    },
+    "nilam": {
+        "canonical_form": "Nilam", "transliteration": "Nilam",
+        "category": EntityCategory.OBJECT, "tinai": "General",
+        "attributes": {"type": "Mutalporuḷ"},
+    },
+    "polutu": {
+        "canonical_form": "Poḻutu", "transliteration": "Poḻutu",
+        "category": EntityCategory.OBJECT, "tinai": "General",
+        "attributes": {"type": "Mutalporuḷ"},
+    },
+    "poḻutu": {
+        "canonical_form": "Poḻutu", "transliteration": "Poḻutu",
+        "category": EntityCategory.OBJECT, "tinai": "General",
+        "attributes": {"type": "Mutalporuḷ"},
+    },
+    # Affective Events (Uripporuḷ)
+    "punartal": {
+        "canonical_form": "Puṇartal", "transliteration": "Puṇartal",
+        "category": EntityCategory.EVENT, "tinai": "Kuṟiñci",
+        "attributes": {"affect": "Union of lovers"},
+    },
+    "puṇartal": {
+        "canonical_form": "Puṇartal", "transliteration": "Puṇartal",
+        "category": EntityCategory.EVENT, "tinai": "Kuṟiñci",
+        "attributes": {"affect": "Union of lovers"},
+    },
+    "iruttal": {
+        "canonical_form": "Iruttal", "transliteration": "Iruttal",
+        "category": EntityCategory.EVENT, "tinai": "Mullai",
+        "attributes": {"affect": "Patient waiting"},
+    },
+    "iruthal": {
+        "canonical_form": "Iruttal", "transliteration": "Iruttal",
+        "category": EntityCategory.EVENT, "tinai": "Mullai",
+        "attributes": {"affect": "Patient waiting"},
+    },
+    "utal": {
+        "canonical_form": "Ūṭal", "transliteration": "Ūṭal",
+        "category": EntityCategory.EVENT, "tinai": "Marutam",
+        "attributes": {"affect": "Lovers feigned quarrel"},
+    },
+    "ūṭal": {
+        "canonical_form": "Ūṭal", "transliteration": "Ūṭal",
+        "category": EntityCategory.EVENT, "tinai": "Marutam",
+        "attributes": {"affect": "Lovers feigned quarrel"},
+    },
+    "irankal": {
+        "canonical_form": "Iraṅkal", "transliteration": "Iraṅkal",
+        "category": EntityCategory.EVENT, "tinai": "Neytal",
+        "attributes": {"affect": "Melancholic pining"},
+    },
+    "iraṅkal": {
+        "canonical_form": "Iraṅkal", "transliteration": "Iraṅkal",
+        "category": EntityCategory.EVENT, "tinai": "Neytal",
+        "attributes": {"affect": "Melancholic pining"},
+    },
+    "pirital": {
+        "canonical_form": "Pirital", "transliteration": "Pirital",
+        "category": EntityCategory.EVENT, "tinai": "Pālai",
+        "attributes": {"affect": "Separation of lovers"},
+    },
+    "pirithal": {
+        "canonical_form": "Pirital", "transliteration": "Pirital",
+        "category": EntityCategory.EVENT, "tinai": "Pālai",
+        "attributes": {"affect": "Separation of lovers"},
+    },
+    # Flora & Implements
+    "venkai": {
+        "canonical_form": "Vēṅkai", "transliteration": "Vēṅkai",
+        "category": EntityCategory.OBJECT, "tinai": "Kuṟiñci",
+        "attributes": {"type": "Flora"},
+    },
+    "vēṅkai": {
+        "canonical_form": "Vēṅkai", "transliteration": "Vēṅkai",
+        "category": EntityCategory.OBJECT, "tinai": "Kuṟiñci",
+        "attributes": {"type": "Flora"},
+    },
+    "kondrai": {
+        "canonical_form": "Koṉṟai", "transliteration": "Koṉṟai",
+        "category": EntityCategory.OBJECT, "tinai": "Mullai",
+        "attributes": {"type": "Flora"},
+    },
+    "koṉṟai": {
+        "canonical_form": "Koṉṟai", "transliteration": "Koṉṟai",
+        "category": EntityCategory.OBJECT, "tinai": "Mullai",
+        "attributes": {"type": "Flora"},
+    },
+    "talai": {
+        "canonical_form": "Tālai", "transliteration": "Tālai",
+        "category": EntityCategory.OBJECT, "tinai": "Neytal",
+        "attributes": {"type": "Flora"},
+    },
+    "tālai": {
+        "canonical_form": "Tālai", "transliteration": "Tālai",
+        "category": EntityCategory.OBJECT, "tinai": "Neytal",
+        "attributes": {"type": "Flora"},
+    },
 }
 
 
@@ -427,7 +726,8 @@ class EntityExtractor:
         supplemental_entities: Optional[List[str]] = None,
     ) -> List[ExtractedEntity]:
         """
-        Extracts entities from text using lexicon matching.
+        Extracts entities from text using bilingual lexicon matching.
+        Supports Tamil Unicode substring matching and case-insensitive Latin word boundary matching.
 
         Parameters
         ----------
@@ -444,15 +744,29 @@ class EntityExtractor:
 
         Returns
         -------
-        List of ExtractedEntity — deduplicated by surface_form.
+        List of ExtractedEntity — deduplicated by canonical_form.
         """
         results: List[ExtractedEntity] = []
-        seen: set = set()
+        seen_canonical: set = set()
+        text_lower = text.lower()
 
         # 1. Lexicon scan against normalized text
         for surface, meta in cls.LEXICON.items():
-            if surface in text and surface not in seen:
-                seen.add(surface)
+            canon = meta["canonical_form"]
+            if canon in seen_canonical:
+                continue
+
+            matched = False
+            # Check if surface contains Tamil characters
+            if any(0x0B80 <= ord(c) <= 0x0BFF for c in surface):
+                matched = surface in text
+            else:
+                # ASCII/Latin word: match case-insensitively with word boundaries
+                pattern = rf"\b{re.escape(surface)}\b"
+                matched = bool(re.search(pattern, text_lower))
+
+            if matched:
+                seen_canonical.add(canon)
                 prov = Provenance(
                     source_id=source_id,
                     source_text=source_text or text[:200],
@@ -463,7 +777,7 @@ class EntityExtractor:
                 results.append(
                     ExtractedEntity(
                         surface_form=surface,
-                        canonical_form=meta["canonical_form"],
+                        canonical_form=canon,
                         transliteration=meta["transliteration"],
                         category=meta["category"],
                         tinai=meta["tinai"],
@@ -471,6 +785,7 @@ class EntityExtractor:
                         attributes=dict(meta.get("attributes", {})),
                     )
                 )
+
 
         # 2. Supplemental entity promotion from corpus metadata
         if supplemental_entities:

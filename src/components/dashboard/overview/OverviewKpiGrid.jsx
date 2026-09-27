@@ -1,7 +1,6 @@
 import {
   Database,
   Network,
-  ShieldCheck,
   BrainCircuit,
   AlertCircle,
   RefreshCw,
@@ -16,7 +15,6 @@ export default function OverviewKpiGrid() {
     graphStatistics,
     graphHealth,
     queryStats,
-    validationResults,
     dashboardSummary,
     isLoadingDashboard,
     isLoadingStats,
@@ -67,19 +65,10 @@ export default function OverviewKpiGrid() {
       ? 100
       : 97;
 
-  // 3. Symbolic Soundness & Defeasible Verification metrics
-  const reasoningData = dashboardSummary?.reasoning_and_soundness;
-  const soundnessPct = reasoningData?.soundness_rate ?? (validationResults ? Math.round((validationResults.soundnessScore || 1.0) * 100) : 100);
-  const fallaciesCount = reasoningData?.fallacies_detected ?? 0;
-  const hetuStatus = reasoningData?.hetu_tests_passed ?? '5/5 Passed';
+  // 3. Formal verification metrics have been disabled in the dashboard.
 
   // 4. Neural-Symbolic Alignment & RAG Retrieval metrics
-  const ragData = dashboardSummary?.search_and_rag;
-  const avgRetrievalMs = ragData?.average_retrieval_ms ?? 14.2;
   const neuralPct = Math.round((currentQuery?.neuralConfidence || (queryStats ? 0.95 : 0)) * 100);
-  const latencyBadge = queryStats?.latencyMs
-    ? `${queryStats.latencyMs} ms Latency`
-    : `${avgRetrievalMs} ms RAG`;
 
   const kpis = [
     {
@@ -119,24 +108,6 @@ export default function OverviewKpiGrid() {
       progressColor: 'bg-blue-600',
     },
     {
-      id: 'symbolic-soundness',
-      title: 'Nyāya Syllogistic Soundness',
-      value: `${soundnessPct}%`,
-      unit: 'Sound',
-      subtitle: 'Defeasible Verification (Abādhita)',
-      icon: ShieldCheck,
-      accentColor: 'green',
-      iconBg: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-      badge: { text: fallaciesCount === 0 ? '0 Fallacies' : `${fallaciesCount} Flagged`, variant: 'green' },
-      details: [
-        { label: 'Hetu Tests', val: hetuStatus },
-        { label: 'Pakṣa-dharma', val: 'Strictly Met' },
-        { label: 'Vyāpti Rule', val: 'Universal' },
-      ],
-      progress: soundnessPct,
-      progressColor: 'bg-emerald-600',
-    },
-    {
       id: 'neural-alignment',
       title: 'Neural-Symbolic Alignment',
       value: neuralPct > 0 ? `${neuralPct}%` : 'Ready',
@@ -145,7 +116,7 @@ export default function OverviewKpiGrid() {
       icon: BrainCircuit,
       accentColor: 'orange',
       iconBg: 'bg-amber-100 text-amber-700 border-amber-200',
-      badge: { text: latencyBadge, variant: 'orange' },
+      badge: { text: 'Hybrid RAG', variant: 'orange' },
       details: [
         { label: 'Cross-Attention', val: 'FAISS + BM25' },
         { label: 'Symbolic Guard', val: 'Defeasible' },
@@ -175,7 +146,7 @@ export default function OverviewKpiGrid() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
         {kpis.map((kpi) => {
           const IconComp = kpi.icon;
         return (

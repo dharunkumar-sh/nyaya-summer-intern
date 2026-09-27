@@ -58,8 +58,7 @@ class DefeasibleValidator:
             "badhita": badhita_val,
         }
 
-        # 2. Evidence-Calibrated Scores
-        # Evidence grounding score
+        # 2. Evidence Grounding & Soundness Calibration
         scores: List[float] = []
         for itm in ev_list:
             sc = getattr(itm, "relevance_score", None) or (itm.get("relevance_score") if isinstance(itm, dict) else None)
@@ -73,59 +72,87 @@ class DefeasibleValidator:
         mean_ev_score = sum(scores) / len(scores) if scores else 0.95
         ev_grounding_score = min(1.0, max(0.60, mean_ev_score))
 
-        # Soundness calculation
-        if evidence_count >= 3 and asiddha_val == 0.0:
+        fallacy_sum = sum(fallacies.values())
+        if evidence_count >= 3 and asiddha_val == 0.0 and fallacy_sum == 0.0:
             soundness = round(min(1.0, 0.90 + (ev_grounding_score * 0.08)), 3)
-        elif evidence_count >= 1 and asiddha_val == 0.0:
+        elif evidence_count >= 1 and asiddha_val == 0.0 and fallacy_sum == 0.0:
             soundness = round(min(0.95, 0.82 + (ev_grounding_score * 0.08)), 3)
         else:
-            soundness = 0.40
+            soundness = round(max(0.10, 0.40 - (fallacy_sum * 0.20)), 3)
+
+        # 3. Dynamic Real-Time Confidence Evaluation
+        from .confidence_evaluator import ConfidenceEvaluator
+
+        conf_eval = ConfidenceEvaluator.evaluate(
+            evidence_items=ev_list,
+            inferences=inferences,
+            tinai=tinai,
+            validation_results={"fallacies": fallacies, "soundnessScore": soundness},
+        )
+
+        f_rel = conf_eval.supporting_factors.get("evidenceRelevance")
+        f_prov = conf_eval.supporting_factors.get("sourceProvenance")
+        f_cons = conf_eval.supporting_factors.get("reasoningConsistency")
+        f_prem = conf_eval.supporting_factors.get("premiseSupport")
+
+        rule_applicability_score = f_cons.score if f_cons and f_cons.score > 0 else 0.90
+        source_consistency_score = f_prov.score if f_prov and f_prov.score > 0 else 0.90
+        context_consistency_score = f_prem.score if f_prem and f_prem.score > 0 else 0.88
+        logical_consistency_score = max(0.0, 1.0 - (fallacy_sum * 0.5))
 
         checks = [
             {
                 "id": "logical_consistency",
                 "title": "Logical Consistency",
                 "tamilTitle": "தர்க்கப் பொருத்தம்",
-                "description": "Deduction is free of Savyabhicāra (erratic reason) and Viruddha (contradiction). Pakṣadharmatā is firmly satisfied.",
-                "status": "100% Consistent",
-                "score": "1.00",
-                "badgeVariant": "green",
+                "description": (
+                    "Deduction is free of Savyabhicāra (erratic reason) and Viruddha (contradiction). Pakṣadharmatā is firmly satisfied."
+                    if sum(fallacies.values()) == 0.0
+                    else f"Logical inconsistencies or fallacies detected in inferential derivation (Score: {logical_consistency_score:.2f})."
+                ),
+                "status": "100% Consistent" if sum(fallacies.values()) == 0.0 else f"{round(logical_consistency_score*100)}% Consistent",
+                "score": f"{logical_consistency_score:.2f}",
+                "badgeVariant": "green" if logical_consistency_score >= 0.85 else ("yellow" if logical_consistency_score >= 0.5 else "red"),
             },
             {
                 "id": "evidence_grounding",
                 "title": "Evidence Grounding",
                 "tamilTitle": "சான்று வேரூன்றல்",
                 "description": f"Middle ground anchored in {evidence_count} canonical Tolkāppiyam sūtras via Pratyakṣa and Śabda Pramāṇa.",
-                "status": "Fully Grounded" if evidence_count >= 2 else "Partially Grounded",
+                "status": "Fully Grounded" if evidence_count >= 2 and ev_grounding_score >= 0.70 else ("Partially Grounded" if evidence_count >= 1 else "Ungrounded"),
                 "score": f"{ev_grounding_score:.2f}",
-                "badgeVariant": "blue" if evidence_count >= 2 else "yellow",
+                "badgeVariant": "blue" if evidence_count >= 2 and ev_grounding_score >= 0.70 else "yellow",
             },
             {
                 "id": "rule_applicability",
                 "title": "Rule Applicability",
                 "tamilTitle": "விதிப் பொருந்துமை",
-                "description": "Universal concomitance (Vyāpti) strictly holds between Mutalporuḷ / Karupporuḷ and Uripporuḷ aesthetic mood.",
-                "status": "Invariant (Vyāpti)",
-                "score": "0.99",
-                "badgeVariant": "orange",
+                "description": (
+                    "Universal concomitance (Vyāpti) strictly holds between Mutalporuḷ / Karupporuḷ and Uripporuḷ aesthetic mood."
+                    if rule_applicability_score >= 0.80
+                    else "Universal concomitance (Vyāpti) is ungrounded or lacks canonical verification."
+                ),
+                "status": "Invariant (Vyāpti)" if rule_applicability_score >= 0.80 else "Vyāpti Deficient",
+                "score": f"{rule_applicability_score:.2f}",
+                "badgeVariant": "orange" if rule_applicability_score >= 0.80 else "red",
             },
             {
                 "id": "source_consistency",
                 "title": "Source Consistency",
                 "tamilTitle": "மூலப் பொருத்தம்",
-                "description": "Zero cross-textual contradictions between Akattiṇaiyiyal, Meyppāṭṭiyal, and Poruḷatikāram chapters.",
-                "status": "Coherent",
-                "score": "1.00",
-                "badgeVariant": "purple",
+                "description": f"Source provenance evaluated across Akattiṇaiyiyal, Meyppāṭṭiyal, and Poruḷatikāram chapters ({round(source_consistency_score*100)}% verified).",
+                "status": "Coherent" if source_consistency_score >= 0.75 else "Unverified Sources",
+                "score": f"{source_consistency_score:.2f}",
+                "badgeVariant": "purple" if source_consistency_score >= 0.75 else "yellow",
             },
             {
                 "id": "context_consistency",
                 "title": "Context Consistency",
                 "tamilTitle": "திணைச் சூழல் பொருத்தம்",
-                "description": f"Canonical ecological and psychological signifiers preserve authentic {tinai} poetic ethos.",
-                "status": "Preserved",
-                "score": "0.97",
-                "badgeVariant": "green",
+                "description": f"Canonical ecological and psychological signifiers preserve authentic {tinai} poetic ethos ({round(context_consistency_score*100)}% congruent).",
+                "status": "Preserved" if context_consistency_score >= 0.70 else "Context Dissonance",
+                "score": f"{context_consistency_score:.2f}",
+                "badgeVariant": "green" if context_consistency_score >= 0.70 else "yellow",
             },
         ]
 
@@ -237,6 +264,7 @@ class DefeasibleValidator:
             "fallacyDetails": fallacy_details,
             "axiomaticGuarantees": axiomatic_guarantees,
             "checks": checks,
+            "confidenceEvaluation": conf_eval.to_dict(),
             "verificationTimestamp": datetime.now().strftime("%I:%M:%S %p"),
             "evidenceCount": evidence_count,
             "tinai": tinai,

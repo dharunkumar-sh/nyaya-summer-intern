@@ -39,5 +39,89 @@
 }
 
 .tamil-font {
-  font-family: 'Noto Serif Tamil', 'Mukta Malar', 'Latha', serif;
+  font-family: 'Noto Serif Tamil', 'Noto Sans Tamil', 'Mukta Malar', 'Latha', serif;
+}
+
+/* Classical Tamil Literary Verse & Sūtra Typography (High-legibility serif with optical metrics) */
+.tamil-verse {
+  font-family: 'Noto Serif Tamil', 'Mukta Malar', 'Latha', 'Vijaya', Georgia, serif;
+  font-feature-settings: 'kern' 1, 'liga' 1;
+  line-height: 1.85;
+  letter-spacing: 0.015em;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Modern Tamil UI Elements, Badges, Breadcrumbs, Chips & Details Panels */
+.tamil-ui {
+  font-family: 'Noto Sans Tamil', 'Mukta Malar', 'Latha', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-feature-settings: 'kern' 1;
+  letter-spacing: 0.005em;
+}
+
+/* Crisp SVG Knowledge Graph Node Labels */
+.node-title-text {
+  font-family: 'Noto Sans Tamil', 'Noto Serif Tamil', 'Mukta Malar', system-ui, sans-serif;
+}
+
+/* D3 Knowledge Graph Selection State & Connected Subgraph Effects */
+@keyframes d3-halo-pulse {
+  0%, 100% {
+    opacity: 0.85;
+    stroke-width: 2px;
+  }
+  50% {
+    opacity: 0.35;
+    stroke-width: 1.2px;
+  }
+}
+
+@keyframes d3-link-dash-flow {
+  from {
+    stroke-dashoffset: 20;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.node-selection-halo {
+  animation: d3-halo-pulse 2.2s ease-in-out infinite;
+  transform-origin: center;
+  pointer-events: none;
+}
+
+.d3-active-link-dash {
+  animation: d3-link-dash-flow 1.2s linear infinite;
+}
+
+/* Smooth transitions for D3 node-centered focus mode */
+.kg-node,
+.kg-node-label,
+.kg-edge,
+.kg-edge-label-group,
+.kg-link,
+.kg-link-label {
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.4s ease;
+}
+
+.node-main-shape,
+.kg-node-shape {
+  transition: stroke 0.38s ease,
+              stroke-width 0.38s ease,
+              filter 0.38s ease;
+}
+
+.kg-edge,
+.kg-link {
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              stroke 0.38s ease,
+              stroke-width 0.38s ease;
+}
+
+.node-selection-ring,
+.node-neighbor-ring,
+.kg-node-selection-ring,
+.node-selection-halo {
+  transition: opacity 0.38s ease;
 }

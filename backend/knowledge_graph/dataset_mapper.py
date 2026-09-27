@@ -166,6 +166,7 @@ class DatasetMapper:
                 "id": node_id,
                 "label": canon_name,
                 "name": canon_name,
+                "text": ev_desc,
                 "type": NodeLabels.EVENT,
                 "hierarchy_level": "L4",
                 "event_type": ev_cat,
@@ -173,9 +174,10 @@ class DatasetMapper:
                 "source": source_ref,
                 "source_id": s_id,
                 "source_reference": source_ref,
+                "context": tinai or "General",
                 "confidence": 1.0,
                 "tinai": tinai,
-                "validation_status": "verified_canonical",
+                "validation_status": "canonical_verified",
                 "metadata": {
                     "origin": "canonical_triples",
                     "event_type": ev_cat,
@@ -196,15 +198,17 @@ class DatasetMapper:
                 "id": node_id,
                 "label": raw_name,
                 "name": clean,
+                "text": raw_name,
                 "type": NodeLabels.ENTITY,
                 "hierarchy_level": "L5",
                 "source": source_ref,
                 "source_id": s_id,
                 "source_reference": source_ref,
+                "context": tinai or "General",
                 "confidence": 1.0,
                 "tinai": tinai,
                 "category": ent_cat,
-                "validation_status": "verified_canonical",
+                "validation_status": "canonical_verified",
                 "metadata": {
                     "origin": "canonical_triples",
                     "category": ent_cat,
@@ -220,14 +224,16 @@ class DatasetMapper:
             "id": node_id,
             "label": raw_name,
             "name": clean,
+            "text": raw_name,
             "type": NodeLabels.CONCEPT,
             "hierarchy_level": "L4",
             "source": source_ref,
             "source_id": s_id,
             "source_reference": source_ref,
+            "context": tinai or "General",
             "confidence": 1.0,
             "tinai": tinai,
-            "validation_status": "verified_canonical",
+            "validation_status": "canonical_verified",
             "metadata": {
                 "origin": "canonical_triples",
                 "raw_expression": raw_name,
@@ -335,10 +341,14 @@ class DatasetMapper:
                 "id": lit_id,
                 "label": "Sangam Literature (சங்க இலக்கியம்)",
                 "name": "Sangam Literature",
+                "text": "Ancient Tamil classical literary and grammatical corpus",
                 "type": NodeLabels.LITERATURE,
                 "hierarchy_level": "L0",
                 "source": "Classical Tamil Corpus",
+                "source_id": lit_id,
+                "context": "Classical Sangam",
                 "confidence": 1.0,
+                "validation_status": "canonical_verified",
                 "metadata": {
                     "period": meta.get("period", "Classical Sangam"),
                     "total_works": 1,
@@ -352,11 +362,15 @@ class DatasetMapper:
                 "id": work_id,
                 "label": meta.get("name", "Tolkāppiyam (தொல்காப்பியம்)"),
                 "name": "Tolkāppiyam",
+                "text": "Tolkāppiyam ancient Tamil grammatical and literary treatise",
                 "type": NodeLabels.WORK,
                 "hierarchy_level": "L1",
                 "source": "Tolkāppiyam",
+                "source_id": work_id,
                 "work_name": "Tolkāppiyam",
+                "context": "Poruḷatikāram",
                 "confidence": 1.0,
+                "validation_status": "canonical_verified",
                 "metadata": {
                     "english_title": "Tolkāppiyam",
                     "total_sutras": meta.get("total_sutras", 1610),
@@ -370,6 +384,12 @@ class DatasetMapper:
                 "relation": RelTypes.HAS_WORK,
                 "confidence": 1.0,
             })
+            relationships.append({
+                "source_id": lit_id,
+                "target_id": work_id,
+                "relation": RelTypes.CONTAINS_WORK,
+                "confidence": 1.0,
+            })
 
             # Sections: Books (Atikāram) and Chapters (Iyal)
             chap_id_map = {}
@@ -381,12 +401,16 @@ class DatasetMapper:
                     "id": book_id,
                     "label": b.get("name", "Poruḷatikāram (பொருளதிகாரம்)"),
                     "name": b_name,
+                    "text": b_name,
                     "section_name": b_name,
                     "work_name": "Tolkāppiyam",
                     "type": NodeLabels.SECTION,
                     "hierarchy_level": "L2",
                     "source": "Tolkāppiyam",
+                    "source_id": book_id,
+                    "context": b_name,
                     "confidence": 1.0,
+                    "validation_status": "canonical_verified",
                     "metadata": {
                         "section_type": "Book",
                         "atikaram": b_name,
@@ -403,6 +427,12 @@ class DatasetMapper:
                     "relation": RelTypes.HAS_SECTION,
                     "confidence": 1.0,
                 })
+                relationships.append({
+                    "source_id": work_id,
+                    "target_id": book_id,
+                    "relation": RelTypes.CONTAINS_SECTION,
+                    "confidence": 1.0,
+                })
 
                 # Chapters (Iyal) under each Book
                 for chap_num, iyal_name in enumerate(b.get("iyals", []), start=1):
@@ -413,13 +443,17 @@ class DatasetMapper:
                         "id": chap_id,
                         "label": iyal_name,
                         "name": iyal_name,
+                        "text": iyal_name,
                         "chapter_name": iyal_name,
                         "section_name": b_name,
                         "work_name": "Tolkāppiyam",
                         "type": NodeLabels.SECTION,
                         "hierarchy_level": "L2",
                         "source": f"Tolkāppiyam {b_name}",
+                        "source_id": chap_id,
+                        "context": b_name,
                         "confidence": 1.0,
+                        "validation_status": "canonical_verified",
                         "metadata": {
                             "section_type": "Chapter",
                             "iyal": iyal_name,
@@ -434,6 +468,12 @@ class DatasetMapper:
                         "source_id": book_id,
                         "target_id": chap_id,
                         "relation": RelTypes.HAS_SECTION,
+                        "confidence": 1.0,
+                    })
+                    relationships.append({
+                        "source_id": book_id,
+                        "target_id": chap_id,
+                        "relation": RelTypes.CONTAINS_SECTION,
                         "confidence": 1.0,
                     })
 
@@ -479,11 +519,14 @@ class DatasetMapper:
                 "source_id": s_id,
                 "passage_id": s_id,
                 "label": f"Sūtra {sutra_num}" if sutra_num else s_id,
+                "name": f"Sūtra {sutra_num}" if sutra_num else s_id,
                 "type": NodeLabels.PASSAGE,
                 "hierarchy_level": "L3",
                 "source": source_ref,
+                "context": tinai,
                 "confidence": 1.0,
                 "tinai": tinai,
+                "validation_status": "canonical_verified",
                 "sutra_number": sutra_num,
                 "verse_number": sutra_num,
                 "passage_number": sutra_num,
@@ -512,11 +555,17 @@ class DatasetMapper:
             })
             seen_nodes.add(s_id)
 
-            # Section (Chapter) -> Passage edge (deterministic traversal link)
+            # Section (Chapter) -> Passage edges (Tier 1 Containment)
             relationships.append({
                 "source_id": chap_id,
                 "target_id": s_id,
                 "relation": RelTypes.HAS_PASSAGE,
+                "confidence": 1.0,
+            })
+            relationships.append({
+                "source_id": chap_id,
+                "target_id": s_id,
+                "relation": RelTypes.CONTAINS_PASSAGE,
                 "confidence": 1.0,
             })
 
@@ -525,10 +574,14 @@ class DatasetMapper:
             evidence_nodes.append({
                 "id": ev_id,
                 "label": f"Evidence for {s_id}",
+                "name": f"Evidence for {s_id}",
                 "type": NodeLabels.EVIDENCE,
                 "hierarchy_level": "L3",
                 "source": source_ref,
+                "source_id": s_id,
+                "context": tinai,
                 "confidence": 1.0,
+                "validation_status": "canonical_verified",
                 "citation": source_ref,
                 "text": norm_tamil,
                 "passage_id": s_id,
@@ -547,6 +600,16 @@ class DatasetMapper:
                 "passage_id": s_id,
                 "validation_level": "canonical_grounded",
             })
+            relationships.append({
+                "source_id": ev_id,
+                "target_id": s_id,
+                "relation": RelTypes.GROUNDED_IN,
+                "confidence": 1.0,
+                "source": source_ref,
+                "source_reference": source_ref,
+                "passage_id": s_id,
+                "validation_level": "canonical_grounded",
+            })
 
             # Literary Category node and Passage -> Category relationship
             cat_name = s.get("category")
@@ -559,15 +622,17 @@ class DatasetMapper:
                         "id": cat_id,
                         "label": cat_clean,
                         "name": cat_clean,
+                        "text": cat_clean,
                         "type": NodeLabels.CONCEPT,
                         "hierarchy_level": "L4",
                         "category": "LiteraryCategory",
                         "source": source_ref,
                         "source_id": s_id,
                         "source_reference": source_ref,
+                        "context": tinai,
                         "confidence": 1.0,
                         "tinai": tinai,
-                        "validation_status": "verified_canonical",
+                        "validation_status": "canonical_verified",
                         "metadata": {"origin": "canonical_category", "category_type": "LiteraryCategory"},
                     })
                     seen_nodes.add(cat_id)
@@ -575,6 +640,16 @@ class DatasetMapper:
                     "source_id": s_id,
                     "target_id": cat_id,
                     "relation": RelTypes.BELONGS_TO_CATEGORY,
+                    "confidence": 1.0,
+                    "source": source_ref,
+                    "source_reference": source_ref,
+                    "passage_id": s_id,
+                    "validation_level": "canonical_grounded",
+                })
+                relationships.append({
+                    "source_id": cat_id,
+                    "target_id": s_id,
+                    "relation": RelTypes.GROUNDED_IN,
                     "confidence": 1.0,
                     "source": source_ref,
                     "source_reference": source_ref,
@@ -603,6 +678,7 @@ class DatasetMapper:
                             "id": ev_id,
                             "label": canon_label,
                             "name": canon_label,
+                            "text": event_desc,
                             "type": NodeLabels.EVENT,
                             "hierarchy_level": "L4",
                             "event_type": event_cat,
@@ -610,9 +686,10 @@ class DatasetMapper:
                             "source": source_ref,
                             "source_id": s_id,
                             "source_reference": source_ref,
+                            "context": tinai,
                             "confidence": 1.0,
                             "tinai": tinai,
-                            "validation_status": "verified_canonical",
+                            "validation_status": "canonical_verified",
                             "metadata": {
                                 "origin": "canonical_sutras",
                                 "event_type": event_cat,
@@ -622,11 +699,31 @@ class DatasetMapper:
                         })
                         seen_nodes.add(ev_id)
 
-                    # Passage -> Event (DESCRIBES)
+                    # Passage -> Event (Tier 4 Evidence Grounding)
                     relationships.append({
                         "source_id": s_id,
                         "target_id": ev_id,
                         "relation": RelTypes.DESCRIBES,
+                        "confidence": 1.0,
+                        "source": source_ref,
+                        "source_reference": source_ref,
+                        "passage_id": s_id,
+                        "validation_level": "canonical_grounded",
+                    })
+                    relationships.append({
+                        "source_id": s_id,
+                        "target_id": ev_id,
+                        "relation": RelTypes.ATTESTS_EVENT,
+                        "confidence": 1.0,
+                        "source": source_ref,
+                        "source_reference": source_ref,
+                        "passage_id": s_id,
+                        "validation_level": "canonical_grounded",
+                    })
+                    relationships.append({
+                        "source_id": ev_id,
+                        "target_id": s_id,
+                        "relation": RelTypes.GROUNDED_IN,
                         "confidence": 1.0,
                         "source": source_ref,
                         "source_reference": source_ref,
@@ -645,24 +742,48 @@ class DatasetMapper:
                             "id": ent_id,
                             "label": ent_clean,
                             "name": ent_clean,
+                            "text": ent_clean,
                             "type": NodeLabels.ENTITY if is_concrete else NodeLabels.CONCEPT,
                             "hierarchy_level": "L5" if is_concrete else "L4",
                             "source": source_ref,
                             "source_id": s_id,
                             "source_reference": source_ref,
+                            "context": tinai,
                             "confidence": 1.0,
                             "tinai": tinai,
                             "category": ent_cat,
-                            "validation_status": "verified_canonical",
+                            "validation_status": "canonical_verified",
                             "metadata": {"origin": "canonical_sutras", "category": ent_cat, "source_reference": source_ref},
                         })
                         seen_nodes.add(ent_id)
 
-                    # Passage -> Entity (MENTIONS) or Concept (DISCUSSES)
+                    # Passage -> Entity / Concept (Tier 4 Evidence Grounding)
+                    rel_attest = RelTypes.ATTESTS_ENTITY if is_concrete else RelTypes.ATTESTS_CONCEPT
+                    rel_legacy = RelTypes.MENTIONS if is_concrete else RelTypes.DISCUSSES
                     relationships.append({
                         "source_id": s_id,
                         "target_id": ent_id,
-                        "relation": RelTypes.MENTIONS if is_concrete else RelTypes.DISCUSSES,
+                        "relation": rel_legacy,
+                        "confidence": 1.0,
+                        "source": source_ref,
+                        "source_reference": source_ref,
+                        "passage_id": s_id,
+                        "validation_level": "canonical_grounded",
+                    })
+                    relationships.append({
+                        "source_id": s_id,
+                        "target_id": ent_id,
+                        "relation": rel_attest,
+                        "confidence": 1.0,
+                        "source": source_ref,
+                        "source_reference": source_ref,
+                        "passage_id": s_id,
+                        "validation_level": "canonical_grounded",
+                    })
+                    relationships.append({
+                        "source_id": ent_id,
+                        "target_id": s_id,
+                        "relation": RelTypes.GROUNDED_IN,
                         "confidence": 1.0,
                         "source": source_ref,
                         "source_reference": source_ref,
@@ -700,6 +821,16 @@ class DatasetMapper:
                         "source_id": s_id,
                         "target_id": nid,
                         "relation": rel_p,
+                        "confidence": 1.0,
+                        "source": source_ref,
+                        "source_reference": source_ref,
+                        "passage_id": s_id,
+                        "validation_level": "canonical_grounded",
+                    })
+                    relationships.append({
+                        "source_id": nid,
+                        "target_id": s_id,
+                        "relation": RelTypes.GROUNDED_IN,
                         "confidence": 1.0,
                         "source": source_ref,
                         "source_reference": source_ref,

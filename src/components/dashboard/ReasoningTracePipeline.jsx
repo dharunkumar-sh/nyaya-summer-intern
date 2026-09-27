@@ -1,17 +1,10 @@
-import { useState } from 'react';
 import {
   ChevronRight,
   ShieldCheck,
   Cpu,
-  BookOpen,
   Sparkles,
-  ExternalLink,
-  Info,
-  CheckCircle2,
   AlertTriangle,
   RefreshCw,
-  Network,
-  Search,
 } from 'lucide-react';
 import Card from '../common/Card';
 import Badge from '../common/Badge';
@@ -193,22 +186,32 @@ const STAGE_THEMES = [
   },
 ];
 
+const STAGE_SUMMARIES = {
+  1: 'Target proposition grounded in classical Tolkāppiyam poetics.',
+  2: 'Causal ground anchored in ecological and temporal signifiers.',
+  3: 'Universal invariant rule (Vyāpti) corroborated by canonical exemplar.',
+  4: 'Subsumptive application verifying target verse signifiers.',
+  5: 'Synthesized epistemic truth established with zero fallacies.',
+  pratijna: 'Target proposition grounded in classical Tolkāppiyam poetics.',
+  hetu: 'Causal ground anchored in ecological and temporal signifiers.',
+  udaharana: 'Universal invariant rule (Vyāpti) corroborated by canonical exemplar.',
+  upanaya: 'Subsumptive application verifying target verse signifiers.',
+  nigamana: 'Synthesized epistemic truth established with zero fallacies.',
+};
+
 import { useReasoner } from '../../context/ReasonerContext';
 
 export default function ReasoningTracePipeline({
   currentQuery: propQuery,
   selectedEvidenceId: propEvidenceId,
-  onSelectEvidence: propOnSelectEvidence,
 }) {
   const reasoner = useReasoner();
 
   const currentQuery = propQuery || reasoner.currentQuery;
   const selectedEvidenceId = propEvidenceId || reasoner.selectedEvidenceId;
-  const onSelectEvidence = propOnSelectEvidence || reasoner.setSelectedEvidenceId;
 
   const selectedStageIndex = reasoner.selectedStageIndex;
   const setSelectedStageIndex = reasoner.setSelectedStageIndex;
-  const [isInspectorExpanded, setIsInspectorExpanded] = useState(true);
 
   // Purely dynamic reasoning stages from backend Flask /api/reasoning/deduce
   const rawStages = Array.isArray(reasoner.reasoningStages) && reasoner.reasoningStages.length > 0
@@ -235,21 +238,6 @@ export default function ReasoningTracePipeline({
   const isInsufficient = reasoner.insufficientEvidence || reasoner.reasoningStatus === 'insufficient';
   const hasError = Boolean(reasoner.reasoningError || reasoner.reasoningStatus === 'error');
   const isEmpty = !isLoading && !isInsufficient && !hasError && stages.length === 0;
-
-  const handleTraceEvidence = (evidenceId) => {
-    if (!evidenceId) return;
-    onSelectEvidence(evidenceId);
-    if (reasoner.setSelectedGraphNodeId) {
-      reasoner.setSelectedGraphNodeId(evidenceId);
-    }
-  };
-
-  const handleFocusInGraph = (nodeId) => {
-    if (!nodeId) return;
-    if (reasoner.setSelectedGraphNodeId) {
-      reasoner.setSelectedGraphNodeId(nodeId);
-    }
-  };
 
   const handleRetryDeduce = () => {
     if (reasoner.runDeduceReasoning) {
@@ -450,24 +438,6 @@ export default function ReasoningTracePipeline({
               Inquire into a classical Tamil poetics or eco-psychology concept in the Query Center, or select a pre-grounded benchmark scenario below to synthesize the 5-stage Pañcāvayava deduction via Flask.
             </p>
           </div>
-          <div className="pt-2 flex flex-wrap justify-center gap-2.5">
-            <button
-              type="button"
-              onClick={() => handleLoadBenchmark('tinai')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-purple-700 text-white hover:bg-purple-800 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Ground Kuṟiñci Tiṇai Benchmark</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleLoadBenchmark('justice')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition-colors cursor-pointer"
-            >
-              <Search className="w-3.5 h-3.5 text-slate-500" />
-              <span>Ground King's Justice Benchmark</span>
-            </button>
-          </div>
         </div>
       </Card>
     );
@@ -550,7 +520,6 @@ export default function ReasoningTracePipeline({
                   type="button"
                   onClick={() => {
                     setSelectedStageIndex(idx);
-                    setIsInspectorExpanded(true);
                   }}
                   className={`w-full text-left flex-1 flex flex-col justify-between p-3.5 rounded-xl border transition-all duration-150 cursor-pointer select-none relative ${
                     isSelected
@@ -558,75 +527,65 @@ export default function ReasoningTracePipeline({
                       : `${theme.bgNormal} ${theme.borderNormal} hover:shadow-sm`
                   } ${isLinkedEvidence && !isSelected ? 'ring-2 ring-purple-400/50' : ''}`}
                 >
-                  {/* Top Badge & Number */}
-                  <div>
-                    <div className="flex items-center justify-between gap-1 mb-2">
-                      <div className="flex items-center gap-1.5">
+                  {/* Top Badge, Title & Epistemic Role */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-1.5">
+                      <div className="flex items-center gap-1.5 min-w-0">
                         <span
-                          className={`w-5 h-5 rounded-full text-[11px] font-mono font-bold flex items-center justify-center shrink-0 ${theme.pillBg}`}
+                          className={`w-5 h-5 rounded-full text-[11px] font-mono font-bold flex items-center justify-center shrink-0 shadow-2xs ${theme.pillBg}`}
                         >
                           {stage.stageNumber || idx + 1}
                         </span>
-                        <span className="font-bold text-xs text-slate-900 tracking-tight truncate">
+                        <span className="font-bold text-xs sm:text-sm text-slate-900 tracking-tight truncate">
                           {stage.sanskritName}
                         </span>
                       </div>
-                      <span
-                        className={`text-[10px] font-medium font-serif px-1.5 py-0.5 rounded border ${theme.badgeBg}`}
-                      >
-                        {stage.tamilName}
+                      <span className="text-[10px] font-serif text-slate-500 font-medium shrink-0">
+                        ({stage.tamilName})
                       </span>
                     </div>
 
-                    {/* Role / Subtitle */}
-                    <div className="mb-2">
-                      <span className={`text-[11px] font-bold block ${theme.accentText}`}>
+                    {/* Role Title */}
+                    <div>
+                      <span className={`text-[11px] font-bold block leading-tight ${theme.accentText}`}>
                         {stage.englishRole}
                       </span>
                     </div>
 
-                    {/* Tamil Reasoning Text */}
-                    <p className="text-slate-800 text-xs font-serif leading-relaxed line-clamp-3 mb-2">
-                      {stage.tamilReasoningText}
-                    </p>
-
-                    {/* English Interpretation */}
-                    <p className="text-slate-500 text-[11px] leading-snug line-clamp-3 italic mb-3">
-                      {stage.englishInterpretation}
+                    {/* Clean Epistemic Role Synopsis */}
+                    <p className="text-slate-600 text-[11px] leading-relaxed line-clamp-2">
+                      {STAGE_SUMMARIES[stage.stageNumber] ||
+                        STAGE_SUMMARIES[idx + 1] ||
+                        STAGE_SUMMARIES[String(stage.sanskritName || '').toLowerCase()] ||
+                        'Canonical Nyāya inference step establishing epistemic validity.'}
                     </p>
                   </div>
 
-                  {/* Bottom Footer of Card: Inline SVG Icon and Status */}
-                  <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between gap-1 text-[10px] mt-auto">
+                  {/* Bottom Footer: Stage Icon & Clear Selection Prompt */}
+                  <div className="pt-2.5 mt-3 border-t border-slate-200/70 flex items-center justify-between gap-1 text-[11px]">
                     <div className="flex items-center gap-1.5">
                       <span
                         className={`p-1 rounded-md flex items-center justify-center ${theme.iconBg}`}
-                        title={stage.fullTitle}
+                        title={stage.fullTitle || stage.sanskritName}
                       >
                         <IconComp className="w-3.5 h-3.5" />
                       </span>
-                      {stage.linkedEvidenceId && (
-                        <span
-                          className="font-mono text-slate-600 bg-slate-100 hover:bg-purple-100 hover:text-purple-800 px-1 py-0.5 rounded border border-slate-200 text-[10px] transition-colors cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleTraceEvidence(stage.linkedEvidenceId);
-                          }}
-                          title="Click to trace linked evidence passage & graph node"
-                        >
-                          [{stage.linkedEvidenceId}]
+                      {stage.pramanaMode && (
+                        <span className="text-[10px] text-slate-500 font-mono">
+                          {stage.pramanaMode.split(' ')[0]}
                         </span>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-1">
+                    <div>
                       {isSelected ? (
-                        <span className="font-semibold text-purple-700 text-[10px] flex items-center gap-0.5">
-                          Active •
+                        <span className="inline-flex items-center gap-1 font-bold text-[10px] text-purple-700 bg-purple-100/90 px-2 py-0.5 rounded-full border border-purple-200 shadow-2xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse" />
+                          Active
                         </span>
                       ) : (
-                        <span className="text-slate-400 group-hover:text-slate-600">
-                          View →
+                        <span className="text-[10px] font-medium text-slate-400 group-hover:text-slate-700 transition-colors">
+                          Inspect →
                         </span>
                       )}
                     </div>
@@ -635,9 +594,9 @@ export default function ReasoningTracePipeline({
                   {/* Highlight pill for active stage */}
                   {isSelected && (
                     <div
-                      className={`absolute -top-1.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase text-white shadow-xs ${theme.pillBg}`}
+                      className={`absolute -top-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase text-white shadow-xs ${theme.pillBg}`}
                     >
-                      Selected Stage
+                      Active Stage
                     </div>
                   )}
                 </button>
@@ -657,161 +616,106 @@ export default function ReasoningTracePipeline({
         </div>
       </div>
 
-      {/* EXPANDABLE DEEP EPISTEMIC INSPECTOR FOR THE SELECTED STAGE */}
-      <div className="border border-slate-200 rounded-xl bg-white overflow-hidden shadow-2xs">
-        <div
-          className="p-3.5 bg-slate-50/80 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 cursor-pointer select-none"
-          onClick={() => setIsInspectorExpanded(!isInspectorExpanded)}
-        >
-          <div className="flex items-center gap-2.5">
-            <span
-              className={`w-6 h-6 rounded-full text-xs font-mono font-bold flex items-center justify-center ${currentTheme.pillBg}`}
-            >
-              {currentStage.stageNumber || selectedStageIndex + 1}
-            </span>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-bold text-slate-900 text-sm">
-                  {currentStage.fullTitle || `${currentStage.stageNumber}. ${currentStage.sanskritName} (${currentStage.tamilName})`}
+      {/* 2-COLUMN GRID: NYĀYA FIRST-ORDER LOGIC + EPISTEMOLOGICAL EXPLANATION */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+        {/* Component 1: Nyāya First-Order Logic */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-slate-900 text-slate-100 border border-slate-800 shadow-sm flex flex-col justify-between space-y-3">
+          <div>
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-800 text-xs">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`w-5 h-5 rounded-full text-[11px] font-mono font-bold flex items-center justify-center shrink-0 ${currentTheme.pillBg}`}
+                >
+                  {currentStage.stageNumber || selectedStageIndex + 1}
                 </span>
-                <Badge variant={currentTheme.badgeVariant} size="xs">
-                  {currentStage.pramanaMode || 'Pramāṇa Validated'}
-                </Badge>
-                {typeof currentStage.confidence === 'number' && (
-                  <span className="font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 text-[10px] font-semibold">
-                    {Math.round(currentStage.confidence * 100)}% Confidence
+                <Cpu className="w-4 h-4 text-purple-400" />
+                <div className="flex flex-col">
+                  <span className="font-mono font-bold text-purple-300 tracking-wide text-xs sm:text-sm">
+                    NYĀYA FIRST-ORDER LOGIC
                   </span>
-                )}
+                  <span className="tamil-ui text-[11px] text-purple-200" lang="ta">
+                    முதல்-வரிசை ந்யாயத் தர்க்கம்
+                  </span>
+                </div>
               </div>
-              <span className="text-xs text-slate-500">
-                Formal Epistemic Proof & Grounding Analysis
-              </span>
+              <div className="flex flex-col items-end">
+                <span className="text-[11px] text-emerald-400 font-mono font-semibold flex items-center gap-1">
+                  ✓ Verified Invariant
+                </span>
+                <span className="tamil-ui text-[10px] text-emerald-300" lang="ta">
+                  சரிபார்க்கப்பட்ட மாறாத விதி
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-3 font-mono text-xs sm:text-sm text-emerald-300 py-2.5 px-3.5 bg-slate-950/80 rounded-xl border border-slate-800/80 overflow-x-auto leading-relaxed shadow-inner">
+              {currentStage.formalLogic}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="text-xs font-medium text-slate-600 hover:text-purple-700 px-2 py-1 rounded hover:bg-slate-100 cursor-pointer"
-            >
-              {isInspectorExpanded ? 'Collapse Details ▲' : 'Expand Details ▼'}
-            </button>
+          <div className="space-y-1 text-xs text-slate-400 leading-normal pt-2 border-t border-slate-800/60">
+            <p>
+              Quantified predicate grounding the semantic entailment of the target proposition without existential rupture.
+            </p>
+            <p className="tamil-verse text-slate-300 text-[11px]" lang="ta">
+              இருப்பியல் முறிவு இல்லாமல், இலக்கு முன்மொழிவின் பொருள் உட்பொருத்தத்தை நிலைநிறுத்தும் அளவிடப்பட்ட பண்புக்கூறு.
+            </p>
           </div>
         </div>
 
-        {isInspectorExpanded && (
-          <div className="p-4 sm:p-5 space-y-4 text-xs sm:text-sm">
-            {/* Full Tamil Reasoning & English Interpretation Banner */}
-            <div className={`p-4 rounded-xl border ${currentTheme.bgSelected} ${currentTheme.borderNormal} space-y-2`}>
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-bold text-xs uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5 text-purple-600" />
-                  Tamil Reasoning Text (தமிழ் ஏது விளக்கம்)
-                </span>
-                <span className="font-mono text-xs text-slate-500">
-                  Stage {currentStage.stageNumber || selectedStageIndex + 1} of {stages.length}
-                </span>
+        {/* Component 2: Epistemic Explanation Component */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex flex-col justify-between space-y-3">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/80">
+              <div className="flex items-center gap-2">
+                <div className="p-1 rounded-md bg-amber-50 text-amber-600 border border-amber-200/70">
+                  <Sparkles className="w-4 h-4 text-amber-600" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-xs sm:text-sm text-slate-900 tracking-tight">
+                    Epistemological Explanation
+                  </h4>
+                  <span className="text-[11px] text-slate-500 font-serif">
+                    ஏதுமுறை விளக்கம் • Stage {currentStage.stageNumber || selectedStageIndex + 1}: {currentStage.sanskritName} ({currentStage.tamilName})
+                  </span>
+                </div>
               </div>
-              <p className="text-slate-900 font-serif text-sm sm:text-base leading-relaxed font-medium">
-                {currentStage.tamilReasoningText}
+              <Badge variant={currentTheme.badgeVariant} size="xs">
+                {currentStage.pramanaMode ? currentStage.pramanaMode.split(' ')[0] : 'Pramāṇa'}
+              </Badge>
+            </div>
+
+            {/* In-depth Philosophical Explanation */}
+            {currentStage.inDepthExplanation && (
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed bg-slate-50/70 p-3 rounded-xl border border-slate-200/70 font-medium">
+                {currentStage.inDepthExplanation}
               </p>
-              <div className="pt-2 border-t border-slate-200/60">
-                <p className="text-slate-700 text-xs sm:text-sm leading-relaxed italic">
-                  {currentStage.englishInterpretation}
-                </p>
-              </div>
-            </div>
+            )}
 
-            {/* Two-Column Inspector Grid: Formal Logic & Sūtra Grounding */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Box 1: First-Order Nyāya Symbolic Logic */}
-              <div className="p-3.5 rounded-xl bg-slate-900 text-slate-100 border border-slate-800 space-y-2">
-                <div className="flex items-center justify-between text-xs pb-1 border-b border-slate-800">
-                  <span className="font-mono font-bold text-purple-300 flex items-center gap-1.5">
-                    <Cpu className="w-3.5 h-3.5 text-purple-400" />
-                    NYĀYA FIRST-ORDER LOGIC
-                  </span>
-                  <span className="text-[10px] text-emerald-400 font-mono">
-                    ✓ Verified Invariant
-                  </span>
-                </div>
-                <div className="font-mono text-xs text-emerald-300 py-1 overflow-x-auto leading-relaxed">
-                  {currentStage.formalLogic}
-                </div>
-                <div className="text-[11px] text-slate-400 leading-normal">
-                  Quantified predicate grounding the semantic entailment of the target proposition without existential rupture.
-                </div>
+            {/* Tamil Reasoning & English Interpretation */}
+            {(currentStage.tamilReasoningText || currentStage.englishInterpretation) && (
+              <div className="space-y-1.5 pt-1">
+                {currentStage.tamilReasoningText && (
+                  <p className="text-slate-900 font-serif text-xs sm:text-sm leading-relaxed font-semibold">
+                    {currentStage.tamilReasoningText}
+                  </p>
+                )}
+                {currentStage.englishInterpretation && (
+                  <p className="text-slate-600 text-xs leading-relaxed italic border-l-2 border-purple-400 pl-2.5">
+                    {currentStage.englishInterpretation}
+                  </p>
+                )}
               </div>
-
-              {/* Box 2: Canonical Tolkāppiyam Sūtra Grounding */}
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-                <div className="flex items-center justify-between text-xs pb-1 border-b border-slate-200">
-                  <span className="font-bold text-slate-800 flex items-center gap-1.5">
-                    <BookOpen className="w-3.5 h-3.5 text-purple-700" />
-                    CANONICAL SŪTRA GROUNDING
-                  </span>
-                  {currentStage.linkedEvidenceId && (
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleTraceEvidence(currentStage.linkedEvidenceId)}
-                        className="inline-flex items-center gap-1 text-[11px] text-purple-700 hover:text-purple-900 font-semibold cursor-pointer"
-                        title="Highlight this evidence in Evidence Panel"
-                      >
-                        <span>Evidence [{currentStage.linkedEvidenceId}]</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleFocusInGraph(currentStage.linkedEvidenceId)}
-                        className="inline-flex items-center gap-1 text-[11px] text-blue-700 hover:text-blue-900 font-semibold cursor-pointer"
-                        title="Focus and highlight this node in Cytoscape Knowledge Graph"
-                      >
-                        <Network className="w-3 h-3" />
-                        <span>Graph Context</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-                <p className="font-medium text-slate-900 text-xs sm:text-sm">
-                  {currentStage.epistemicGrounding}
-                </p>
-                <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
-                  <span className="text-slate-500 font-semibold">Pramāṇa Mode:</span>
-                  <span className="font-medium text-purple-800 bg-purple-100/80 px-2 py-0.5 rounded border border-purple-200 text-[11px]">
-                    {currentStage.pramanaMode}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* In-depth Philosophical Explanation & Defeasibility */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 pt-1">
-              <div className="lg:col-span-8 p-3.5 rounded-xl bg-slate-50/60 border border-slate-200/80 space-y-1.5">
-                <div className="font-bold text-xs text-slate-800 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Epistemological Role in Tolkāppiyam Semiotics</span>
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  {currentStage.inDepthExplanation}
-                </p>
-              </div>
-
-              <div className="lg:col-span-4 p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-1.5">
-                <div className="font-bold text-xs text-emerald-900 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
-                  <span>Hetvābhāsa Defeasibility Check</span>
-                </div>
-                <p className="text-xs text-emerald-800 font-mono">
-                  {currentStage.fallacyCheck || 'Zero Fallacies Detected (Sound)'}
-                </p>
-                <div className="text-[11px] text-emerald-700">
-                  Free from Asiddha, Savyabhicāra, Viruddha, Satpratipakṣa, and Bādhita.
-                </div>
-              </div>
-            </div>
+            )}
           </div>
-        )}
+
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+            <span>Canonical Role: <strong className="text-slate-700">{currentStage.englishRole}</strong></span>
+            {currentStage.fallacyCheck && (
+              <span className="text-emerald-700 font-medium">✓ Defeasible Soundness Verified</span>
+            )}
+          </div>
+        </div>
       </div>
     </Card>
   );

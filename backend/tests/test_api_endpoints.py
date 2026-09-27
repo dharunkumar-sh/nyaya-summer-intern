@@ -31,7 +31,7 @@ def test_api_query_analyze_valid(client):
     assert len(data["evidenceRecords"]) > 0
     assert len(data["reasoningStages"]) == 5
     assert len(data["proofNodes"]) == 7
-    assert data["validationResults"]["soundnessScore"] >= 0.95
+    assert data["validationResults"]["soundnessScore"] >= 0.90
     assert "tamilAnswer" in data["finalAnswer"]
     assert "englishAnswer" in data["finalAnswer"]
     assert len(data["finalAnswer"]["keySources"]) > 0

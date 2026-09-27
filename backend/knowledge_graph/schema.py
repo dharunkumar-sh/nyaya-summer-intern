@@ -86,78 +86,163 @@ class NodeLabels:
 
 
 # ==============================================================================
-# 2. Canonical Relationship Types
+# 2. Canonical Relationship Types (5 Architectural Tiers)
 # ==============================================================================
 
 class RelTypes:
-    """Controlled relationship vocabulary grounded in Tolkāppiyam semiotics and Nyāya deduction."""
+    """
+    Controlled relationship vocabulary grounded in Tolkāppiyam semiotics and Nyāya deduction.
+    Separated into 5 distinct architectural tiers:
+    - Tier 1: Literary Structure Relationships
+    - Tier 2: Semantic Knowledge Relationships
+    - Tier 3: Contextual Relationships
+    - Tier 4: Evidence & Textual Provenance Relationships
+    - Tier 5: Epistemic Reasoning Pipeline Relationships
+    """
 
-    # Structural Containment Hierarchy
-    HAS_WORK = "HAS_WORK"            # Literature -> Work
-    HAS_SECTION = "HAS_SECTION"      # Work -> Section
-    HAS_PASSAGE = "HAS_PASSAGE"      # Section -> Passage
+    # --------------------------------------------------------------------------
+    # Tier 1: Literary Structure Relationships (Corpus Containment)
+    # --------------------------------------------------------------------------
+    CONTAINS_WORK = "CONTAINS_WORK"          # Literature -> Work
+    HAS_WORK = "HAS_WORK"                    # Compatibility alias
+    CONTAINS_SECTION = "CONTAINS_SECTION"    # Work -> Section (Book / Chapter)
+    HAS_SECTION = "HAS_SECTION"              # Compatibility alias
+    CONTAINS_PASSAGE = "CONTAINS_PASSAGE"    # Section -> Passage (Sūtra)
+    HAS_PASSAGE = "HAS_PASSAGE"              # Compatibility alias
 
-    # Passage-to-Knowledge Grounding
-    MENTIONS = "MENTIONS"            # Passage -> Entity
-    DISCUSSES = "DISCUSSES"          # Passage -> Concept
-    DESCRIBES = "DESCRIBES"          # Passage -> Event
-    DEPICTS_EVENT = "DESCRIBES"      # Alias for DESCRIBES (Passage -> Event)
-    BELONGS_TO_CATEGORY = "BELONGS_TO_CATEGORY"  # Passage -> Concept (Category)
-    GROUNDS_IN_ONTOLOGY = "GROUNDS_IN_ONTOLOGY"  # Passage/Concept -> Ontology Concept
+    # --------------------------------------------------------------------------
+    # Tier 2: Semantic Knowledge Relationships (Tolkāppiyam Semiotics & Ontology)
+    # --------------------------------------------------------------------------
+    SUB_CONCEPT_OF = "SUB_CONCEPT_OF"        # Concept -> Concept taxonomy
+    GROUNDS_IN = "GROUNDS_IN"                # Concept -> Concept (e.g. Mutalporuḷ -> Uripporuḷ)
+    CHARACTERISTIC_OF = "CHARACTERISTIC_OF"  # Entity -> Concept
+    PRESIDES_OVER = "PRESIDES_OVER"          # Entity -> Concept/Entity (e.g. Cēyōṉ -> Kuṟiñci)
+    INCLUDES_COMPONENT = "INCLUDES_COMPONENT" # Concept -> Entity/Concept (Karupporuḷ -> Flora/Fauna)
+    EVOKES_AFFECT = "EVOKES_AFFECT"          # Event -> Concept / Meyppāṭu
+    MANIFESTS_AS = "MANIFESTS_AS"            # Event -> Concept (Puṇartal -> Meyppāṭu)
+    HAS_URIPPORUL = "HAS_URIPPORUL"          # Concept/Entity -> Event (Kuṟiñci -> Puṇartal)
+    MANIFESTS_SIGNIFIER_FOR = "MANIFESTS_SIGNIFIER_FOR" # Entity -> Concept
+    BELONGS_TO_CATEGORY = "BELONGS_TO_CATEGORY" # Passage/Concept -> Category
+    GROUNDS_IN_ONTOLOGY = "GROUNDS_IN_ONTOLOGY" # Passage/Concept -> Ontology Concept
 
-    # Domain Semiotic Relationships (actual Tolkāppiyam Tiṇai model)
-    GROUNDS_IN = "GROUNDS_IN"        # Concept -> Concept (e.g. Mutalporuḷ -> Uripporuḷ)
-    PRESIDES_OVER = "PRESIDES_OVER"  # Entity -> Entity (e.g. Cēyōṉ -> Kuṟiñci)
-    HAS_URIPPORUL = "HAS_URIPPORUL"  # Entity -> Event (e.g. Kuṟiñci -> Puṇartal)
-    HAS_HABITAT = "HAS_HABITAT"      # Concept (Tiṇai) -> Entity (Landscape/Habitat)
-    MANIFESTS_SIGNIFIER_FOR = "MANIFESTS_SIGNIFIER_FOR"  # Entity -> Concept
-    INCLUDES_COMPONENT = "INCLUDES_COMPONENT"            # Concept -> Entity (Karupporuḷ -> Vēṅkai)
-    MANIFESTS_AS = "MANIFESTS_AS"    # Event -> Concept (Puṇartal -> Meyppāṭu)
+    # --------------------------------------------------------------------------
+    # Tier 3: Contextual Relationships (Spatiotemporal, Ecological, Poetic)
+    # --------------------------------------------------------------------------
+    OCCURS_IN_HABITAT = "OCCURS_IN_HABITAT"  # Fauna/Flora in Landscape / Nilam
+    HAS_HABITAT = "HAS_HABITAT"              # Compatibility alias for OCCURS_IN_HABITAT
+    ASSOCIATED_WITH_SEASON = "ASSOCIATED_WITH_SEASON" # Entity/Concept -> Season (Kālam)
+    ASSOCIATED_WITH_TIME = "ASSOCIATED_WITH_TIME"     # Entity/Concept -> Time of Day (Poḻutu)
+    ASSOCIATED_WITH_TINAI = "ASSOCIATED_WITH_TINAI"   # Entity/Event -> Tiṇai
+    LOCATED_IN_CONTEXT = "LOCATED_IN_CONTEXT"         # Event/Entity -> Context
 
-    # Epistemic Reasoning Pipeline Relationships
-    SUPPORTED_BY = "SUPPORTED_BY"    # Premise/Rule -> Evidence / Passage
-    DERIVED_FROM = "DERIVED_FROM"    # Conclusion -> Premise / Rule, Premise -> Passage
-    CONTRADICTS = "CONTRADICTS"      # Hetvābhāsa fallacy detection
-    SUB_SUMES = "SUB_SUMES"          # Upanaya inference application
+    # --------------------------------------------------------------------------
+    # Tier 4: Evidence & Textual Provenance Grounding (Passage Grounding)
+    # --------------------------------------------------------------------------
+    ATTESTS_ENTITY = "ATTESTS_ENTITY"        # Passage -> Entity (canonical textual attestation)
+    MENTIONS = "MENTIONS"                    # Backward-compatible alias
+    ATTESTS_CONCEPT = "ATTESTS_CONCEPT"      # Passage -> Concept (canonical textual attestation)
+    DISCUSSES = "DISCUSSES"                  # Backward-compatible alias
+    ATTESTS_EVENT = "ATTESTS_EVENT"          # Passage -> Event (canonical textual attestation)
+    DESCRIBES = "DESCRIBES"                  # Backward-compatible alias
+    DEPICTS_EVENT = "DESCRIBES"              # Alias for DESCRIBES
+    GROUNDED_IN = "GROUNDED_IN"              # Entity/Concept/Event/Rule -> Passage (direct provenance)
+    SUPPORTED_BY = "SUPPORTED_BY"            # Evidence/Premise/Rule -> Passage
+
+    # --------------------------------------------------------------------------
+    # Tier 5: Epistemic Reasoning Pipeline Relationships (Nyāya Deduction)
+    # --------------------------------------------------------------------------
+    APPLIES_TO = "APPLIES_TO"                # Rule -> Concept (Invariant scope)
+    DERIVED_FROM = "DERIVED_FROM"            # Inference -> Premise, Premise -> Passage
+    INFERRED_FROM = "INFERRED_FROM"          # Conclusion -> Inference
+    CONTRADICTS = "CONTRADICTS"              # Hetvābhāsa fallacy detection
+    SUB_SUMES = "SUB_SUMES"                  # Upanaya application
 
     # Mapping from legacy or raw relation names to canonical uppercase relationships
     RELATION_MAP = {
-        "contains_work": HAS_WORK,
-        "contains_section": HAS_SECTION,
-        "contains_passage": HAS_PASSAGE,
-        "mentions": MENTIONS,
-        "mentions_entity": MENTIONS,
-        "instantiates_entity": MENTIONS,
-        "discusses": DISCUSSES,
-        "exposes_concept": DISCUSSES,
-        "describes": DESCRIBES,
-        "describes_event": DESCRIBES,
-        "depicts_event": DESCRIBES,
-        "depictsevent": DESCRIBES,
+        # Tier 1
+        "contains_work": CONTAINS_WORK,
+        "containswork": CONTAINS_WORK,
+        "has_work": HAS_WORK,
+        "haswork": HAS_WORK,
+        "contains_section": CONTAINS_SECTION,
+        "containssection": CONTAINS_SECTION,
+        "has_section": HAS_SECTION,
+        "hassection": HAS_SECTION,
+        "contains_passage": CONTAINS_PASSAGE,
+        "containspassage": CONTAINS_PASSAGE,
+        "has_passage": HAS_PASSAGE,
+        "haspassage": HAS_PASSAGE,
+        # Tier 2
+        "sub_concept_of": SUB_CONCEPT_OF,
+        "subconceptof": SUB_CONCEPT_OF,
+        "characteristic_of": CHARACTERISTIC_OF,
+        "characteristicof": CHARACTERISTIC_OF,
+        "presides_over": PRESIDES_OVER,
+        "presidesover": PRESIDES_OVER,
+        "includes_component": INCLUDES_COMPONENT,
+        "includescomponent": INCLUDES_COMPONENT,
+        "consistsof": INCLUDES_COMPONENT,
+        "consists_of": INCLUDES_COMPONENT,
+        "hasconstituent": INCLUDES_COMPONENT,
+        "has_constituent": INCLUDES_COMPONENT,
+        "has_uripporul": HAS_URIPPORUL,
+        "hasuripporul": HAS_URIPPORUL,
+        "manifests_signifier_for": MANIFESTS_SIGNIFIER_FOR,
+        "manifestssignifierfor": MANIFESTS_SIGNIFIER_FOR,
+        "manifests_as": MANIFESTS_AS,
+        "manifestsas": MANIFESTS_AS,
+        "evokes_affect": EVOKES_AFFECT,
+        "evokesaffect": EVOKES_AFFECT,
         "belongs_to_category": BELONGS_TO_CATEGORY,
         "belongstocategory": BELONGS_TO_CATEGORY,
         "grounds_in_ontology": GROUNDS_IN_ONTOLOGY,
         "groundsinontology": GROUNDS_IN_ONTOLOGY,
-        "supported_by": SUPPORTED_BY,
-        "grounds_deduction": SUPPORTED_BY,
-        "derived_from": DERIVED_FROM,
         "groundsin": GROUNDS_IN,
         "grounds_in": GROUNDS_IN,
-        "consistsof": GROUNDS_IN,
-        "presidesover": PRESIDES_OVER,
-        "presides_over": PRESIDES_OVER,
-        "hasuripporul": HAS_URIPPORUL,
-        "has_uripporul": HAS_URIPPORUL,
-        "hashabitat": HAS_HABITAT,
+        # Tier 3
+        "occurs_in_habitat": OCCURS_IN_HABITAT,
+        "occursinhabitat": OCCURS_IN_HABITAT,
         "has_habitat": HAS_HABITAT,
-        "manifestssignifierfor": MANIFESTS_SIGNIFIER_FOR,
-        "manifests_signifier_for": MANIFESTS_SIGNIFIER_FOR,
-        "includescomponent": INCLUDES_COMPONENT,
-        "includes_component": INCLUDES_COMPONENT,
-        "manifestsas": MANIFESTS_AS,
-        "manifests_as": MANIFESTS_AS,
-        "evokesaffect": MANIFESTS_AS,
-        "evokes_affect": MANIFESTS_AS,
+        "hashabitat": OCCURS_IN_HABITAT,
+        "associated_with_season": ASSOCIATED_WITH_SEASON,
+        "associatedwithseason": ASSOCIATED_WITH_SEASON,
+        "associated_with_time": ASSOCIATED_WITH_TIME,
+        "associatedwithtime": ASSOCIATED_WITH_TIME,
+        "associated_with_tinai": ASSOCIATED_WITH_TINAI,
+        "associatedwithtinai": ASSOCIATED_WITH_TINAI,
+        "located_in_context": LOCATED_IN_CONTEXT,
+        "locatedincontext": LOCATED_IN_CONTEXT,
+        # Tier 4
+        "attests_entity": ATTESTS_ENTITY,
+        "attestsentity": ATTESTS_ENTITY,
+        "mentions": MENTIONS,
+        "mentions_entity": MENTIONS,
+        "instantiates_entity": MENTIONS,
+        "attests_concept": ATTESTS_CONCEPT,
+        "attestsconcept": ATTESTS_CONCEPT,
+        "discusses": DISCUSSES,
+        "exposes_concept": DISCUSSES,
+        "attests_event": ATTESTS_EVENT,
+        "attestsevent": ATTESTS_EVENT,
+        "describes": DESCRIBES,
+        "describes_event": DESCRIBES,
+        "depicts_event": DESCRIBES,
+        "depictsevent": DESCRIBES,
+        "grounded_in": GROUNDED_IN,
+        "groundedin": GROUNDED_IN,
+        "supported_by": SUPPORTED_BY,
+        "supportedby": SUPPORTED_BY,
+        "grounds_deduction": SUPPORTED_BY,
+        # Tier 5
+        "applies_to": APPLIES_TO,
+        "appliesto": APPLIES_TO,
+        "derived_from": DERIVED_FROM,
+        "derivedfrom": DERIVED_FROM,
+        "inferred_from": INFERRED_FROM,
+        "inferredfrom": INFERRED_FROM,
+        "contradicts": CONTRADICTS,
+        "sub_sumes": SUB_SUMES,
+        "subsumes": SUB_SUMES,
     }
 
     @classmethod
@@ -170,6 +255,36 @@ class RelTypes:
             return cls.RELATION_MAP[normalized]
         cleaned = "".join(c if c.isalnum() else "_" for c in rel).upper()
         return cleaned or "RELATED_TO"
+
+    @classmethod
+    def tier_1_literary(cls) -> List[str]:
+        return [cls.CONTAINS_WORK, cls.HAS_WORK, cls.CONTAINS_SECTION, cls.HAS_SECTION, cls.CONTAINS_PASSAGE, cls.HAS_PASSAGE]
+
+    @classmethod
+    def tier_2_semantic(cls) -> List[str]:
+        return [
+            cls.SUB_CONCEPT_OF, cls.GROUNDS_IN, cls.CHARACTERISTIC_OF, cls.PRESIDES_OVER,
+            cls.INCLUDES_COMPONENT, cls.EVOKES_AFFECT, cls.MANIFESTS_AS, cls.HAS_URIPPORUL,
+            cls.MANIFESTS_SIGNIFIER_FOR, cls.BELONGS_TO_CATEGORY, cls.GROUNDS_IN_ONTOLOGY,
+        ]
+
+    @classmethod
+    def tier_3_contextual(cls) -> List[str]:
+        return [
+            cls.OCCURS_IN_HABITAT, cls.HAS_HABITAT, cls.ASSOCIATED_WITH_SEASON,
+            cls.ASSOCIATED_WITH_TIME, cls.ASSOCIATED_WITH_TINAI, cls.LOCATED_IN_CONTEXT,
+        ]
+
+    @classmethod
+    def tier_4_evidence(cls) -> List[str]:
+        return [
+            cls.ATTESTS_ENTITY, cls.MENTIONS, cls.ATTESTS_CONCEPT, cls.DISCUSSES,
+            cls.ATTESTS_EVENT, cls.DESCRIBES, cls.GROUNDED_IN, cls.SUPPORTED_BY,
+        ]
+
+    @classmethod
+    def tier_5_reasoning(cls) -> List[str]:
+        return [cls.APPLIES_TO, cls.DERIVED_FROM, cls.INFERRED_FROM, cls.CONTRADICTS, cls.SUB_SUMES]
 
 
 # ==============================================================================
@@ -198,7 +313,11 @@ UNIQUENESS_CONSTRAINTS: List[Tuple[str, str, str]] = [
 PROPERTY_INDEXES: List[Tuple[str, str, str]] = [
     # (Index Name, Label, Property)
     ("index_kgnode_label", NodeLabels.KGNODE, "label"),
+    ("index_kgnode_name", NodeLabels.KGNODE, "name"),
     ("index_kgnode_type", NodeLabels.KGNODE, "type"),
+    ("index_kgnode_source_id", NodeLabels.KGNODE, "source_id"),
+    ("index_kgnode_context", NodeLabels.KGNODE, "context"),
+    ("index_kgnode_validation_status", NodeLabels.KGNODE, "validation_status"),
     ("index_passage_sutra_number", NodeLabels.PASSAGE, "sutra_number"),
     ("index_passage_tinai", NodeLabels.PASSAGE, "tinai"),
     ("index_entity_category", NodeLabels.ENTITY, "category"),
@@ -421,6 +540,221 @@ class Neo4jSchemaManager:
             "edges_upserted": edges_upserted,
         }
 
+    def migrate_and_normalize_graph(self, database: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Executes an in-place semantic migration and normalization of the Neo4j Knowledge Graph:
+        1. Ensures all uniqueness constraints and property indexes are applied.
+        2. Strips obsolete/legacy labels (:L0..:L5, :Verse) while ensuring canonical primary labels.
+        3. Standardizes properties on all nodes: id, name, text, type, source, source_id, context,
+           confidence, and validation_status.
+        4. Re-types legacy/un-normalized relationships (HASHABITAT -> OCCURS_IN_HABITAT,
+           PRESIDESOVER -> PRESIDES_OVER, CONSISTSOF -> INCLUDES_COMPONENT, etc.).
+        5. Synchronizes canonical 5-tier relationships (CONTAINS_WORK, CONTAINS_SECTION, CONTAINS_PASSAGE,
+           ATTESTS_ENTITY, ATTESTS_CONCEPT, ATTESTS_EVENT).
+        6. Establishes explicit [:GROUNDED_IN] edges from every entity/concept/event/rule
+           back to its source literary Passage.
+        """
+        driver = self.service.get_driver()
+        if driver is None:
+            raise KnowledgeGraphError("Cannot migrate graph: Neo4j Aura driver is not connected")
+
+        logger.info("Starting Neo4j graph semantic migration and normalization...")
+
+        # Step 1: Ensure constraints and indexes
+        schema_res = self.setup_schema(database=database)
+
+        # Step 2: Strip obsolete hierarchy and duplicate labels
+        strip_query = """
+        MATCH (n:KGNode)
+        REMOVE n:L0, n:L1, n:L2, n:L3, n:L4, n:L5, n:Verse
+        RETURN count(n) AS cleaned_count
+        """
+        res_strip = self.service.execute_write(strip_query, {}, database=database)
+        nodes_stripped = res_strip[0].get("cleaned_count", 0) if res_strip else 0
+
+        # Step 3: Enforce primary semantic labels on all nodes
+        label_queries = [
+            ("MATCH (n:KGNode) WHERE n.hierarchy_level = 'L0' OR n.type = 'Literature' SET n:Literature", "Literature"),
+            ("MATCH (n:KGNode) WHERE n.hierarchy_level = 'L1' OR n.type = 'Work' SET n:Work", "Work"),
+            ("MATCH (n:KGNode) WHERE n.hierarchy_level = 'L2' OR n.type = 'Section' SET n:Section", "Section"),
+            ("MATCH (n:KGNode) WHERE (n.hierarchy_level = 'L3' OR n.sutra_number IS NOT NULL OR n.id STARTS WITH 'tol-') AND n.type <> 'Evidence' SET n:Passage", "Passage"),
+            ("MATCH (n:KGNode) WHERE n.type = 'Evidence' OR n.id STARTS WITH 'ev_' SET n:Evidence", "Evidence"),
+            ("MATCH (n:KGNode) WHERE (n.hierarchy_level = 'L4' OR n.type = 'Concept') AND NOT n:Passage AND NOT n:Section AND NOT n:Work AND NOT n:Literature AND NOT n:Evidence SET n:Concept", "Concept"),
+            ("MATCH (n:KGNode) WHERE (n.hierarchy_level = 'L5' OR n.type = 'Entity') AND NOT n:Event AND NOT n:Passage AND NOT n:Section AND NOT n:Work AND NOT n:Literature SET n:Entity", "Entity"),
+            ("MATCH (n:KGNode) WHERE n.type = 'Event' OR n.event_type IS NOT NULL OR n.id STARTS WITH 'event_' SET n:Event", "Event"),
+        ]
+        for q, lbl in label_queries:
+            self.service.execute_write(q, {}, database=database)
+
+        # Step 4: Standardize properties on all nodes
+        prop_query = """
+        MATCH (n:KGNode)
+        SET n.name = coalesce(n.name, n.label, n.id),
+            n.text = coalesce(n.text, n.tamil_text, n.original_text, n.normalized_text, n.description, n.label, n.name, ''),
+            n.type = coalesce(n.type, [l IN labels(n) WHERE l <> 'KGNode'][0], 'Entity'),
+            n.source = coalesce(n.source, n.source_reference, 'Tolkāppiyam'),
+            n.source_id = coalesce(n.source_id, n.passage_id, CASE WHEN n:Passage THEN n.id ELSE null END),
+            n.context = coalesce(n.context, n.tinai, n.section_name, 'General'),
+            n.confidence = coalesce(n.confidence, 1.0),
+            n.validation_status = coalesce(n.validation_status, 'canonical_verified')
+        RETURN count(n) AS prop_count
+        """
+        res_prop = self.service.execute_write(prop_query, {}, database=database)
+        nodes_standardized = res_prop[0].get("prop_count", 0) if res_prop else 0
+
+        # Also standardize Passage specific hierarchy fields
+        passage_prop_query = """
+        MATCH (p:Passage)
+        SET p.work = coalesce(p.work, p.work_name, 'Tolkāppiyam'),
+            p.section = coalesce(p.section, p.section_name, 'Poruḷatikāram'),
+            p.chapter = coalesce(p.chapter, p.chapter_name, p.iyal, '')
+        """
+        self.service.execute_write(passage_prop_query, {}, database=database)
+
+        # Step 5: Normalize and migrate legacy relationships
+        rel_migrations = [
+            ("HASHABITAT", RelTypes.OCCURS_IN_HABITAT),
+            ("PRESIDESOVER", RelTypes.PRESIDES_OVER),
+            ("CONSISTSOF", RelTypes.INCLUDES_COMPONENT),
+            ("EVOKESAFFECT", RelTypes.EVOKES_AFFECT),
+            ("HASURIPPORUL", RelTypes.HAS_URIPPORUL),
+            ("HASURIPPORUḶ", RelTypes.HAS_URIPPORUL),
+            ("MANIFESTSSIGNIFIERFOR", RelTypes.MANIFESTS_SIGNIFIER_FOR),
+            ("INCLUDESCOMPONENT", RelTypes.INCLUDES_COMPONENT),
+            ("MANIFESTSAS", RelTypes.MANIFESTS_AS),
+            ("GROUNDSIN", RelTypes.GROUNDS_IN),
+            ("HASCONSTITUENT", RelTypes.INCLUDES_COMPONENT),
+            ("DETERMINISTICALLYGROUNDS", RelTypes.GROUNDS_IN),
+            ("ISSPACEDIMENSIONOF", RelTypes.OCCURS_IN_HABITAT),
+            ("ISTIMEDIMENSIONOF", RelTypes.ASSOCIATED_WITH_TIME),
+            ("HAS_LANDSCAPE", RelTypes.OCCURS_IN_HABITAT),
+            ("HAS_TIME", RelTypes.ASSOCIATED_WITH_TIME),
+            ("ASSOCIATED_DEITY", RelTypes.PRESIDES_OVER),
+            ("HAS_THINAI", RelTypes.ASSOCIATED_WITH_TINAI),
+        ]
+        migrated_rels = 0
+        for old_rel, new_rel in rel_migrations:
+            retype_cypher = f"""
+            MATCH (s:KGNode)-[r:{old_rel}]->(t:KGNode)
+            MERGE (s)-[r2:{new_rel}]->(t)
+            SET r2 += properties(r),
+                r2.relation = '{new_rel}',
+                r2.source = coalesce(r.source, 'Tolkāppiyam')
+            DELETE r
+            RETURN count(r2) AS cnt
+            """
+            try:
+                res_rel = self.service.execute_write(retype_cypher, {}, database=database)
+                cnt = res_rel[0].get("cnt", 0) if res_rel else 0
+                if cnt > 0:
+                    logger.info(f"Migrated {cnt} relationships from {old_rel} to {new_rel}")
+                    migrated_rels += cnt
+            except Exception as e:
+                logger.debug(f"Retype {old_rel} notice: {e}")
+
+        # Step 6: Synchronize canonical Literary Structure edges
+        lit_struct_sync = [
+            ("MATCH (lit:Literature)-[r:HAS_WORK]->(w:Work) MERGE (lit)-[r2:CONTAINS_WORK]->(w) SET r2 += properties(r), r2.relation = 'CONTAINS_WORK'", "CONTAINS_WORK"),
+            ("MATCH (w:Work)-[r:HAS_SECTION]->(sec:Section) MERGE (w)-[r2:CONTAINS_SECTION]->(sec) SET r2 += properties(r), r2.relation = 'CONTAINS_SECTION'", "CONTAINS_SECTION"),
+            ("MATCH (sec:Section)-[r:HAS_PASSAGE]->(p:Passage) MERGE (sec)-[r2:CONTAINS_PASSAGE]->(p) SET r2 += properties(r), r2.relation = 'CONTAINS_PASSAGE'", "CONTAINS_PASSAGE"),
+        ]
+        for q, rel_name in lit_struct_sync:
+            try:
+                self.service.execute_write(q, {}, database=database)
+            except Exception as e:
+                logger.debug(f"Sync {rel_name} notice: {e}")
+
+        # Step 7: Synchronize canonical Evidence Attestation edges
+        evidence_attest_sync = [
+            ("MATCH (p:Passage)-[r:MENTIONS]->(e:Entity) MERGE (p)-[r2:ATTESTS_ENTITY]->(e) SET r2 += properties(r), r2.relation = 'ATTESTS_ENTITY', r2.passage_id = p.id", "ATTESTS_ENTITY"),
+            ("MATCH (p:Passage)-[r:DISCUSSES]->(c:Concept) MERGE (p)-[r2:ATTESTS_CONCEPT]->(c) SET r2 += properties(r), r2.relation = 'ATTESTS_CONCEPT', r2.passage_id = p.id", "ATTESTS_CONCEPT"),
+            ("MATCH (p:Passage)-[r:DESCRIBES]->(ev:Event) MERGE (p)-[r2:ATTESTS_EVENT]->(ev) SET r2 += properties(r), r2.relation = 'ATTESTS_EVENT', r2.passage_id = p.id", "ATTESTS_EVENT"),
+            ("MATCH (s:Entity)-[r:HAS_HABITAT]->(t:Entity) MERGE (s)-[r2:OCCURS_IN_HABITAT]->(t) SET r2 += properties(r), r2.relation = 'OCCURS_IN_HABITAT'", "OCCURS_IN_HABITAT"),
+        ]
+        for q, rel_name in evidence_attest_sync:
+            try:
+                self.service.execute_write(q, {}, database=database)
+            except Exception as e:
+                logger.debug(f"Sync {rel_name} notice: {e}")
+
+        # Step 8: Direct Literary Provenance Grounding ([:GROUNDED_IN])
+        grounding_queries = [
+            # Connect elements with source_id directly matching a Passage
+            """
+            MATCH (n:KGNode), (p:Passage)
+            WHERE n.source_id = p.id AND n <> p AND NOT n:Section AND NOT n:Work AND NOT n:Literature
+            MERGE (n)-[r:GROUNDED_IN]->(p)
+            SET r.relation = 'GROUNDED_IN',
+                r.confidence = 1.0,
+                r.validation_level = 'corpus_grounded',
+                r.source = coalesce(p.source, p.source_reference, 'Tolkāppiyam'),
+                r.passage_id = p.id
+            RETURN count(r) AS grounded_cnt
+            """,
+            # Connect entities/concepts/events attested by passages back to those passages
+            """
+            MATCH (p:Passage)-[att:ATTESTS_ENTITY|ATTESTS_CONCEPT|ATTESTS_EVENT|MENTIONS|DISCUSSES|DESCRIBES]->(n:KGNode)
+            WHERE n <> p
+            MERGE (n)-[r:GROUNDED_IN]->(p)
+            SET r.relation = 'GROUNDED_IN',
+                r.confidence = coalesce(att.confidence, 1.0),
+                r.validation_level = 'corpus_grounded',
+                r.source = coalesce(p.source, p.source_reference, 'Tolkāppiyam'),
+                r.passage_id = p.id
+            RETURN count(r) AS grounded_cnt
+            """,
+        ]
+        grounded_edges = 0
+        for g_q in grounding_queries:
+            try:
+                res_g = self.service.execute_write(g_q, {}, database=database)
+                grounded_edges += res_g[0].get("grounded_cnt", 0) if res_g else 0
+            except Exception as e:
+                logger.debug(f"Grounding query notice: {e}")
+
+        # Step 9: Inspection of post-migration graph statistics
+        cnt_nodes = self.service.execute_read("MATCH (n:KGNode) RETURN count(n) AS cnt", database=database)
+        cnt_edges = self.service.execute_read("MATCH ()-[r]->() RETURN count(r) AS cnt", database=database)
+        total_nodes = cnt_nodes[0].get("cnt", 0) if cnt_nodes else 0
+        total_edges = cnt_edges[0].get("cnt", 0) if cnt_edges else 0
+
+        # Query label distribution
+        lbl_dist_q = """
+        MATCH (n:KGNode)
+        UNWIND labels(n) AS lbl
+        WITH lbl, n
+        WHERE lbl <> 'KGNode'
+        RETURN lbl, count(n) AS cnt
+        ORDER BY cnt DESC
+        """
+        lbl_records = self.service.execute_read(lbl_dist_q, database=database)
+        label_counts = {r["lbl"]: r["cnt"] for r in lbl_records}
+
+        # Query relationship distribution
+        rel_dist_q = """
+        MATCH ()-[r]->()
+        RETURN type(r) AS rel, count(r) AS cnt
+        ORDER BY cnt DESC
+        """
+        rel_records = self.service.execute_read(rel_dist_q, database=database)
+        rel_counts = {r["rel"]: r["cnt"] for r in rel_records}
+
+        summary = {
+            "status": "MIGRATION_COMPLETED",
+            "database": database or self.service.database,
+            "total_nodes": total_nodes,
+            "total_edges": total_edges,
+            "nodes_standardized": nodes_standardized,
+            "relationships_migrated": migrated_rels,
+            "grounded_edges_created": grounded_edges,
+            "constraints_applied": schema_res.get("constraints_applied", 0),
+            "indexes_applied": schema_res.get("indexes_applied", 0),
+            "label_distribution": label_counts,
+            "relationship_distribution": rel_counts,
+        }
+        logger.info(f"Graph migration completed successfully: {total_nodes} nodes, {total_edges} relationships")
+        return summary
+
     @staticmethod
     def _resolve_primary_label(node_type: str, hierarchy_level: str) -> str:
         """Maps node type and hierarchy level to canonical Neo4j label."""
@@ -458,21 +792,41 @@ class Neo4jSchemaManager:
                 for i in PROPERTY_INDEXES
             ],
             "relationship_types": [
+                RelTypes.CONTAINS_WORK,
+                RelTypes.CONTAINS_SECTION,
+                RelTypes.CONTAINS_PASSAGE,
                 RelTypes.HAS_WORK,
                 RelTypes.HAS_SECTION,
                 RelTypes.HAS_PASSAGE,
+                RelTypes.ATTESTS_ENTITY,
+                RelTypes.ATTESTS_CONCEPT,
+                RelTypes.ATTESTS_EVENT,
                 RelTypes.MENTIONS,
                 RelTypes.DISCUSSES,
                 RelTypes.DESCRIBES,
+                RelTypes.GROUNDED_IN,
                 RelTypes.GROUNDS_IN,
                 RelTypes.PRESIDES_OVER,
+                RelTypes.OCCURS_IN_HABITAT,
+                RelTypes.HAS_HABITAT,
                 RelTypes.HAS_URIPPORUL,
                 RelTypes.MANIFESTS_SIGNIFIER_FOR,
                 RelTypes.INCLUDES_COMPONENT,
                 RelTypes.MANIFESTS_AS,
+                RelTypes.EVOKES_AFFECT,
                 RelTypes.SUPPORTED_BY,
                 RelTypes.DERIVED_FROM,
+                RelTypes.APPLIES_TO,
+                RelTypes.INFERRED_FROM,
+                RelTypes.CONTRADICTS,
             ],
+            "relationship_tiers": {
+                "tier_1_literary_structure": RelTypes.tier_1_literary(),
+                "tier_2_semantic_knowledge": RelTypes.tier_2_semantic(),
+                "tier_3_contextual_relationships": RelTypes.tier_3_contextual(),
+                "tier_4_evidence_grounding": RelTypes.tier_4_evidence(),
+                "tier_5_epistemic_reasoning": RelTypes.tier_5_reasoning(),
+            },
         }
 
 
@@ -489,17 +843,23 @@ if __name__ == "__main__":
     parser.add_argument("--setup", action="store_true", help="Create uniqueness constraints and property indexes")
     parser.add_argument("--verify", action="store_true", help="Inspect active constraints and indexes in Neo4j")
     parser.add_argument("--seed", action="store_true", help="Seed canonical Tamil literary knowledge graph into Neo4j")
+    parser.add_argument("--migrate", action="store_true", help="Migrate and normalize existing Neo4j graph into 5-tier canonical schema")
     parser.add_argument("--info", action="store_true", help="Print schema specification metadata")
 
     args = parser.parse_args()
 
-    if args.info or not (args.setup or args.verify or args.seed):
+    if args.info or not (args.setup or args.verify or args.seed or args.migrate):
         print("\n=== Neo4j Knowledge Graph Schema Specification ===")
         print(json.dumps(Neo4jSchemaManager.get_schema_metadata(), indent=2))
 
     if args.setup:
         print("\n=== Applying Neo4j Schema Constraints & Indexes ===")
         res = neo4j_schema_manager.setup_schema()
+        print(json.dumps(res, indent=2))
+
+    if args.migrate:
+        print("\n=== Migrating and Normalizing Knowledge Graph in Neo4j ===")
+        res = neo4j_schema_manager.migrate_and_normalize_graph()
         print(json.dumps(res, indent=2))
 
     if args.seed:
@@ -511,3 +871,4 @@ if __name__ == "__main__":
         print("\n=== Verifying Neo4j Schema Active Constraints & Indexes ===")
         res = neo4j_schema_manager.verify_schema()
         print(json.dumps(res, indent=2))
+

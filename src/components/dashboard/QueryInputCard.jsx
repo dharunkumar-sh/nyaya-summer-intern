@@ -7,15 +7,12 @@ import {
   X,
   HelpCircle,
   Layers,
-  Target,
   CheckCircle2,
   AlertTriangle,
   AlertCircle,
   Clock,
   RefreshCw,
   Search,
-  Sliders,
-  Compass,
 } from "lucide-react";
 import Badge from "../common/Badge";
 import Button from "../common/Button";
@@ -29,14 +26,8 @@ export default function QueryInputCard() {
     setQueryType,
     depth,
     setDepth,
-    focus,
-    setFocus,
     searchMode,
     setSearchMode,
-    topK,
-    setTopK,
-    filterTinai,
-    setFilterTinai,
     researchExamples,
     handleSelectExample,
     isAnalyzing,
@@ -193,14 +184,6 @@ export default function QueryInputCard() {
                   <span className="text-[11px] text-emerald-700 font-mono bg-emerald-100/70 px-1.5 py-0.5 rounded border border-emerald-200">
                     Mode: {searchMode.toUpperCase()}
                   </span>
-                  <span className="text-[11px] text-emerald-700 font-mono bg-emerald-100/70 px-1.5 py-0.5 rounded border border-emerald-200">
-                    Top-{topK}
-                  </span>
-                  {filterTinai !== "all" && (
-                    <span className="text-[11px] text-purple-700 font-mono bg-purple-100/70 px-1.5 py-0.5 rounded border border-purple-200">
-                      {filterTinai}
-                    </span>
-                  )}
                   <span className="text-[11px] text-emerald-700 font-mono">
                     Pipeline v{queryStats?.pipelineVersion || "1.0.0"}
                   </span>
@@ -338,10 +321,10 @@ export default function QueryInputCard() {
         {/* Large Tamil Text Area */}
         <div className="relative">
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-              <span>Classical Tamil Research Question</span>
+            <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5 flex-wrap">
+              <span>Classical Tamil or English Research Question</span>
               <span className="text-[11px] text-purple-700 font-serif font-normal">
-                (தமிழில் வினா / ஆராய்ச்சி குறிப்பு)
+                (தமிழ் அல்லது ஆங்கில வினா)
               </span>
             </label>
           </div>
@@ -352,16 +335,16 @@ export default function QueryInputCard() {
               value={queryText}
               onChange={(e) => setQueryText(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="உதாரணம்: குறிஞ்சி நிலத்தின் முதற்பொருள், கருப்பொருள், உரிப்பொருள் தொடர்பு எவ்வாறு அக ஒழுக்கத்தை உணர்த்துகிறது?..."
+              placeholder="Enter question in Classical Tamil or English (e.g., 'How does the primary ground (Mutalporuḷ) in Kuṟiñci govern emotional union?' or 'குறிஞ்சி நிலத்தின் முதற்பொருள், கருப்பொருள், உரிப்பொருள் தொடர்பு எவ்வாறு அக ஒழுக்கத்தை உணர்த்துகிறது?')..."
               className="w-full bg-slate-50/70 border border-slate-200 rounded-xl p-3.5 text-sm sm:text-base text-slate-900 placeholder:text-slate-400 leading-relaxed font-serif shadow-inner outline-none focus:bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all resize-none"
             />
           </div>
         </div>
 
         {/* Retrieval & Epistemic Configuration Controls */}
-        <div className="space-y-2 pt-1">
-          {/* Row 1: Hybrid Search Configuration (Search Mode, Top-K, Landscape Filter) */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+          {/* Row 1: Hybrid Search Configuration */}
+          <div className="contents">
             {/* 1. Search Mode */}
             <div className="bg-purple-50/30 hover:bg-purple-50/60 p-3 rounded-2xl border border-purple-100 shadow-2xs transition-colors">
               <label className="text-[11px] font-bold text-purple-900 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
@@ -397,103 +380,10 @@ export default function QueryInputCard() {
               </div>
             </div>
 
-            {/* 2. Top-K Passages */}
-            <div className="bg-purple-50/30 hover:bg-purple-50/60 p-3 rounded-2xl border border-purple-100 shadow-2xs transition-colors">
-              <label className="text-[11px] font-bold text-purple-900 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <Sliders className="w-3.5 h-3.5 text-purple-600" />
-                Top-K Verses
-              </label>
-              <div className="relative">
-                <select
-                  value={topK}
-                  onChange={(e) => setTopK(Number(e.target.value))}
-                  className="w-full bg-white border border-purple-200/90 hover:border-purple-400 rounded-xl px-3 py-2 text-xs font-semibold text-purple-950 shadow-2xs outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 cursor-pointer appearance-none pr-8 transition-all"
-                >
-                  <option
-                    value={3}
-                    className="bg-white text-slate-800 py-1 font-medium"
-                  >
-                    Top 3 Verses (Focused)
-                  </option>
-                  <option
-                    value={5}
-                    className="bg-white text-slate-800 py-1 font-medium"
-                  >
-                    Top 5 Verses (Standard)
-                  </option>
-                  <option
-                    value={10}
-                    className="bg-white text-slate-800 py-1 font-medium"
-                  >
-                    Top 10 Verses (Extended)
-                  </option>
-                  <option
-                    value={20}
-                    className="bg-white text-slate-800 py-1 font-medium"
-                  >
-                    Top 20 Verses (Comprehensive)
-                  </option>
-                </select>
-                <ChevronDown className="w-4 h-4 text-purple-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
-            </div>
-
-            {/* 3. Landscape / Tiṇai Filter */}
-            <div className="bg-purple-50/30 hover:bg-purple-50/60 p-3 rounded-2xl border border-purple-100 shadow-2xs transition-colors">
-              <label className="text-[11px] font-bold text-purple-900 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <Compass className="w-3.5 h-3.5 text-purple-600" />
-                Landscape / Tiṇai
-              </label>
-              <div className="relative">
-                <select
-                  value={filterTinai}
-                  onChange={(e) => setFilterTinai(e.target.value)}
-                  className="w-full bg-white border border-purple-200/90 hover:border-purple-400 rounded-xl px-3 py-2 text-xs font-semibold text-purple-950 shadow-2xs outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 cursor-pointer appearance-none pr-8 transition-all"
-                >
-                  <option
-                    value="all"
-                    className="bg-white text-slate-800 py-1 font-medium"
-                  >
-                    All Landscapes (அனைத்தும்)
-                  </option>
-                  <option
-                    value="Kurinji"
-                    className="bg-white text-slate-800 py-1 font-medium"
-                  >
-                    Kuṟiñci (குறிஞ்சி - Mountain)
-                  </option>
-                  <option
-                    value="Mullai"
-                    className="bg-white text-slate-800 py-1 font-medium"
-                  >
-                    Mullai (முல்லை - Pastoral)
-                  </option>
-                  <option
-                    value="Marutam"
-                    className="bg-white text-slate-800 py-1 font-medium"
-                  >
-                    Marutam (மருதம் - Agricultural)
-                  </option>
-                  <option
-                    value="Neytal"
-                    className="bg-white text-slate-800 py-1 font-medium"
-                  >
-                    Neytal (நெய்தல் - Littoral)
-                  </option>
-                  <option
-                    value="Palai"
-                    className="bg-white text-slate-800 py-1 font-medium"
-                  >
-                    Pālai (பாலை - Arid)
-                  </option>
-                </select>
-                <ChevronDown className="w-4 h-4 text-purple-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
-            </div>
           </div>
 
-          {/* Row 2: Epistemic Nyāya Configuration (Query Type, Depth, Focus) */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-3 gap-2.5">
+          {/* Row 2: Epistemic Nyāya Configuration */}
+          <div className="contents">
             {/* 1. Query Type */}
             <div className="bg-purple-50/30 hover:bg-purple-50/60 p-3 rounded-2xl border border-purple-100 shadow-2xs transition-colors">
               <label className="text-[11px] font-bold text-purple-900 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
@@ -582,52 +472,6 @@ export default function QueryInputCard() {
               </div>
             </div>
 
-            {/* 3. Focus */}
-            <div className="bg-purple-50/30 hover:bg-purple-50/60 p-3 rounded-2xl border border-purple-100 shadow-2xs transition-colors">
-              <label className="text-[11px] font-bold text-purple-900 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <Target className="w-3.5 h-3.5 text-purple-600" />
-                Focus
-              </label>
-              <div className="relative">
-                <select
-                  value={focus}
-                  onChange={(e) => setFocus(e.target.value)}
-                  className="w-full bg-white border border-purple-200/90 hover:border-purple-400 rounded-xl px-3 py-2 text-xs font-semibold text-purple-950 shadow-2xs outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 cursor-pointer appearance-none pr-8 transition-all"
-                >
-                  <option
-                    value="Judgment / Justice"
-                    className="bg-white text-slate-800 py-1 font-medium"
-                  >
-                    Judgment / Justice (நீதி / தீர்ப்பு)
-                  </option>
-                  <option
-                    value="Character"
-                    className="bg-white text-slate-800 py-1 font-medium"
-                  >
-                    Character (மாந்தர் / பண்பு)
-                  </option>
-                  <option
-                    value="Event"
-                    className="bg-white text-slate-800 py-1 font-medium"
-                  >
-                    Event (நிகழ்வு / காதை)
-                  </option>
-                  <option
-                    value="Relationship"
-                    className="bg-white text-slate-800 py-1 font-medium"
-                  >
-                    Relationship (உறவு / தொடர்பு)
-                  </option>
-                  <option
-                    value="General"
-                    className="bg-white text-slate-800 py-1 font-medium"
-                  >
-                    General Epistemology (பொது)
-                  </option>
-                </select>
-                <ChevronDown className="w-4 h-4 text-purple-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
-            </div>
           </div>
         </div>
 
@@ -642,14 +486,6 @@ export default function QueryInputCard() {
             <span className="font-mono text-[11px] text-purple-700 bg-purple-100/60 px-2 py-0.5 rounded border border-purple-200/80">
               {searchMode.toUpperCase()}
             </span>
-            <span className="font-mono text-[11px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-              Top-{topK}
-            </span>
-            {filterTinai !== "all" && (
-              <span className="font-mono text-[11px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                {filterTinai}
-              </span>
-            )}
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">

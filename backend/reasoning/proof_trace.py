@@ -1,4 +1,4 @@
-﻿"""
+"""
 Proof Trace DAG Generator producing the 7-node inference chain:
 E1 -> P1 -> E2 -> P2 -> R1 -> I1 -> C1 with SVG layout coordinates,
 Cytoscape edges, step-by-step chaining, and path traceability verification.
@@ -63,28 +63,59 @@ class ProofTraceGenerator:
         evidence_ids: Optional[List[str]] = None,
     ) -> List[Dict[str, Any]]:
         """Constructs the 7 nodes of the proof DAG using retrieved evidence references."""
+        effective_items = list(evidence_items) if evidence_items else []
+        if not effective_items:
+            try:
+                from knowledge_graph.neo4j_repository import neo4j_repository
+                neo4j_items = neo4j_repository.get_canonical_evidence_for_tinai(tinai, limit=3)
+                if neo4j_items:
+                    effective_items = neo4j_items
+            except Exception:
+                pass
+
         e_ids: List[str] = list(evidence_ids or [])
         e_refs: List[str] = []
         e_texts: List[str] = []
+        e_meta: List[Dict[str, Any]] = []
 
-        if evidence_items:
-            for itm in evidence_items:
-                pid = getattr(itm, "passage_id", None) or (itm.get("passage_id") if isinstance(itm, dict) else "")
+        if effective_items:
+            for itm in effective_items:
+                pid = getattr(itm, "passage_id", None) or (itm.get("passage_id") or itm.get("id") if isinstance(itm, dict) else "")
                 if pid and pid not in e_ids:
                     e_ids.append(pid)
                 src = getattr(itm, "source", {}) or (itm.get("source", {}) if isinstance(itm, dict) else {})
-                ref = src.get("reference") or f"{src.get('work', 'Tolkāppiyam')} {src.get('section', 'Poruḷ')} Sūtra {src.get('sutra_number', '')}"
+                ref = (
+                    src.get("reference")
+                    or (itm.get("source_reference") if isinstance(itm, dict) else None)
+                    or (itm.get("citation") if isinstance(itm, dict) else None)
+                    or f"{src.get('work', 'Tolkāppiyam')} {src.get('section', 'Poruḷatikāram')} Sūtra {src.get('sutra_number', itm.get('sutra_number', '')) if isinstance(itm, dict) else ''}"
+                )
                 e_refs.append(ref.strip())
-                txt = getattr(itm, "text", "") or (itm.get("text", "") if isinstance(itm, dict) else "")
+                txt = getattr(itm, "text", "") or (itm.get("text", "") or itm.get("original_text", "") if isinstance(itm, dict) else "")
                 e_texts.append(txt.replace("\n", " ").strip())
+                e_meta.append({
+                    "work": src.get("work") or (itm.get("work_name") if isinstance(itm, dict) else "Tolkāppiyam"),
+                    "section": src.get("section") or (itm.get("section_name") if isinstance(itm, dict) else "Poruḷatikāram"),
+                    "chapter": src.get("chapter") or (itm.get("chapter_name") if isinstance(itm, dict) else "Akattiṇaiyiyal"),
+                    "sutra_number": src.get("sutra_number") or (itm.get("sutra_number") if isinstance(itm, dict) else None),
+                    "original_text": (itm.get("original_text") if isinstance(itm, dict) else getattr(itm, "original_text", "")) or txt,
+                    "translation": (itm.get("translation") if isinstance(itm, dict) else getattr(itm, "translation", "")) or "",
+                    "confidence": (itm.get("confidence") if isinstance(itm, dict) else getattr(itm, "confidence", 1.0)) or 1.0,
+                })
 
-        e1_id = e_ids[0] if e_ids else "tol-porul-akam-003"
-        e2_id = e_ids[1] if len(e_ids) > 1 else (e_ids[0] if e_ids else "tol-porul-akam-005")
+        from .rule_engine import TinaiRuleEngine
+        rule_data = TinaiRuleEngine.get_rule_for_tinai(tinai)
 
-        e1_ref = e_refs[0] if e_refs else "Tolkāppiyam Poruḷatikāram (Akattiṇaiyiyal) Sūtra 3"
-        e2_ref = e_refs[1] if len(e_refs) > 1 else "Tolkāppiyam Poruḷatikāram (Akattiṇaiyiyal) Sūtra 5"
+        e1_id = e_ids[0] if e_ids else rule_data.get("exemplar_passage_id", "tol-porul-akam-005")
+        e2_id = e_ids[1] if len(e_ids) > 1 else (e_ids[0] if e_ids else rule_data.get("exemplar_passage_id", "tol-porul-akam-005"))
 
-        e1_text = e_texts[0][:100] + "..." if e_texts and len(e_texts[0]) > 100 else (e_texts[0] if e_texts else f"Cēyōṉ designates {tinai} mountain realm.")
+        e1_ref = e_refs[0] if e_refs else rule_data.get("exemplar_sutra", "Tolkāppiyam Poruḷatikāram (Akattiṇaiyiyal) Sūtra 5")
+        e2_ref = e_refs[1] if len(e_refs) > 1 else (e_refs[0] if e_refs else rule_data.get("exemplar_sutra", "Tolkāppiyam Poruḷatikāram (Akattiṇaiyiyal) Sūtra 5"))
+
+        e1_meta = e_meta[0] if e_meta else {}
+        e2_meta = e_meta[1] if len(e_meta) > 1 else (e_meta[0] if e_meta else {})
+
+        e1_text = e_texts[0][:100] + "..." if e_texts and len(e_texts[0]) > 100 else (e_texts[0] if e_texts else f"Canonical eco-semiotic ground for {tinai} mountain realm.")
         e2_text = e_texts[1][:100] + "..." if len(e_texts) > 1 and len(e_texts[1]) > 100 else (e_texts[1] if len(e_texts) > 1 else f"Biotic signifiers and seasonal markers of {tinai}.")
 
         p1_stmt = premises[0].statement if premises and len(premises) > 0 else "In classical Tamil poetics, human emotions cannot manifest in verse without terrestrial habitat (Mutalporuḷ)."
@@ -93,7 +124,13 @@ class ProofTraceGenerator:
         p2_stmt = premises[1].statement if premises and len(premises) > 1 else f"Biotic signifiers invariably condition subjective human sentiment (Uripporuḷ: Puṇartal in {tinai})."
         p2_logic = premises[1].formal_logic if premises and len(premises) > 1 else f"Premise(P2) : BioticSignifier({tinai}) → EvokesAffect(Puṇartal)"
 
-        r1_logic = rules[0].formal_logic if rules and len(rules) > 0 else f"Rule(R1) : ∀x [NocturnalMountain(x) ⇒ InvariableAffect(x, Puṇartal)]"
+        r1_logic = rules[0].formal_logic if rules and len(rules) > 0 else rule_data.get("formal_logic", f"Rule(R1) : ∀x [Terrain({tinai}) ⇒ InvariableAffect(x)]")
+
+        p1_conf = round(float(getattr(premises[0], "confidence", 0.95)), 4) if premises and len(premises) > 0 else 0.95
+        p2_conf = round(float(getattr(premises[1], "confidence", p1_conf)), 4) if premises and len(premises) > 1 else p1_conf
+        r1_conf = round(float(getattr(rules[0], "confidence", 0.95)), 4) if rules and len(rules) > 0 else 0.95
+        i1_conf = round(float(getattr(inferences[3], "confidence", 0.92)), 4) if inferences and len(inferences) > 3 else (round(float(getattr(inferences[0], "confidence", 0.92)), 4) if inferences else 0.92)
+        c1_conf = round(float(getattr(conclusion, "confidence", 0.95)), 4) if conclusion else round(min(i1_conf, r1_conf), 4)
 
         return [
             {
@@ -108,6 +145,14 @@ class ProofTraceGenerator:
                 "citation": e1_ref,
                 "sourceReference": e1_ref,
                 "passageId": e1_id,
+                "work": e1_meta.get("work", "Tolkāppiyam"),
+                "section": e1_meta.get("section", "Poruḷatikāram"),
+                "chapter": e1_meta.get("chapter", "Akattiṇaiyiyal"),
+                "sutraNumber": e1_meta.get("sutra_number"),
+                "originalText": e1_meta.get("original_text", ""),
+                "translation": e1_meta.get("translation", ""),
+                "evidenceType": "CanonicalSutra",
+                "confidence": e1_meta.get("confidence", 1.0),
                 "relationshipToNext": "GROUNDS_PREMISE",
                 "relationshipLabel": "grounds premise",
                 "targetStepId": "P1",
@@ -131,6 +176,7 @@ class ProofTraceGenerator:
                 "citation": e1_ref,
                 "sourceReference": e1_ref,
                 "passageId": e1_id,
+                "confidence": p1_conf,
                 "relationshipToNext": "CORROBORATED_BY",
                 "relationshipLabel": "corroborates",
                 "targetStepId": "E2",
@@ -154,6 +200,14 @@ class ProofTraceGenerator:
                 "citation": e2_ref,
                 "sourceReference": e2_ref,
                 "passageId": e2_id,
+                "work": e2_meta.get("work", "Tolkāppiyam"),
+                "section": e2_meta.get("section", "Poruḷatikāram"),
+                "chapter": e2_meta.get("chapter", "Akattiṇaiyiyal"),
+                "sutraNumber": e2_meta.get("sutra_number"),
+                "originalText": e2_meta.get("original_text", ""),
+                "translation": e2_meta.get("translation", ""),
+                "evidenceType": "CanonicalSutra",
+                "confidence": e2_meta.get("confidence", 1.0),
                 "relationshipToNext": "SUPPORTS_AFFECT",
                 "relationshipLabel": "conditions affect",
                 "targetStepId": "P2",
@@ -177,6 +231,7 @@ class ProofTraceGenerator:
                 "citation": e2_ref,
                 "sourceReference": e2_ref,
                 "passageId": e2_id,
+                "confidence": p2_conf,
                 "relationshipToNext": "EXEMPLIFIED_IN_RULE",
                 "relationshipLabel": "exemplifies Vyāpti",
                 "targetStepId": "R1",
@@ -200,6 +255,7 @@ class ProofTraceGenerator:
                 "citation": "Nyāya Sūtra 1.1.5 + Tolkāppiyam Akattiṇaiyiyal Vyāpti",
                 "sourceReference": "Tolkāppiyam Akattiṇaiyiyal Sūtra 5 (Vyāpti Rule)",
                 "passageId": e2_id,
+                "confidence": r1_conf,
                 "relationshipToNext": "APPLIED_IN_SUBSUMPTION",
                 "relationshipLabel": "subsumes instance",
                 "targetStepId": "I1",
@@ -223,6 +279,7 @@ class ProofTraceGenerator:
                 "citation": "Pañcāvayava Anumāna Step 4 (Subsumption)",
                 "sourceReference": "Pañcāvayava Anumāna Step 4 (Subsumptive Syllogism)",
                 "passageId": e1_id,
+                "confidence": i1_conf,
                 "relationshipToNext": "ENTAILS_CONCLUSION",
                 "relationshipLabel": "deduces conclusion",
                 "targetStepId": "C1",
@@ -242,10 +299,11 @@ class ProofTraceGenerator:
                 "name": "Epistemic Verdict (Nigamana)",
                 "tamilName": "நிகமன முடிவு C1 (அக ஒழுக்கம்)",
                 "summary": f"Therefore, primary aesthetic signification is conclusively established as authentic {tinai} Uripporuḷ.",
-                "formalLogic": f"∴ Conclusion(C1) : AffectiveSignification(Verse) = {tinai}_Uripporuḷ ∧ Soundness = 1.0",
+                "formalLogic": f"∴ Conclusion(C1) : AffectiveSignification(Verse) = {tinai}_Uripporuḷ ∧ Soundness = {c1_conf}",
                 "citation": "Nigamana (Nyāya Epistemic Resolution)",
                 "sourceReference": "Tolkāppiyam Poruḷatikāram Meyppāṭṭiyal Sūtra 1",
                 "passageId": e1_id,
+                "confidence": c1_conf,
                 "relationshipToNext": None,
                 "relationshipLabel": None,
                 "targetStepId": None,
@@ -270,9 +328,11 @@ class ProofTraceGenerator:
         Matches exact schema expected by ReasonerContext.jsx and KnowledgeGraphViewer.jsx.
         """
         edges: List[Dict[str, Any]] = []
+        node_conf_map = {n.get("id"): float(n.get("confidence", 0.95)) for n in (nodes or [])}
 
         # 1. Primary Proof Trace Linear Pipeline Edges
-        for source, target, label, rel_type, conf, _ in cls.RELATIONSHIP_CHAIN:
+        for source, target, label, rel_type, fallback_conf, _ in cls.RELATIONSHIP_CHAIN:
+            edge_conf = round(min(node_conf_map.get(source, fallback_conf), node_conf_map.get(target, fallback_conf)), 4)
             edges.append({
                 "id": f"pe_{source}_{target}",
                 "source": source,
@@ -280,7 +340,7 @@ class ProofTraceGenerator:
                 "label": label,
                 "type": rel_type,
                 "relation": rel_type,
-                "confidence": conf,
+                "confidence": edge_conf,
                 "isProofTraceEdge": True,
             })
 

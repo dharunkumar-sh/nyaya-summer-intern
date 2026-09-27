@@ -383,9 +383,28 @@ class StructuredContextBuilder:
                 ref_parts.append(f"Sūtra {sutra_num}")
             exact_source_ref = str(src.get("source_reference") or " ".join(ref_parts))
 
-            # Entities and concepts
-            entities = list(it.get("entities") or src.get("entities") or inner_meta.get("entities") or [])
-            concepts = list(it.get("concepts") or src.get("concepts") or inner_meta.get("concepts") or [])
+            # Entities and concepts normalized to strings
+            raw_entities = it.get("entities") or src.get("entities") or inner_meta.get("entities") or []
+            raw_concepts = it.get("concepts") or src.get("concepts") or inner_meta.get("concepts") or []
+            
+            entities: List[str] = []
+            for e in (raw_entities if isinstance(raw_entities, list) else [raw_entities]):
+                if isinstance(e, dict):
+                    val = e.get("label") or e.get("name") or e.get("id") or str(e)
+                    if val:
+                        entities.append(str(val))
+                elif e:
+                    entities.append(str(e))
+
+            concepts: List[str] = []
+            for c in (raw_concepts if isinstance(raw_concepts, list) else [raw_concepts]):
+                if isinstance(c, dict):
+                    val = c.get("label") or c.get("name") or c.get("id") or str(c)
+                    if val:
+                        concepts.append(str(val))
+                elif c:
+                    concepts.append(str(c))
+
             translation = str(it.get("translation") or src.get("translation") or inner_meta.get("translation") or "")
 
             # Graph relationships

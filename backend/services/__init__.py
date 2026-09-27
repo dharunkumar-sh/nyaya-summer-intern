@@ -6,6 +6,7 @@ from .neo4j_service import Neo4jService, neo4j_service
 from .graph_rag_service import GraphRAGService, graph_rag_service
 from .graph_retrieval_service import GraphRetrievalService, graph_retrieval_service
 from .proof_trace_service import ProofTraceService, proof_trace_service
+from .corpus_service import CorpusService, get_corpus_service
 
 __all__ = [
     "QueryService",
@@ -22,4 +23,6 @@ __all__ = [
     "graph_retrieval_service",
     "ProofTraceService",
     "proof_trace_service",
+    "CorpusService",
+    "get_corpus_service",
 ]

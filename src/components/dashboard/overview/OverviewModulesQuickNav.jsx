@@ -5,8 +5,6 @@ import {
   Cpu,
   Network,
   BookOpen,
-  ShieldCheck,
-  Library,
   BarChart3,
   ArrowUpRight,
 } from 'lucide-react';
@@ -22,7 +20,6 @@ export default function OverviewModulesQuickNav() {
     graphHealth,
     evidenceRecords,
     reasoningStages,
-    validationResults,
     queryStatus,
     queryStats,
     dashboardSummary,
@@ -41,9 +38,6 @@ export default function OverviewModulesQuickNav() {
     if (kgData?.is_connected !== false && graphHealth?.valid !== false) return 100;
     return 97;
   }, [isLoadingStats, isLoadingDashboard, graphHealth, kgData]);
-
-  const totalSutras =
-    corpusData?.total_sutras_canonical || corpusData?.totalSutras || 1610;
 
   const modules = useMemo(
     () => [
@@ -100,30 +94,7 @@ export default function OverviewModulesQuickNav() {
         badgeVariant: 'green',
         description: 'Ranked canonical passages with cross-attention weights, confidence scores, and translations.',
       },
-      {
-        id: 'fallacies',
-        path: '/fallacies',
-        title: 'Hetvābhāsa Checker',
-        tamilTitle: 'ஏதுவாபாச ஆய்வு',
-        icon: ShieldCheck,
-        color: 'green',
-        iconBg: 'bg-emerald-100 text-emerald-700',
-        badge: validationResults ? (validationResults.symbolicValidity ? 'Sound' : 'Checks') : '0 Fallacies',
-        badgeVariant: 'green',
-        description: 'Rigorous formal verification against the 5 classical Nyāya fallacies (Savyabhicāra, Viruddha, etc.).',
-      },
-      {
-        id: 'sutras',
-        path: '/sutras',
-        title: 'Sūtra Explorer',
-        tamilTitle: 'நூற்பா அரங்கம்',
-        icon: Library,
-        color: 'indigo',
-        iconBg: 'bg-indigo-100 text-indigo-700',
-        badge: `${totalSutras.toLocaleString()} Verses`,
-        badgeVariant: 'purple',
-        description: 'Search, filter, and inspect canonical verses across Eḻuttatikāram, Collatikāram, and Poruḷatikāram.',
-      },
+      /* Formal verification module disabled. */
       {
         id: 'analytics',
         path: '/analytics',
@@ -134,21 +105,16 @@ export default function OverviewModulesQuickNav() {
         iconBg: 'bg-slate-100 text-slate-700',
         badge: `${validPercentage}% Valid`,
         badgeVariant: validPercentage >= 90 ? 'green' : 'slate',
-        description: queryStats?.latencyMs
-          ? `Inference latency: ${queryStats.latencyMs}ms. Inspect Pramāṇa distribution, graph health, and metrics.`
-          : `Inspect inference latency, Pramāṇa distribution, and graph structural health (${validPercentage}% valid).`,
+        description: 'Inspect Pramāṇa distribution, graph structural health, and epistemic metrics.',
       },
     ],
     [
       queryStatus,
       evidenceRecords,
       reasoningStages,
-      validationResults,
       totalNodes,
       totalEdges,
-      totalSutras,
       validPercentage,
-      queryStats,
     ]
   );
 
@@ -159,7 +125,7 @@ export default function OverviewModulesQuickNav() {
       icon={Sparkles}
       accent="purple"
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
         {modules.map((mod) => {
           const IconComp = mod.icon;
 

@@ -8,6 +8,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  optimizeDeps: {
+    include: ['d3'],
+  },
   server: {
     proxy: {
       '/api': {

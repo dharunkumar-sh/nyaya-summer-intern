@@ -44,7 +44,7 @@ class TestSchemaVocabularies:
         expected_labels = [
             "Literature", "Work", "Section", "Passage", "Evidence",
             "Concept", "Entity", "Event",
-            "Premise", "Rule", "Conclusion",
+            "Premise", "Rule", "Inference", "Conclusion",
         ]
         all_labels = NodeLabels.all_primary_labels()
         for label in expected_labels:
@@ -60,6 +60,7 @@ class TestSchemaVocabularies:
         assert NodeLabels.from_string("CONCEPT") == "Concept"
         assert NodeLabels.from_string("kgnode") == "KGNode"
         assert NodeLabels.from_string("rule") == "Rule"
+        assert NodeLabels.from_string("inference") == "Inference"
         assert NodeLabels.from_string("invalid_type") is None
         assert NodeLabels.from_string("") is None
         assert NodeLabels.from_string(None) is None
@@ -68,10 +69,13 @@ class TestSchemaVocabularies:
         """Core Tolkāppiyam and Nyāya reasoning relationships must exist."""
         expected_rels = [
             "HAS_WORK", "HAS_SECTION", "HAS_PASSAGE",
+            "CONTAINS_WORK", "CONTAINS_SECTION", "CONTAINS_PASSAGE",
+            "ATTESTS_ENTITY", "ATTESTS_CONCEPT", "ATTESTS_EVENT",
             "MENTIONS", "DISCUSSES", "DESCRIBES",
-            "SUPPORTED_BY", "DERIVED_FROM", "GROUNDS_IN",
-            "PRESIDES_OVER", "HAS_URIPPORUL", "MANIFESTS_SIGNIFIER_FOR",
-            "INCLUDES_COMPONENT", "MANIFESTS_AS", "CONTRADICTS", "SUB_SUMES",
+            "GROUNDED_IN", "SUPPORTED_BY", "DERIVED_FROM", "GROUNDS_IN",
+            "PRESIDES_OVER", "OCCURS_IN_HABITAT", "HAS_HABITAT", "HAS_URIPPORUL",
+            "MANIFESTS_SIGNIFIER_FOR", "INCLUDES_COMPONENT", "MANIFESTS_AS",
+            "APPLIES_TO", "INFERRED_FROM", "CONTRADICTS", "SUB_SUMES",
         ]
         for rel in expected_rels:
             assert hasattr(RelTypes, rel)
@@ -80,12 +84,13 @@ class TestSchemaVocabularies:
     def test_rel_types_canonicalization(self):
         """Resolves various casing, punctuation, and legacy mapping to uppercase canonical."""
         assert RelTypes.canonicalize("has_work") == "HAS_WORK"
-        assert RelTypes.canonicalize("contains-section") == "HAS_SECTION"
+        assert RelTypes.canonicalize("contains-section") == "CONTAINS_SECTION"
         assert RelTypes.canonicalize("mentions_entity") == "MENTIONS"
         assert RelTypes.canonicalize("grounds_deduction") == "SUPPORTED_BY"
         assert RelTypes.canonicalize("presides_over") == "PRESIDES_OVER"
         assert RelTypes.canonicalize("has_uripporul") == "HAS_URIPPORUL"
-        assert RelTypes.canonicalize("evokes_affect") == "MANIFESTS_AS"
+        assert RelTypes.canonicalize("hashabitat") == "OCCURS_IN_HABITAT"
+        assert RelTypes.canonicalize("evokes_affect") == "EVOKES_AFFECT"
         assert RelTypes.canonicalize("custom_relation") == "CUSTOM_RELATION"
         assert RelTypes.canonicalize("") == "RELATED_TO"
         assert RelTypes.canonicalize(None) == "RELATED_TO"
@@ -99,8 +104,8 @@ class TestDDLDefinitions:
     """Verifies uniqueness constraints and property index statements."""
 
     def test_uniqueness_constraints_count(self):
-        """12 uniqueness constraints: 11 domain/reasoning labels + 1 base KGNode."""
-        assert len(UNIQUENESS_CONSTRAINTS) == 12
+        """13 uniqueness constraints: 12 domain/reasoning labels + 1 base KGNode."""
+        assert len(UNIQUENESS_CONSTRAINTS) == 13
         labels_covered = {c[1] for c in UNIQUENESS_CONSTRAINTS}
         for label in NodeLabels.all_primary_labels():
             assert label in labels_covered
@@ -146,10 +151,10 @@ class TestSchemaManagerMocked:
         result = manager.setup_schema()
 
         assert result["status"] == "COMPLETED"
-        assert result["constraints_applied"] == 12
+        assert result["constraints_applied"] == 13
         assert result["indexes_applied"] == len(PROPERTY_INDEXES)
         assert result["errors"] == []
-        assert mock_service.run_query.call_count == 12 + len(PROPERTY_INDEXES)
+        assert mock_service.run_query.call_count == 13 + len(PROPERTY_INDEXES)
 
     def test_setup_schema_captures_errors(self):
         """setup_schema captures failures gracefully without crashing."""
@@ -159,7 +164,7 @@ class TestSchemaManagerMocked:
         # Fail on first call, succeed on others
         mock_service.run_query.side_effect = [
             CypherQueryError("Failed to create constraint"),
-            *([[]] * 25),
+            *([[]] * 50),
         ]
 
         manager = Neo4jSchemaManager(service=mock_service)
@@ -185,7 +190,7 @@ class TestSchemaManagerMocked:
 
         assert report["status"] == "VERIFIED"
         assert report["connected"] is True
-        assert report["constraints_count"] == 12
+        assert report["constraints_count"] == 13
         assert report["indexes_count"] == len(PROPERTY_INDEXES)
 
     def test_verify_schema_detects_empty(self):
@@ -215,8 +220,8 @@ class TestSchemaManagerMocked:
         assert "uniqueness_constraints" in metadata
         assert "property_indexes" in metadata
         assert "relationship_types" in metadata
-        assert len(metadata["entity_labels"]) == 11
-        assert len(metadata["uniqueness_constraints"]) == 12
+        assert len(metadata["entity_labels"]) == 12
+        assert len(metadata["uniqueness_constraints"]) == 13
         assert len(metadata["property_indexes"]) == len(PROPERTY_INDEXES)
 
         # Security: credentials must never be in metadata dict
@@ -258,18 +263,18 @@ class TestSchemaManagerLiveAura:
         """Applies schema DDL to live Neo4j Aura and confirms verification."""
         setup_result = neo4j_schema_manager.setup_schema()
         assert setup_result["status"] == "COMPLETED"
-        assert setup_result["constraints_applied"] == 12
+        assert setup_result["constraints_applied"] == 13
 
         report = neo4j_schema_manager.verify_schema()
         assert report["status"] == "VERIFIED"
         assert report["connected"] is True
-        assert report["constraints_count"] >= 12
+        assert report["constraints_count"] >= 13
         assert report["indexes_count"] >= len(PROPERTY_INDEXES)
 
     def test_live_schema_metadata(self):
         """Retrieves live schema metadata from Aura."""
         metadata = Neo4jSchemaManager.get_schema_metadata()
-        assert len(metadata["uniqueness_constraints"]) == 12
+        assert len(metadata["uniqueness_constraints"]) == 13
         assert len(metadata["property_indexes"]) >= 7
 
 

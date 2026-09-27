@@ -38,6 +38,40 @@ def preprocess_query():
         return error_response(str(e), error_code="PREPROCESS_FAILED", status_code=500)
 
 
+@query_bp.route("/representation", methods=["POST"])
+@query_bp.route("/semantic-representation", methods=["POST"])
+def get_semantic_representation():
+    """
+    Dedicated endpoint returning the common semantic representation for Tamil,
+    English, and mixed-language queries over Classical Tamil literature.
+    Returns original_query, detected_language, normalized_query,
+    identified_entities, identified_concepts, and retrieval_representation.
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+        query_text = data.get("queryText") or data.get("query")
+        focus = data.get("focus", "Relationship")
+
+        if query_text is None:
+            query_text = ""
+
+        processed = query_preprocessor.preprocess(query_text, focus=focus)
+        payload = {
+            "original_query": processed.original_query,
+            "detected_language": processed.detected_language,
+            "normalized_query": processed.normalized_query,
+            "identified_entities": processed.identified_entities,
+            "identified_concepts": processed.identified_concepts,
+            "retrieval_representation": processed.retrieval_representation,
+        }
+        return success_response(
+            data=payload,
+            message="Common semantic retrieval representation generated successfully",
+        )
+    except Exception as e:
+        logger.error(f"Error in /api/query/representation: {e}", exc_info=True)
+        return error_response(str(e), error_code="REPRESENTATION_FAILED", status_code=500)
+
 
 @query_bp.route("/analyze", methods=["POST"])
 def analyze_query():

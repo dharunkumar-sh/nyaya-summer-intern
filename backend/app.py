@@ -23,6 +23,8 @@ from services.neo4j_service import neo4j_service
 
 # Ensure graceful connection pool shutdown on application exit
 atexit.register(neo4j_service.close)
+from database.connection import get_db_manager
+atexit.register(get_db_manager().close)
 
 # Import route blueprints
 from api.routes.query_routes import query_bp
@@ -35,6 +37,10 @@ from api.routes.extraction_routes import extraction_bp
 from api.routes.retrieval_routes import retrieval_bp
 from api.routes.search_routes import search_bp
 from api.routes.system_routes import system_bp
+
+# Import modular V1 API blueprint and centralized error handlers
+from routes import api_v1_bp
+from errors.handlers import register_error_handlers
 
 
 def create_app(config_name: str = None) -> Flask:
@@ -114,42 +120,11 @@ def create_app(config_name: str = None) -> Flask:
     app.register_blueprint(retrieval_bp)
     app.register_blueprint(search_bp)
     app.register_blueprint(system_bp)
+    # Register modular V1 API blueprint
+    app.register_blueprint(api_v1_bp)
 
     # 4. Global Exception Handlers
-    @app.errorhandler(ReasonerException)
-    def handle_reasoner_exception(error: ReasonerException):
-        logger.warning(f"Reasoner error: {error.message} (status: {error.status_code})")
-        return error_response(
-            message=error.message,
-            error_code=error.__class__.__name__,
-            details=error.details,
-            status_code=error.status_code,
-        )
-
-    @app.errorhandler(404)
-    def handle_not_found(error):
-        return error_response(
-            message="The requested API endpoint does not exist",
-            error_code="NOT_FOUND",
-            status_code=404,
-        )
-
-    @app.errorhandler(405)
-    def handle_method_not_allowed(error):
-        return error_response(
-            message="Method not allowed for this endpoint",
-            error_code="METHOD_NOT_ALLOWED",
-            status_code=405,
-        )
-
-    @app.errorhandler(500)
-    def handle_internal_server_error(error):
-        logger.error(f"Internal server error: {error}", exc_info=True)
-        return error_response(
-            message="An internal server error occurred",
-            error_code="INTERNAL_SERVER_ERROR",
-            status_code=500,
-        )
+    register_error_handlers(app)
 
     # 5. Startup Connectivity Check for Neo4j Aura
     if config_name != "testing":

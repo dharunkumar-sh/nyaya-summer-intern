@@ -5,14 +5,25 @@ import {
   searchPassages,
   getGraphStatistics,
   getGraphHealth,
-  getGraphElements,
   getCorpusInfo,
   validateFallacies,
   getProofTrace,
   deduceReasoning,
   getDashboardSummary,
   getSystemStatus,
+  graphApi,
 } from '../services/apiClient';
+import { normalizeGraphData } from '../services/graphNormalization';
+import {
+  findNodeByStableId,
+  findAssociatedEvidenceForNode,
+  getInducedSubgraphNeighborhood,
+} from '../services/nodeSyncService';
+import { detectQueryLanguage } from '../services/languageService';
+import {
+  calculateClientConfidence,
+  CONFIDENCE_LEVELS,
+} from '../services/confidenceService';
 
 /**
  * Normalizes an EvidenceItem returned from backend /api/search, /api/retrieval/hybrid-rag,
@@ -207,10 +218,21 @@ export const CANONICAL_CORPUS = {
   ],
 };
 
-// Genuine Research Prompts for interactive evaluation in Query Center
+// Genuine Research Prompts for interactive evaluation in Query Center (Tamil & English)
 export const BENCHMARK_RESEARCH_PROMPTS = [
   {
-    id: 'prompt-tinai',
+    id: 'prompt-tinai-en',
+    title: 'Kurinji Eco-Semiotics (English)',
+    query: 'How does the primary ground (Mutalporuḷ) in Kuṟiñci govern emotional union?',
+    queryType: 'How / Process',
+    depth: 2,
+    focus: 'Relationship',
+    corpusName: 'Tolkāppiyam (தொல்காப்பியம்)',
+    translation: 'Invariable concomitance between mountainous ecology and emotional interiority (Puṇartal).',
+    description: 'Bilingual inquiry into Mutal-Karu-Uri causality in Kuṟiñci montane landscape',
+  },
+  {
+    id: 'prompt-tinai-ta',
     title: 'Tiṇai Eco-Semiotics (குறிஞ்சி நில ஒழுக்கம்)',
     query: 'குறிஞ்சி நிலத்தின் முதற்பொருள், கருப்பொருள், உரிப்பொருள் தொடர்பு எவ்வாறு அக ஒழுக்கத்தை உணர்த்துகிறது?',
     queryType: 'How / Process',
@@ -219,6 +241,28 @@ export const BENCHMARK_RESEARCH_PROMPTS = [
     corpusName: 'Tolkāppiyam (தொல்காப்பியம்)',
     translation: 'How does the relationship among mutal, karu, and uri in Kurinji landscape signify inner poetics?',
     description: 'Invariable concomitance between mountainous ecology and emotional interiority',
+  },
+  {
+    id: 'prompt-neytal-en',
+    title: 'Neytal Littoral & Varuna (English)',
+    query: 'What is the role of Varunan in coastal seashore Neytal poetics?',
+    queryType: 'Who / Entity',
+    depth: 2,
+    focus: 'Character',
+    corpusName: 'Tolkāppiyam (தொல்காப்பியம்)',
+    translation: 'The coastal deity Varunan presiding over littoral maritime space and pining mood (Iraṅkal).',
+    description: 'Deity and aesthetic landscape mapping in ancient littoral poetics',
+  },
+  {
+    id: 'prompt-mullai-ta',
+    title: 'Mullai Pastoral & Mayon (முல்லை நில ஒழுக்கம்)',
+    query: 'முல்லை நிலத்தின் தெய்வம் மாயோன் மற்றும் அதன் உரிப்பொருள் ஒழுக்கம் யாது?',
+    queryType: 'Who / Entity',
+    depth: 2,
+    focus: 'Relationship',
+    corpusName: 'Tolkāppiyam (தொல்காப்பியம்)',
+    translation: 'What is the pastoral deity Mayon and its corresponding aesthetic mood (Iruttal)?',
+    description: 'Dark-hued deity presiding over pastoral forest ecology and patient waiting',
   },
   {
     id: 'prompt-justice',
@@ -269,11 +313,22 @@ export function ReasonerProvider({ children }) {
   const [graphEdges, setGraphEdges] = useState([]);
   const [graphCategories, setGraphCategories] = useState(null);
   const [selectedGraphNodeId, setSelectedGraphNodeId] = useState(null);
+  const [activeGraphContext, setActiveGraphContext] = useState(null);
+  const [syncSource, setSyncSource] = useState(null);
   const [activeCategoryFilter, setActiveCategoryFilter] = useState(null);
   const [graphZoom, setGraphZoom] = useState(1);
   const [graphPan, setGraphPan] = useState({ x: 0, y: 0 });
   const [isLoadingGraph, setIsLoadingGraph] = useState(false);
   const [graphError, setGraphError] = useState(null);
+  const [isMutatingGraph, setIsMutatingGraph] = useState(false);
+  const [mutationError, setMutationError] = useState(null);
+
+  // 4a. Query-Specific Knowledge Graph Subgraph & Full Backend Response State
+  const [querySubgraph, setQuerySubgraph] = useState(null);
+  const [isQueryGraphActive, setIsQueryGraphActive] = useState(false);
+  const [graphVersion, setGraphVersion] = useState(0);
+  const [rawBackendResponse, setRawBackendResponse] = useState(null);
+  const queryExecutionTokenRef = useRef(0);
 
   // Live Knowledge Graph Statistics & Structural Health
   const [graphStatistics, setGraphStatistics] = useState(null);
@@ -307,12 +362,15 @@ export function ReasonerProvider({ children }) {
   const [isLoadingProofTrace, setIsLoadingProofTrace] = useState(false);
   const [proofTraceError, setProofTraceError] = useState(null);
 
-  // Cytoscape Proof Trace Focus State & Insufficient Evidence State
+  // Knowledge Graph Proof Trace Focus State & Insufficient Evidence State
   const [isShowingProofTrace, setIsShowingProofTrace] = useState(false);
   const [insufficientEvidence, setInsufficientEvidence] = useState(false);
 
   // 8. Final Answer & Justification State (Starts null in clean idle state)
   const [finalAnswer, setFinalAnswer] = useState(null);
+
+  // 8a. Real-Time Dynamic Confidence Score Validation State
+  const [serverConfidenceOverride, setServerConfidenceOverride] = useState(null);
 
   // 9. AI Workflow & Hybrid RAG Query State
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -346,9 +404,8 @@ export function ReasonerProvider({ children }) {
     };
   }, []);
 
-  // Live Initialization: Fetch real Knowledge Graph topology, statistics, health, corpus info, dashboard summary, and unified system status
+  // Live Initialization: Fetch corpus info, statistics, health, dashboard summary, and unified system status
   const loadLiveInitialData = useCallback(async (externalSignal = null) => {
-    setIsLoadingGraph(true);
     setIsLoadingStats(true);
     setIsLoadingCorpus(true);
     setIsLoadingDashboard(true);
@@ -360,10 +417,9 @@ export function ReasonerProvider({ children }) {
     setSystemStatusError(null);
 
     try {
-      const [statsResult, healthResult, graphResult, corpusResult, dashboardResult, statusResult] = await Promise.allSettled([
+      const [statsResult, healthResult, corpusResult, dashboardResult, statusResult] = await Promise.allSettled([
         getGraphStatistics({ signal: externalSignal }),
         getGraphHealth({ signal: externalSignal }),
-        getGraphElements({ limit: 250, source: 'auto', signal: externalSignal }),
         getCorpusInfo({ signal: externalSignal }),
         getDashboardSummary({ signal: externalSignal }),
         getSystemStatus({ signal: externalSignal }),
@@ -445,17 +501,6 @@ export function ReasonerProvider({ children }) {
         setStatsError((prev) => prev || healthResult.reason?.message || 'Failed to load graph health');
       }
 
-      if (graphResult.status === 'fulfilled' && graphResult.value?.data) {
-        const gData = graphResult.value.data;
-        setGraphNodes(gData.nodes || []);
-        setGraphEdges(gData.relationships || gData.edges || []);
-        if (gData.categories) {
-          setGraphCategories(gData.categories);
-        }
-      } else if (graphResult.status === 'rejected') {
-        setGraphError(graphResult.reason?.message || 'Failed to load graph elements from backend');
-      }
-
       if (statusResult.status === 'fulfilled' && statusResult.value?.data) {
         setSystemStatus(statusResult.value.data);
       } else if (statusResult.status === 'rejected') {
@@ -463,9 +508,8 @@ export function ReasonerProvider({ children }) {
       }
     } catch (err) {
       if (err.name === 'AbortError') return;
-      setGraphError(err.message || 'Initialization error');
+      setStatsError(err.message || 'Initialization error');
     } finally {
-      setIsLoadingGraph(false);
       setIsLoadingStats(false);
       setIsLoadingCorpus(false);
       setIsLoadingDashboard(false);
@@ -508,27 +552,189 @@ export function ReasonerProvider({ children }) {
     };
   }, [loadLiveInitialData]);
 
+  // 8b. Dynamically calculated confidence score derived reactively via useMemo
+  const dynamicCalculatedConfidence = useMemo(() => {
+    return calculateClientConfidence({
+      query: queryText,
+      evidenceRecords,
+      selectedEvidenceId,
+      graphNodes,
+      selectedGraphNodeId,
+      reasoningStages,
+      validationResults,
+      finalAnswer,
+      tinai: filterTinai !== 'all' ? filterTinai : null,
+      insufficientEvidence,
+    });
+  }, [
+    queryText,
+    evidenceRecords,
+    selectedEvidenceId,
+    graphNodes,
+    selectedGraphNodeId,
+    reasoningStages,
+    validationResults,
+    finalAnswer,
+    filterTinai,
+    insufficientEvidence,
+  ]);
+
+  const confidenceEvaluation = serverConfidenceOverride || dynamicCalculatedConfidence;
+  const setConfidenceEvaluation = setServerConfidenceOverride;
+
   // Compute dynamic currentQuery context object derived purely from active inquiry & real results
   const currentQuery = useMemo(() => {
     const topSource = finalAnswer?.keySources?.[0];
+
+    // Compute ontological triples directly from the query-relevant knowledge graph links
+    const triples = (graphEdges || []).slice(0, 10).map((edge) => {
+      const srcId = typeof edge.source === 'object' ? (edge.source?.id || edge.source?.label) : edge.source;
+      const tgtId = typeof edge.target === 'object' ? (edge.target?.id || edge.target?.label) : edge.target;
+      const srcNode = graphNodes.find((n) => n.id === srcId);
+      const tgtNode = graphNodes.find((n) => n.id === tgtId);
+      return {
+        subject: srcNode?.label || srcNode?.tamilLabel || srcId || 'Entity',
+        predicate: edge.type || edge.relation || edge.label || 'RELATED_TO',
+        object: tgtNode?.label || tgtNode?.tamilLabel || tgtId || 'Entity',
+      };
+    });
+
+    const langInfo = detectQueryLanguage(queryText);
+
     return {
       id: 'active-session-query',
       verseId: topSource?.sutra || topSource?.id || 'Tolkāppiyam',
       corpus: 'Tolkāppiyam (Poruḷatikāram)',
       tamilText: queryText,
+      detectedLanguage: langInfo,
       domain: focus || 'Tiṇai Eco-Psychology & Ontological Semiotics',
       hypothesis: queryText ? `Inquiry into canonical Tamil poetics: "${queryText.slice(0, 70)}..."` : '',
       hetu: 'Grounding via Classical Tamil morpho-semantic rules and multi-channel Hybrid RAG evidence',
       vyapti: 'Universal concomitance between spatio-temporal signifiers and emotional interiority',
       upanaya: 'Case subsumption evaluated against canonical Tolkāppiyam verses',
       nigamana: finalAnswer?.englishAnswer || 'Awaiting evidence-grounded inference execution',
-      neuralConfidence: typeof finalAnswer?.confidenceScore === 'number' ? finalAnswer.confidenceScore : 0.0,
+      confidenceEvaluation,
+      confidenceScore: confidenceEvaluation?.confidenceScore ?? (typeof finalAnswer?.confidenceScore === 'number' ? finalAnswer.confidenceScore : 0.0),
+      confidencePercentage: confidenceEvaluation?.confidencePercentage ?? 0,
+      confidenceStars: confidenceEvaluation?.confidenceStars ?? (typeof finalAnswer?.starsCount === 'number' ? finalAnswer.starsCount : 0.0),
+      confidenceLevel: confidenceEvaluation?.confidenceLevel ?? 'INSUFFICIENT',
+      neuralConfidence: confidenceEvaluation?.confidenceScore ?? (typeof finalAnswer?.confidenceScore === 'number' ? finalAnswer.confidenceScore : 0.0),
       symbolicValidity: validationResults?.symbolicValidity || 'Awaiting Epistemic Verification',
       pramana: validationResults?.pramana || 'Pratyakṣa + Śabda + Anumāna',
       hetvabhasaCheck: validationResults?.hetvabhasaCheck || 'Not Evaluated',
       reasoningStages: reasoningStages,
+      triples: triples,
     };
-  }, [queryText, focus, finalAnswer, validationResults, reasoningStages]);
+  }, [queryText, focus, finalAnswer, validationResults, reasoningStages, graphEdges, graphNodes, confidenceEvaluation]);
+
+  /**
+   * Recalculates dynamic confidence across evidence relevance, source provenance,
+   * retrieval strength, premise support, reasoning consistency, and validation status.
+   */
+  const recalculateConfidence = useCallback(
+    (overrides = null) => {
+      if (overrides) {
+        const activeEvidence = overrides.evidenceRecords || evidenceRecords;
+        const res = calculateClientConfidence({
+          query: overrides.queryText || queryText,
+          evidenceRecords: activeEvidence,
+          selectedEvidenceId: overrides.selectedEvidenceId !== undefined ? overrides.selectedEvidenceId : selectedEvidenceId,
+          graphNodes: overrides.graphNodes || graphNodes,
+          selectedGraphNodeId: overrides.selectedGraphNodeId !== undefined ? overrides.selectedGraphNodeId : selectedGraphNodeId,
+          reasoningStages: overrides.reasoningStages || reasoningStages,
+          validationResults: overrides.validationResults || validationResults,
+          finalAnswer: overrides.finalAnswer || finalAnswer,
+          tinai: overrides.tinai || (filterTinai !== 'all' ? filterTinai : null),
+          insufficientEvidence: overrides.insufficientEvidence ?? (insufficientEvidence || activeEvidence.length === 0 || finalAnswer?.status === 'insufficient_evidence'),
+        });
+        setServerConfidenceOverride(res);
+        return res;
+      }
+      setServerConfidenceOverride(null);
+      return dynamicCalculatedConfidence;
+    },
+    [
+      queryText,
+      evidenceRecords,
+      selectedEvidenceId,
+      graphNodes,
+      selectedGraphNodeId,
+      reasoningStages,
+      validationResults,
+      finalAnswer,
+      filterTinai,
+      insufficientEvidence,
+      dynamicCalculatedConfidence,
+    ]
+  );
+
+  /**
+   * Strictly synchronizes mutations with Neo4j Aura before updating frontend state.
+   * Pattern:
+   * Neo4j mutation -> confirmed DB response -> fresh Neo4j query -> updated graph response -> React state -> D3.js.
+   * Never updates visualization optimistically before Neo4j confirms the operation.
+   */
+  const mutateKnowledgeGraph = useCallback(
+    async ({
+      action,
+      entity = null,
+      relationship = null,
+      concept = null,
+      evidence = null,
+      query = null,
+      hops = null,
+    } = {}) => {
+      setIsMutatingGraph(true);
+      setMutationError(null);
+
+      try {
+        const activeQ = query !== null ? query : (queryText || '');
+        const res = await graphApi.mutateGraph({
+          action,
+          entity,
+          relationship,
+          concept,
+          evidence,
+          query: activeQ,
+          hops: hops || depth || 2,
+        });
+
+        const resData = res?.data || res;
+        const freshNodes = resData?.nodes || [];
+        const freshRels = resData?.relationships || resData?.edges || [];
+
+        // Atomically normalize and commit the fresh Neo4j subgraph
+        if (freshNodes.length > 0) {
+          const normalizedGraph = normalizeGraphData({
+            nodes: freshNodes,
+            relationships: freshRels,
+          });
+          setGraphNodes(normalizedGraph.nodes);
+          setGraphEdges(normalizedGraph.links);
+          setQuerySubgraph({
+            nodes: normalizedGraph.nodes,
+            links: normalizedGraph.links,
+            stats: normalizedGraph.stats,
+            query: activeQ,
+            timestamp: Date.now(),
+          });
+          if (normalizedGraph.nodes.length > 0) {
+            setSelectedGraphNodeId(normalizedGraph.nodes[0].id);
+          }
+        }
+        setGraphVersion(Date.now());
+        return res;
+      } catch (err) {
+        console.error('Knowledge Graph mutation failed in Neo4j Aura:', err);
+        const errMsg = err?.message || 'Failed to apply mutation to Neo4j Aura';
+        setMutationError(errMsg);
+        throw err;
+      } finally {
+        setIsMutatingGraph(false);
+      }
+    },
+    [queryText, depth]
+  );
 
   // Run AI Reasoning Workflow via real Backend Hybrid RAG & Answer endpoints
   const runAnalyze = useCallback(async () => {
@@ -544,6 +750,27 @@ export function ReasonerProvider({ children }) {
 
     const controller = new AbortController();
     activeAbortControllerRef.current = controller;
+
+    // Track execution generation to eliminate race conditions between rapid queries
+    const currentToken = ++queryExecutionTokenRef.current;
+
+    // ATOMICALLY CLEAR prior query-specific graph and reasoning state immediately
+    // so users never see a mixture of previous and current query results
+    setIsQueryGraphActive(true);
+    setGraphNodes([]);
+    setGraphEdges([]);
+    setSelectedGraphNodeId(null);
+    setSelectedProofNodeId(null);
+    setProofNodes([]);
+    setProofEdges([]);
+    setProofSteps([]);
+    setProofTraceData(null);
+    setEvidenceRecords([]);
+    setSelectedEvidenceId(null);
+    setQuerySubgraph(null);
+    setRawBackendResponse(null);
+    setGraphVersion(Date.now());
+    setIsLoadingGraph(true);
 
     setIsAnalyzing(true);
     setQueryStatus('loading');
@@ -573,11 +800,12 @@ export function ReasonerProvider({ children }) {
       ...(filterTinai && filterTinai !== 'all' ? { tinai: filterTinai } : {}),
       ...(filterSection && filterSection !== 'all' ? { section: filterSection } : {}),
       query_type: queryType,
-      focus,
     };
 
+    const detectedLang = detectQueryLanguage(cleanQuery);
+
     try {
-      // Execute multi-channel Hybrid Search and Grounded Answer Generation concurrently
+      // 1. Execute retrieval pipeline (Hybrid Search & Grounded Answer Generation)
       const [searchResult, answerResult] = await Promise.allSettled([
         searchPassages({
           query: cleanQuery,
@@ -593,6 +821,8 @@ export function ReasonerProvider({ children }) {
         }),
         generateGroundedAnswer({
           query: cleanQuery,
+          originalQuery: cleanQuery,
+          detectedLanguage: detectedLang,
           topK,
           depth: depth || 2,
           filters: activeFilters,
@@ -601,30 +831,194 @@ export function ReasonerProvider({ children }) {
         }),
       ]);
 
-      const elapsedMs = Math.round(performance.now() - startTime);
-      clearWorkflowTimers();
-      setCurrentWorkflowStageIndex(4);
-      setWorkflowProgressPercent(100);
+      if (queryExecutionTokenRef.current !== currentToken) {
+        // Query was superseded by a newer submission; ignore stale payload
+        return;
+      }
 
-      // Check if both calls failed
+      // Check if both primary retrieval calls failed
       if (searchResult.status === 'rejected' && answerResult.status === 'rejected') {
         const primaryErr = searchResult.reason || answerResult.reason || new Error('Search request failed');
         throw primaryErr;
       }
 
-      // Extract raw items and answer details
-      const searchData = searchResult.status === 'fulfilled' ? (searchResult.value?.data || {}) : {};
-      const answerData = answerResult.status === 'fulfilled' ? (answerResult.value?.data || {}) : {};
+      // 2. Determine relevant entities and evidence returned by retrieval pipeline
+      const searchData = searchResult.status === 'fulfilled'
+        ? (searchResult.value?.data || searchResult.value || {})
+        : {};
+      const answerData = answerResult.status === 'fulfilled'
+        ? (answerResult.value?.data || answerResult.value || {})
+        : {};
 
-      const searchItems = searchData.ranked_results || [];
-      const answerItems = answerData.retrieved_evidence || [];
-      const items = answerItems.length > 0 ? answerItems : searchItems;
+      const searchItems = searchData.ranked_results || searchData.results || searchData.passages || [];
+      const answerItems = answerData.retrieved_evidence || answerData.evidence || answerData.passages || [];
+      const items = Array.isArray(answerItems) && answerItems.length > 0
+        ? answerItems
+        : (Array.isArray(searchItems) ? searchItems : []);
 
-      const isInsufficient = answerData.insufficient_evidence || (answerData.reasoning_metadata?.is_sufficient === false) || (items.length === 0);
-      const generatedFinalAnswer = answerData.final_answer || {};
-      const reasoningMetadata = answerData.reasoning_metadata || {};
-      const retrievalStats = answerData.retrieval_stats || searchData.retrieval_stats || {};
+      // Extract unique entities, concepts, passages, and literary sources directly from retrieved evidence
+      const relevantEntities = Array.from(new Set(
+        items.flatMap((p) => p.entities || p.entity_names || []).filter(Boolean)
+      ));
+      const relevantConcepts = Array.from(new Set(
+        items.flatMap((p) => p.concepts || []).filter(Boolean)
+      ));
+      const relevantPassages = Array.from(new Set(
+        items.map((p) => p.passage_id || p.id).filter(Boolean)
+      ));
+      const relevantSources = Array.from(new Set(
+        items.map((p) => p.source || p.reference || p.work).filter(Boolean)
+      ));
+      const evidenceCount = items.length;
+
+      // 3. Directly retrieve the corresponding Neo4j subgraph using the determined entities & evidence
+      // First check if answerData from the Adaptive Graph-RAG pipeline already contains the authoritative attributed graph
+      const pipelineGraph = answerData?.knowledge_graph || answerData?.knowledgeGraph || answerData?.neo4j_graph;
+      let rawGraphNodes = [];
+      let rawGraphEdges = [];
+      let epistemicContext = null;
+      let graphMeta = {
+        query: cleanQuery,
+        node_count: 0,
+        relationship_count: 0,
+        literary_sources: relevantSources.length > 0 ? relevantSources : ['Tolkāppiyam (தொல்காப்பியம்)'],
+        evidence_count: evidenceCount,
+      };
+
+      if (pipelineGraph && Array.isArray(pipelineGraph.nodes) && pipelineGraph.nodes.length > 0) {
+        rawGraphNodes = pipelineGraph.nodes;
+        rawGraphEdges = Array.isArray(pipelineGraph.relationships)
+          ? pipelineGraph.relationships
+          : (Array.isArray(pipelineGraph.edges) ? pipelineGraph.edges : []);
+        epistemicContext = pipelineGraph.epistemic_context || null;
+        if (pipelineGraph.metadata) {
+          graphMeta = { ...graphMeta, ...pipelineGraph.metadata };
+        }
+      } else {
+        try {
+          const graphRes = await graphApi.queryGraph({
+            query: cleanQuery,
+            entities: relevantEntities,
+            concepts: relevantConcepts,
+            passages: relevantPassages,
+            evidence: items.map((p) => ({
+              id: p.passage_id || p.id,
+              entities: p.entities || [],
+              concepts: p.concepts || [],
+              source: p.source || p.reference || p.work,
+              tinai: p.tinai,
+            })),
+            seed_ids: Array.from(new Set([...relevantEntities, ...relevantConcepts, ...relevantPassages])),
+            depth: depth || 2,
+            limit: 150,
+            signal: controller.signal,
+            timeoutMs: 25000,
+          });
+
+          if (queryExecutionTokenRef.current === currentToken && graphRes) {
+            const gData = graphRes?.data || graphRes;
+            epistemicContext = gData.epistemic_context || null;
+            if (Array.isArray(gData.nodes)) {
+              rawGraphNodes = gData.nodes;
+            }
+            const gRels = Array.isArray(gData.relationships)
+              ? gData.relationships
+              : (Array.isArray(gData.edges) ? gData.edges : []);
+            rawGraphEdges = gRels;
+            if (gData.metadata) {
+              graphMeta = { ...graphMeta, ...gData.metadata };
+            }
+          }
+        } catch (graphErr) {
+          console.warn('Query-driven Neo4j subgraph retrieval failed:', graphErr);
+        }
+      }
+
+      if (queryExecutionTokenRef.current !== currentToken) {
+        return;
+      }
+
+      const elapsedMs = Math.round(performance.now() - startTime);
+      clearWorkflowTimers();
+      setCurrentWorkflowStageIndex(4);
+      setWorkflowProgressPercent(100);
+
+      // 4. Atomically commit the query-specific graph state (or clean empty state)
+      // Never keeps unrelated nodes from previous queries unless also returned by new Neo4j query
+      let normalizedGraph = {
+        nodes: [],
+        links: [],
+        stats: { nodeCount: 0, edgeCount: 0 },
+      };
+
+      if (rawGraphNodes.length > 0) {
+        normalizedGraph = normalizeGraphData({
+          nodes: rawGraphNodes,
+          relationships: rawGraphEdges,
+        });
+
+        setGraphNodes(normalizedGraph.nodes);
+        setGraphEdges(normalizedGraph.links);
+        setQuerySubgraph({
+          nodes: normalizedGraph.nodes,
+          links: normalizedGraph.links,
+          stats: normalizedGraph.stats,
+          query: cleanQuery,
+          metadata: {
+            ...graphMeta,
+            node_count: normalizedGraph.nodes.length,
+            relationship_count: normalizedGraph.links.length,
+            literary_sources: graphMeta.literary_sources || relevantSources,
+            evidence_count: evidenceCount,
+          },
+          literarySources: graphMeta.literary_sources || relevantSources,
+          evidenceCount: evidenceCount,
+          timestamp: Date.now(),
+        });
+        const primaryId = epistemicContext?.primary_entity_id ||
+          (normalizedGraph.nodes.length > 0 ? normalizedGraph.nodes[0].id : null);
+        setSelectedGraphNodeId(primaryId);
+      } else {
+        // Complete clean replacement: Query B shows 0 nodes if not matched, never keeps Query A's nodes
+        setGraphNodes([]);
+        setGraphEdges([]);
+        setQuerySubgraph({
+          nodes: [],
+          links: [],
+          stats: { nodeCount: 0, edgeCount: 0 },
+          query: cleanQuery,
+          metadata: {
+            ...graphMeta,
+            node_count: 0,
+            relationship_count: 0,
+            literary_sources: relevantSources,
+            evidence_count: evidenceCount,
+          },
+          literarySources: relevantSources,
+          evidenceCount: evidenceCount,
+          timestamp: Date.now(),
+        });
+        setSelectedGraphNodeId(null);
+      }
+      setGraphVersion(Date.now());
+      setIsLoadingGraph(false);
+
+      const isInsufficient = Boolean(
+        answerData.insufficient_evidence ||
+        answerData.insufficientEvidence ||
+        (answerData.reasoning_metadata?.is_sufficient === false) ||
+        (answerData.reasoningMetadata?.is_sufficient === false) ||
+        (items.length === 0)
+      );
+      const generatedFinalAnswer = answerData.final_answer || answerData.finalAnswer || {};
+      const reasoningMetadata = answerData.reasoning_metadata || answerData.reasoningMetadata || {};
+      const retrievalStats = answerData.retrieval_stats || searchData.retrieval_stats || answerData.retrievalStats || searchData.retrievalStats || {};
       const targetTinai = filterTinai !== 'all' ? filterTinai : (reasoningMetadata.tinai || 'Kuṟiñci');
+
+      // Preserve complete backend response in application state
+      let proofResultData = null;
+      let fallacyResultData = null;
+      let deduceResultData = null;
 
       if (items.length === 0 || isInsufficient) {
         const mappedRecords = items.map(mapBackendEvidenceToUI);
@@ -636,7 +1030,7 @@ export function ReasonerProvider({ children }) {
         setQueryStats({
           latencyMs: elapsedMs,
           totalResults: items.length,
-          pipelineVersion: reasoningMetadata.pipeline_version || '1.0.0',
+          pipelineVersion: reasoningMetadata.pipeline_version || reasoningMetadata.pipelineVersion || '1.0.0',
           provider: reasoningMetadata.provider || 'openrouter',
           model: reasoningMetadata.model || 'unknown',
           mode: searchMode,
@@ -646,16 +1040,26 @@ export function ReasonerProvider({ children }) {
 
         setFinalAnswer({
           status: 'insufficient_evidence',
-          tamilAnswer: generatedFinalAnswer.tamilAnswer || 'தீர்மானிக்கப் போதுமான தொல்காப்பியச் சான்றுகள் கிடைக்கவில்லை.',
-          englishAnswer: generatedFinalAnswer.englishAnswer || 'Insufficient canonical evidence retrieved to answer query without speculation.',
-          subtitle: generatedFinalAnswer.subtitle || (reasoningMetadata.insufficient_reason ? `Evidence threshold unmet: ${reasoningMetadata.insufficient_reason}` : 'Epistemic validation requires additional primary sources.'),
+          tamilAnswer: generatedFinalAnswer.tamilAnswer || generatedFinalAnswer.tamil_answer || 'தீர்மானிக்கப் போதுமான தொல்காப்பியச் சான்றுகள் கிடைக்கவில்லை.',
+          englishAnswer: generatedFinalAnswer.englishAnswer || generatedFinalAnswer.english_answer || 'Insufficient canonical evidence retrieved to answer query without speculation.',
+          subtitle: generatedFinalAnswer.subtitle || (reasoningMetadata.insufficient_reason || reasoningMetadata.insufficientReason ? `Evidence threshold unmet: ${reasoningMetadata.insufficient_reason || reasoningMetadata.insufficientReason}` : 'Epistemic validation requires additional primary sources.'),
           confidenceScore: 0.0,
           starsCount: 0.0,
-          verdictStatus: generatedFinalAnswer.verdictStatus || 'Insufficient Canonical Evidence (போதிய சான்றுகள் இல்லை)',
-          justificationTamil: generatedFinalAnswer.justificationTamil || 'தொல்காப்பிய மூல நூல்களில் வினவப்பட்ட கருதுகோளுக்குப் போதிய சான்றுகள் இல்லை.',
-          justificationEnglish: generatedFinalAnswer.justificationEnglish || 'Retrieved canonical evidence did not meet the required relevance or count criteria. Speculative answer generation was blocked.',
-          keySources: generatedFinalAnswer.keySources || [],
+          verdictStatus: generatedFinalAnswer.verdictStatus || generatedFinalAnswer.verdict_status || 'Insufficient Canonical Evidence (போதிய சான்றுகள் இல்லை)',
+          justificationTamil: generatedFinalAnswer.justificationTamil || generatedFinalAnswer.justification_tamil || 'தொல்காப்பிய மூல நூல்களில் வினவப்பட்ட கருதுகோளுக்குப் போதிய சான்றுகள் இல்லை.',
+          justificationEnglish: generatedFinalAnswer.justificationEnglish || generatedFinalAnswer.justification_english || 'Retrieved canonical evidence did not meet the required relevance or count criteria. Speculative answer generation was blocked.',
+          keySources: generatedFinalAnswer.keySources || generatedFinalAnswer.key_sources || [],
         });
+
+        const insConf = calculateClientConfidence({
+          query: cleanQuery,
+          evidenceRecords: mappedRecords,
+          selectedEvidenceId: mappedRecords[0]?.id || null,
+          graphNodes: rawGraphNodes,
+          insufficientEvidence: true,
+          tinai: targetTinai,
+        });
+        setConfidenceEvaluation(insConf);
 
         // Insufficient evidence: clean reset of reasoning deduction and proof trace
         setReasoningStages([]);
@@ -669,7 +1073,7 @@ export function ReasonerProvider({ children }) {
         setSelectedProofNodeId(null);
         setIsLoadingProofTrace(false);
         setProofTraceError(null);
-        setProofTraceData({
+        const insProofData = {
           status: 'INSUFFICIENT_EVIDENCE',
           insufficient_evidence: true,
           is_valid: false,
@@ -684,7 +1088,9 @@ export function ReasonerProvider({ children }) {
           nodes: [],
           edges: [],
           traceable_paths: [],
-        });
+        };
+        setProofTraceData(insProofData);
+        proofResultData = insProofData;
 
         // Trigger fallacy validation on empty evidence
         try {
@@ -696,6 +1102,7 @@ export function ReasonerProvider({ children }) {
           });
           if (valRes?.success && valRes?.data) {
             setValidationResults(valRes.data);
+            fallacyResultData = valRes.data;
           }
         } catch {
           // ignore background fallacy check failure
@@ -722,30 +1129,38 @@ export function ReasonerProvider({ children }) {
 
         setFinalAnswer({
           status: 'sufficient',
-          tamilAnswer: generatedFinalAnswer.tamilAnswer || '',
-          englishAnswer: generatedFinalAnswer.englishAnswer || '',
+          tamilAnswer: generatedFinalAnswer.tamilAnswer || generatedFinalAnswer.tamil_answer || (topItem ? topItem.tamilText : ''),
+          englishAnswer: generatedFinalAnswer.englishAnswer || generatedFinalAnswer.english_answer || (topItem ? topItem.translation : ''),
           subtitle: generatedFinalAnswer.subtitle || `Retrieved via ${searchMode.toUpperCase()} mode: Grounded on ${items.length} canonical verses.`,
           confidenceScore: typeof generatedFinalAnswer.confidenceScore === 'number'
             ? generatedFinalAnswer.confidenceScore
-            : (typeof answerData.confidence_info?.confidenceScore === 'number'
-              ? answerData.confidence_info.confidenceScore
-              : topItem.confidence),
+            : (typeof generatedFinalAnswer.confidence_score === 'number'
+              ? generatedFinalAnswer.confidence_score
+              : (typeof answerData.confidence_info?.confidenceScore === 'number'
+                ? answerData.confidence_info.confidenceScore
+                : (typeof answerData.confidence_info?.confidence_score === 'number'
+                  ? answerData.confidence_info.confidence_score
+                  : (topItem?.confidence ?? 0.95)))),
           starsCount: typeof generatedFinalAnswer.starsCount === 'number'
             ? generatedFinalAnswer.starsCount
-            : Number((topItem.confidence * 5).toFixed(1)),
-          verdictStatus: generatedFinalAnswer.verdictStatus || answerData.confidence_info?.verdictStatus || `Sound Canonical Grounding (${items.length} Verses)`,
-          justificationTamil: generatedFinalAnswer.justificationTamil || '',
-          justificationEnglish: generatedFinalAnswer.justificationEnglish || '',
+            : (typeof generatedFinalAnswer.stars_count === 'number'
+              ? generatedFinalAnswer.stars_count
+              : Number(((topItem?.confidence ?? 0.95) * 5).toFixed(1))),
+          verdictStatus: generatedFinalAnswer.verdictStatus || generatedFinalAnswer.verdict_status || answerData.confidence_info?.verdictStatus || answerData.confidence_info?.verdict_status || `Sound Canonical Grounding (${items.length} Verses)`,
+          justificationTamil: generatedFinalAnswer.justificationTamil || generatedFinalAnswer.justification_tamil || '',
+          justificationEnglish: generatedFinalAnswer.justificationEnglish || generatedFinalAnswer.justification_english || '',
           keySources: (generatedFinalAnswer.keySources && generatedFinalAnswer.keySources.length > 0)
             ? generatedFinalAnswer.keySources
-            : (answerData.sources || mappedRecords.map((m) => ({
-                id: m.id,
-                label: m.code,
-                sutra: m.reference,
-                section: m.section,
-                topic: m.badges[0]?.label || 'Evidence',
-                score: m.confidenceFormatted,
-              }))),
+            : ((generatedFinalAnswer.key_sources && generatedFinalAnswer.key_sources.length > 0)
+              ? generatedFinalAnswer.key_sources
+              : (answerData.sources || mappedRecords.map((m) => ({
+                  id: m.id,
+                  label: m.code,
+                  sutra: m.reference,
+                  section: m.section,
+                  topic: m.badges[0]?.label || 'Evidence',
+                  score: m.confidenceFormatted,
+                })))),
         });
 
         // Concurrently fetch real Proof Trace DAG, Fallacy Validation, and 5-stage Nyāya deduction from backend
@@ -779,9 +1194,14 @@ export function ReasonerProvider({ children }) {
             }),
           ]);
 
+          if (queryExecutionTokenRef.current !== currentToken) {
+            return;
+          }
+
           if (proofResult.status === 'fulfilled' && proofResult.value?.data) {
             const ptData = proofResult.value.data;
             setProofTraceData(ptData);
+            proofResultData = ptData;
             if (
               ptData.insufficient_evidence ||
               ptData.status === 'INSUFFICIENT_EVIDENCE' ||
@@ -809,7 +1229,7 @@ export function ReasonerProvider({ children }) {
             setProofEdges([]);
             setProofSteps([]);
             setSelectedProofNodeId(null);
-            setProofTraceData({
+            const insData = {
               status: 'INSUFFICIENT_EVIDENCE',
               insufficient_evidence: true,
               is_valid: false,
@@ -819,19 +1239,25 @@ export function ReasonerProvider({ children }) {
               nodes: [],
               edges: [],
               traceable_paths: [],
-            });
+            };
+            setProofTraceData(insData);
+            proofResultData = insData;
           }
 
-          if (fallacyResult.status === 'fulfilled' && fallacyResult.value?.data) {
-            setValidationResults(fallacyResult.value.data);
+          if (fallacyResult.status === 'fulfilled' && (fallacyResult.value?.data || fallacyResult.value)) {
+            const fData = fallacyResult.value?.data || fallacyResult.value;
+            setValidationResults(fData);
+            fallacyResultData = fData;
           }
 
-          if (deduceResult.status === 'fulfilled' && deduceResult.value?.data?.reasoningStages) {
-            const stages = deduceResult.value.data.reasoningStages;
+          if (deduceResult.status === 'fulfilled' && (deduceResult.value?.data?.reasoningStages || deduceResult.value?.data?.stages || deduceResult.value?.reasoningStages)) {
+            const dData = deduceResult.value?.data || deduceResult.value;
+            const stages = dData.reasoningStages || dData.stages || [];
             setReasoningStages(stages);
             setReasoningStatus(stages.length > 0 ? 'success' : 'empty');
             setReasoningError(null);
             setSelectedStageIndex(0);
+            deduceResultData = dData;
           } else if (deduceResult.status === 'rejected') {
             setReasoningError(deduceResult.reason?.message || 'Failed to deduce reasoning stages');
             setReasoningStatus('error');
@@ -845,7 +1271,51 @@ export function ReasonerProvider({ children }) {
           setIsLoadingReasoning(false);
           setIsLoadingProofTrace(false);
         }
+
+        const serverConfidence =
+          deduceResultData?.confidenceEvaluation ||
+          fallacyResultData?.confidenceEvaluation ||
+          answerData.confidence_info?.confidenceEvaluation ||
+          answerData.reasoning_metadata?.confidence_evaluation;
+
+        if (serverConfidence) {
+          setConfidenceEvaluation(serverConfidence);
+        } else {
+          recalculateConfidence({
+            queryText: cleanQuery,
+            evidenceRecords: mappedRecords,
+            selectedEvidenceId: mappedRecords[0]?.id || null,
+            graphNodes: rawGraphNodes,
+            selectedGraphNodeId: epistemicContext?.primary_entity_id || (rawGraphNodes[0]?.id || null),
+            reasoningStages: deduceResultData?.reasoningStages || [],
+            validationResults: fallacyResultData || null,
+            tinai: targetTinai,
+          });
+        }
       }
+
+      // PRESERVE COMPLETE BACKEND RESPONSE IN APPLICATION STATE
+      const fullResponsePayload = {
+        query: cleanQuery,
+        timestamp: new Date().toISOString(),
+        executionDurationMs: elapsedMs,
+        searchData,
+        answerData,
+        groundedGraph: {
+          nodes: rawGraphNodes,
+          relationships: rawGraphEdges,
+          normalized: normalizedGraph,
+          epistemicContext,
+        },
+        proofTrace: proofResultData,
+        fallacyValidation: fallacyResultData,
+        deduceReasoning: deduceResultData,
+        retrievalStats,
+        reasoningMetadata,
+        isInsufficient,
+      };
+      setRawBackendResponse(fullResponsePayload);
+
     } catch (err) {
       if (err.name === 'AbortError') return;
       clearWorkflowTimers();
@@ -865,7 +1335,7 @@ export function ReasonerProvider({ children }) {
       setIsAnalyzing(false);
       activeAbortControllerRef.current = null;
     }
-  }, [queryText, depth, focus, queryType, searchMode, topK, filterTinai, filterSection]);
+  }, [queryText, depth, queryType, searchMode, topK, filterTinai, filterSection, recalculateConfidence, setConfidenceEvaluation]);
 
   // Live Fallacy Verification directly against Flask Defeasible Validator
   const revalidateFallacies = useCallback(
@@ -994,6 +1464,7 @@ export function ReasonerProvider({ children }) {
     setReasoningError(null);
     setReasoningStatus('idle');
     setValidationResults(null);
+    setConfidenceEvaluation(calculateClientConfidence({ evidenceRecords: [] }));
 
     // Reset Graph View
     setSelectedGraphNodeId(null);
@@ -1001,7 +1472,11 @@ export function ReasonerProvider({ children }) {
     setGraphZoom(1);
     setGraphPan({ x: 0, y: 0 });
     setIsShowingProofTrace(false);
-  }, []);
+    setQuerySubgraph(null);
+    setIsQueryGraphActive(false);
+    setRawBackendResponse(null);
+    setGraphVersion(Date.now());
+  }, [setConfidenceEvaluation]);
 
   // Handler for selecting research example
   const handleSelectExample = useCallback((ex) => {
@@ -1039,88 +1514,169 @@ export function ReasonerProvider({ children }) {
     setGraphPan({ x: 10, y: 10 });
   }, []);
 
-  // Cross-highlighting handlers linking Evidence, Graph, Proof DAG, and Reasoning Stages
-  const handleSetSelectedEvidenceId = useCallback((evidenceId) => {
-    if (!evidenceId) {
-      setSelectedEvidenceId(null);
+  /**
+   * Universal bidirectional synchronization handler.
+   * Atomically connects Query Center results (retrieved passages, entities, concepts,
+   * events, evidence nodes, premises, rules, conclusions) and D3 Knowledge Graph nodes.
+   * Guarantees zero duplicate API calls and synchronized React/D3 state.
+   */
+  const selectSynchronizedItem = useCallback((target, source = 'query_center') => {
+    setSyncSource(source);
+    if (!target) {
       setSelectedGraphNodeId(null);
+      setSelectedEvidenceId(null);
+      setSelectedProofNodeId(null);
+      setActiveGraphContext(null);
       return;
     }
 
-    const ev = evidenceRecords.find(
-      (e) => e.id === evidenceId || e.code === evidenceId || e.passageId === evidenceId
-    );
+    // Build pooled candidate nodes from all active stores
+    const candidateNodes = [
+      ...(graphNodes || []),
+      ...(proofNodes || []),
+      ...(evidenceRecords || []).map((ev, i) => ({
+        id: ev.passageId || ev.id,
+        code: ev.code || `E${i + 1}`,
+        label: ev.reference || ev.passageId || ev.id,
+        name: ev.work || ev.reference || ev.id,
+        tamilLabel: ev.tamilText || ev.text || ev.reference,
+        type: 'Evidence',
+        category: 'Evidence',
+        passageId: ev.passageId || ev.id,
+        isEvidenceRecord: true,
+        source: ev.source || 'Tolkāppiyam',
+        properties: { ...ev },
+      })),
+    ];
 
-    const targetId = ev ? (ev.passageId || ev.id) : evidenceId;
-    const targetCode = ev ? ev.code : (evidenceId.startsWith('E') ? evidenceId : null);
+    const matchedNode = findNodeByStableId(candidateNodes, target);
+    const resolvedGraphId = matchedNode
+      ? matchedNode.id
+      : (typeof target === 'string' ? target : (target.id || target.code || target.passageId));
 
-    setSelectedEvidenceId(ev ? ev.id : evidenceId);
-    setSelectedGraphNodeId(targetId);
+    // 1. Synchronize Graph Node ID
+    setSelectedGraphNodeId(resolvedGraphId);
 
-    if (targetCode) {
-      setSelectedProofNodeId(targetCode);
+    // 2. Resolve Associated Evidence
+    const associatedEvList = matchedNode
+      ? findAssociatedEvidenceForNode(matchedNode, evidenceRecords)
+      : (typeof target === 'object' && target.id ? [target] : []);
+
+    let targetEvidenceId = null;
+    if (associatedEvList.length > 0) {
+      targetEvidenceId = associatedEvList[0].id;
+      setSelectedEvidenceId(associatedEvList[0].id);
+    } else if (typeof target === 'string') {
+      const directEv = evidenceRecords.find(
+        (e) => e.id === target || e.code === target || e.passageId === target
+      );
+      if (directEv) {
+        targetEvidenceId = directEv.id;
+        setSelectedEvidenceId(directEv.id);
+      }
+    }
+
+    // 3. Resolve Proof Step / Node ID (E1, P1, R1, I1, C1)
+    let targetProofId = null;
+    const testCode = String(matchedNode?.code || target?.code || target || '').toUpperCase();
+    if (['E1', 'E2', 'E3', 'P1', 'P2', 'R1', 'I1', 'C1'].includes(testCode)) {
+      targetProofId = testCode;
+    } else if (matchedNode?.id && ['E1', 'E2', 'E3', 'P1', 'P2', 'R1', 'I1', 'C1'].includes(String(matchedNode.id).toUpperCase())) {
+      targetProofId = String(matchedNode.id).toUpperCase();
+    }
+    if (targetProofId) {
+      setSelectedProofNodeId(targetProofId);
+    } else if (matchedNode) {
+      setSelectedProofNodeId(matchedNode.id);
+    }
+
+    // 4. Synchronize Reasoning Stage (only from external sources like Query Center or Graph, not when user deliberately selects a reasoning stage)
+    if (source !== 'reasoning' && (targetEvidenceId || targetProofId)) {
+      const mIdx = reasoningStages.findIndex((s) => {
+        const link = s.linkedEvidenceId || (Array.isArray(s.linkedEvidenceIds) && s.linkedEvidenceIds[0]);
+        return link === targetEvidenceId || link === targetProofId || link === resolvedGraphId;
+      });
+      if (mIdx !== -1) {
+        setSelectedStageIndex(mIdx);
+      }
+    }
+
+    // 5. Build and commit rich active graph context for Query Center
+    if (matchedNode) {
+      const neighborInfo = getInducedSubgraphNeighborhood(matchedNode.id, graphEdges || [], 1);
+      const connectedNeighbors = candidateNodes.filter((n) => neighborInfo.directNeighborIds.has(String(n.id)));
+
+      setActiveGraphContext({
+        node: matchedNode,
+        id: matchedNode.id,
+        label: matchedNode.label || matchedNode.id,
+        tamilLabel: matchedNode.tamilLabel || matchedNode.tamil_label || matchedNode.label,
+        transliteration: matchedNode.transliteration || '',
+        type: matchedNode.type || matchedNode.category || 'Entity',
+        category: matchedNode.category || matchedNode.type || 'Entity',
+        hierarchyLevel: matchedNode.hierarchyLevel || matchedNode.hierarchy_level || 'L5',
+        source: matchedNode.source || matchedNode.citation || 'Tolkāppiyam',
+        citation: matchedNode.citation || matchedNode.source || '',
+        description: matchedNode.description || matchedNode.text || matchedNode.english || '',
+        associatedEvidence: associatedEvList,
+        connectedEdgesCount: neighborInfo.inducedEdgeIds.size,
+        connectedNeighbors: connectedNeighbors.map((n) => ({
+          id: n.id,
+          label: n.label || n.id,
+          type: n.type || 'Entity',
+          transliteration: n.transliteration || '',
+        })),
+        sourceOrigin: source,
+        timestamp: Date.now(),
+      });
+    } else if (typeof target === 'object') {
+      setActiveGraphContext({
+        node: target,
+        id: target.id || target.code || 'custom_node',
+        label: target.label || target.name || target.code || target.id,
+        tamilLabel: target.tamilLabel || target.tamilText || target.tamil_label || target.label,
+        transliteration: target.transliteration || '',
+        type: target.type || target.category || 'Item',
+        category: target.category || target.type || 'Item',
+        source: target.source || target.reference || 'Tolkāppiyam',
+        citation: target.citation || target.reference || '',
+        description: target.description || target.text || target.translation || '',
+        associatedEvidence: associatedEvList,
+        connectedEdgesCount: 0,
+        connectedNeighbors: [],
+        sourceOrigin: source,
+        timestamp: Date.now(),
+      });
     } else {
-      setSelectedProofNodeId(targetId);
+      setActiveGraphContext(null);
     }
+  }, [graphNodes, proofNodes, evidenceRecords, graphEdges, reasoningStages]);
 
-    const matchedStageIdx = reasoningStages.findIndex(
-      (s) =>
-        s.linkedEvidenceId === evidenceId ||
-        s.linkedEvidenceId === targetId ||
-        s.linkedEvidenceId === targetCode ||
-        (Array.isArray(s.linkedEvidenceIds) &&
-          (s.linkedEvidenceIds.includes(evidenceId) ||
-            s.linkedEvidenceIds.includes(targetId) ||
-            s.linkedEvidenceIds.includes(targetCode)))
-    );
-    if (matchedStageIdx !== -1) {
-      setSelectedStageIndex(matchedStageIdx);
-    }
-  }, [evidenceRecords, reasoningStages]);
+  const clearActiveGraphContext = useCallback(() => {
+    selectSynchronizedItem(null, 'reset');
+  }, [selectSynchronizedItem]);
+
+  // Cross-highlighting handlers linking Evidence, Graph, Proof DAG, and Reasoning Stages
+  const handleSetSelectedEvidenceId = useCallback((evidenceId) => {
+    selectSynchronizedItem(evidenceId, 'query_center');
+  }, [selectSynchronizedItem]);
 
   const handleSetSelectedProofNodeId = useCallback((nodeId) => {
-    setSelectedProofNodeId(nodeId);
-    if (!nodeId) return;
-
-    const matchedProofNode = proofNodes.find((n) => n.id === nodeId);
-    const targetGraphId = matchedProofNode?.passageId || nodeId;
-
-    setSelectedGraphNodeId(targetGraphId);
-
-    if (matchedProofNode?.passageId) {
-      handleSetSelectedEvidenceId(matchedProofNode.passageId);
-    } else if (nodeId.startsWith('E') || evidenceRecords.some((e) => e.id === nodeId || e.passageId === nodeId)) {
-      handleSetSelectedEvidenceId(nodeId);
-    }
-  }, [proofNodes, evidenceRecords, handleSetSelectedEvidenceId]);
+    selectSynchronizedItem(nodeId, 'proof_trace');
+  }, [selectSynchronizedItem]);
 
   const handleSetSelectedStageIndex = useCallback((index) => {
     setSelectedStageIndex(index);
     const stage = reasoningStages[index];
     const linkedEvId = stage?.linkedEvidenceId || (Array.isArray(stage?.linkedEvidenceIds) && stage.linkedEvidenceIds[0]) || null;
     if (linkedEvId) {
-      const ev = evidenceRecords.find(
-        (e) => e.id === linkedEvId || e.code === linkedEvId || e.passageId === linkedEvId
-      );
-      const targetId = ev ? (ev.passageId || ev.id) : linkedEvId;
-      setSelectedEvidenceId(ev ? ev.id : linkedEvId);
-      setSelectedProofNodeId(targetId);
-      setSelectedGraphNodeId(targetId);
+      selectSynchronizedItem(linkedEvId, 'reasoning');
     }
-  }, [reasoningStages, evidenceRecords]);
+  }, [reasoningStages, selectSynchronizedItem]);
 
   const handleSetSelectedGraphNodeId = useCallback((nodeId) => {
-    setSelectedGraphNodeId(nodeId);
-    if (!nodeId) return;
-
-    if (nodeId.startsWith('E') || ['P1', 'P2', 'R1', 'I1', 'C1'].includes(nodeId)) {
-      setSelectedProofNodeId(nodeId);
-    }
-    const isEvidence = evidenceRecords.some((e) => e.id === nodeId || e.passageId === nodeId || e.code === nodeId);
-    if (isEvidence || nodeId.startsWith('E')) {
-      handleSetSelectedEvidenceId(nodeId);
-    }
-  }, [evidenceRecords, handleSetSelectedEvidenceId]);
+    selectSynchronizedItem(nodeId, 'graph');
+  }, [selectSynchronizedItem]);
 
   const showProofTrace = useCallback(() => {
     setIsShowingProofTrace(true);
@@ -1128,8 +1684,8 @@ export function ReasonerProvider({ children }) {
 
   const resetGraph = useCallback(() => {
     setIsShowingProofTrace(false);
-    setSelectedGraphNodeId(null);
-  }, []);
+    selectSynchronizedItem(null, 'reset');
+  }, [selectSynchronizedItem]);
 
   const loadBenchmarkEvidence = useCallback((archetype = 'tinai') => {
     setInsufficientEvidence(false);
@@ -1200,6 +1756,7 @@ export function ReasonerProvider({ children }) {
     filterSection,
     setFilterSection,
     currentQuery,
+    detectedLanguage: currentQuery.detectedLanguage,
     handleSelectExample,
     researchExamples: BENCHMARK_RESEARCH_PROMPTS,
     // 3. Evidence
@@ -1225,6 +1782,10 @@ export function ReasonerProvider({ children }) {
     refetchDashboard: loadLiveInitialData,
     selectedGraphNodeId,
     setSelectedGraphNodeId: handleSetSelectedGraphNodeId,
+    selectSynchronizedItem,
+    activeGraphContext,
+    clearActiveGraphContext,
+    syncSource,
     activeCategoryFilter,
     setActiveCategoryFilter,
     graphZoom,
@@ -1235,6 +1796,16 @@ export function ReasonerProvider({ children }) {
     handleGraphZoomOut,
     handleGraphReset,
     handleGraphFitToScreen,
+    // 4b. Dedicated Query Subgraph & Full Backend Response
+    querySubgraph,
+    isQueryGraphActive,
+    graphVersion,
+    rawBackendResponse,
+    lastBackendResponse: rawBackendResponse,
+    // 4c. Authoritative Neo4j Strict Mutation & Synchronization
+    isMutatingGraph,
+    mutationError,
+    mutateKnowledgeGraph,
     // 5. Reasoning Trace
     reasoningStages,
     selectedStageIndex,
@@ -1248,7 +1819,7 @@ export function ReasonerProvider({ children }) {
     revalidateFallacies,
     isValidatingFallacies,
     fallacyValidationError,
-    // 7. Proof Trace DAG & Cytoscape Highlighting
+    // 7. Proof Trace DAG & Knowledge Graph Highlighting
     proofNodes,
     setProofNodes,
     proofEdges,
@@ -1268,6 +1839,11 @@ export function ReasonerProvider({ children }) {
     loadBenchmarkEvidence,
     // 8. Final Answer & Justification
     finalAnswer,
+    // 8a. Real-Time Dynamic Confidence Score Validation
+    confidenceEvaluation,
+    setConfidenceEvaluation,
+    recalculateConfidence,
+    CONFIDENCE_LEVELS,
     // 9. Workflow & Live Query State
     isAnalyzing,
     currentWorkflowStageIndex,

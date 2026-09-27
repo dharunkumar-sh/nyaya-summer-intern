@@ -566,6 +566,403 @@ LITERARY_TERMINOLOGY: Dict[str, Dict[str, Any]] = {
         "tinai": "General",
         "kg_id": "hetvabhasa",
     },
+
+    # 7. Classical Tamil Grammar & Poetics Concepts (Tolkāppiyam)
+    "வழுவமைதி": {
+        "canonical": "Vaḻuvamaiti",
+        "transliteration": "Vaḻuvamaiti",
+        "tamil_term": "வழுவமைதி",
+        "english": "Grammatical Error Tolerance / Syntactic Exception",
+        "category": "Grammar",
+        "tinai": "General",
+        "kg_id": "valuvamaiti",
+    },
+    "valuvamaiti": {
+        "canonical": "Vaḻuvamaiti",
+        "transliteration": "Vaḻuvamaiti",
+        "tamil_term": "வழுவமைதி",
+        "english": "Grammatical Error Tolerance / Syntactic Exception",
+        "category": "Grammar",
+        "tinai": "General",
+        "kg_id": "valuvamaiti",
+    },
+    "vazhuvamaiti": {
+        "canonical": "Vaḻuvamaiti",
+        "transliteration": "Vaḻuvamaiti",
+        "tamil_term": "வழுவமைதி",
+        "english": "Grammatical Error Tolerance / Syntactic Exception",
+        "category": "Grammar",
+        "tinai": "General",
+        "kg_id": "valuvamaiti",
+    },
+    "vazhuvamaithi": {
+        "canonical": "Vaḻuvamaiti",
+        "transliteration": "Vaḻuvamaiti",
+        "tamil_term": "வழுவமைதி",
+        "english": "Grammatical Error Tolerance / Syntactic Exception",
+        "category": "Grammar",
+        "tinai": "General",
+        "kg_id": "valuvamaiti",
+    },
+    "error tolerance": {
+        "canonical": "Vaḻuvamaiti",
+        "transliteration": "Vaḻuvamaiti",
+        "tamil_term": "வழுவமைதி",
+        "english": "Grammatical Error Tolerance / Syntactic Exception",
+        "category": "Grammar",
+        "tinai": "General",
+        "kg_id": "valuvamaiti",
+    },
+    "syntactic exception": {
+        "canonical": "Vaḻuvamaiti",
+        "transliteration": "Vaḻuvamaiti",
+        "tamil_term": "வழுவமைதி",
+        "english": "Grammatical Error Tolerance / Syntactic Exception",
+        "category": "Grammar",
+        "tinai": "General",
+        "kg_id": "valuvamaiti",
+    },
+    "திணைவழு": {
+        "canonical": "Tiṇaivaḻu",
+        "transliteration": "Tiṇaivaḻu",
+        "tamil_term": "திணைவழு",
+        "english": "Category Violation of Tiṇai / Poetic Incongruity",
+        "category": "Grammar",
+        "tinai": "General",
+        "kg_id": "tinaivalu",
+    },
+    "tinaivalu": {
+        "canonical": "Tiṇaivaḻu",
+        "transliteration": "Tiṇaivaḻu",
+        "tamil_term": "திணைவழு",
+        "english": "Category Violation of Tiṇai / Poetic Incongruity",
+        "category": "Grammar",
+        "tinai": "General",
+        "kg_id": "tinaivalu",
+    },
+    "சொல்லதிகாரம்": {
+        "canonical": "Collatikāram",
+        "transliteration": "Collatikāram",
+        "tamil_term": "சொல்லதிகாரம்",
+        "english": "Book on Morphology, Syntax and Parts of Speech",
+        "category": "Section",
+        "tinai": "General",
+        "kg_id": "collatikaram",
+    },
+    "collatikaram": {
+        "canonical": "Collatikāram",
+        "transliteration": "Collatikāram",
+        "tamil_term": "சொல்லதிகாரம்",
+        "english": "Book on Morphology, Syntax and Parts of Speech",
+        "category": "Section",
+        "tinai": "General",
+        "kg_id": "collatikaram",
+    },
+    "எழுத்ததிகாரம்": {
+        "canonical": "Eḻuttatikāram",
+        "transliteration": "Eḻuttatikāram",
+        "tamil_term": "எழுத்ததிகாரம்",
+        "english": "Book on Phonology and Orthography",
+        "category": "Section",
+        "tinai": "General",
+        "kg_id": "eluttatikaram",
+    },
+    "eluttatikaram": {
+        "canonical": "Eḻuttatikāram",
+        "transliteration": "Eḻuttatikāram",
+        "tamil_term": "எழுத்ததிகாரம்",
+        "english": "Book on Phonology and Orthography",
+        "category": "Section",
+        "tinai": "General",
+        "kg_id": "eluttatikaram",
+    },
+    "மரபியல்": {
+        "canonical": "Marapiyal",
+        "transliteration": "Marapiyal",
+        "tamil_term": "மரபியல்",
+        "english": "Chapter on Conventional Usage and Lexical Tradition",
+        "category": "Chapter",
+        "tinai": "General",
+        "kg_id": "marapiyal",
+    },
+    "marapiyal": {
+        "canonical": "Marapiyal",
+        "transliteration": "Marapiyal",
+        "tamil_term": "மரபியல்",
+        "english": "Chapter on Conventional Usage and Lexical Tradition",
+        "category": "Chapter",
+        "tinai": "General",
+        "kg_id": "marapiyal",
+    },
+    "வேற்றுமை": {
+        "canonical": "Vēṟṟumai",
+        "transliteration": "Vēṟṟumai",
+        "tamil_term": "வேற்றுமை",
+        "english": "Grammatical Case System / Declension",
+        "category": "Grammar",
+        "tinai": "General",
+        "kg_id": "vettumai",
+    },
+    "vettumai": {
+        "canonical": "Vēṟṟumai",
+        "transliteration": "Vēṟṟumai",
+        "tamil_term": "வேற்றுமை",
+        "english": "Grammatical Case System / Declension",
+        "category": "Grammar",
+        "tinai": "General",
+        "kg_id": "vettumai",
+    },
+    "vetrumai": {
+        "canonical": "Vēṟṟumai",
+        "transliteration": "Vēṟṟumai",
+        "tamil_term": "வேற்றுமை",
+        "english": "Grammatical Case System / Declension",
+        "category": "Grammar",
+        "tinai": "General",
+        "kg_id": "vettumai",
+    },
+    "வினை": {
+        "canonical": "Vinai",
+        "transliteration": "Vinai",
+        "tamil_term": "வினை",
+        "english": "Verb / Predicative Action",
+        "category": "Grammar",
+        "tinai": "General",
+        "kg_id": "vinai",
+    },
+    "vinai": {
+        "canonical": "Vinai",
+        "transliteration": "Vinai",
+        "tamil_term": "வினை",
+        "english": "Verb / Predicative Action",
+        "category": "Grammar",
+        "tinai": "General",
+        "kg_id": "vinai",
+    },
+    "பெயர்": {
+        "canonical": "Peyar",
+        "transliteration": "Peyar",
+        "tamil_term": "பெயர்",
+        "english": "Noun / Substantive Nominal",
+        "category": "Grammar",
+        "tinai": "General",
+        "kg_id": "peyar",
+    },
+    "peyar": {
+        "canonical": "Peyar",
+        "transliteration": "Peyar",
+        "tamil_term": "பெயர்",
+        "english": "Noun / Substantive Nominal",
+        "category": "Grammar",
+        "tinai": "General",
+        "kg_id": "peyar",
+    },
+    "உவமம்": {
+        "canonical": "Uvamam",
+        "transliteration": "Uvamam",
+        "tamil_term": "உவமம்",
+        "english": "Simile / Figurative Comparison",
+        "category": "Poetics",
+        "tinai": "General",
+        "kg_id": "uvamam",
+    },
+    "uvamam": {
+        "canonical": "Uvamam",
+        "transliteration": "Uvamam",
+        "tamil_term": "உவமம்",
+        "english": "Simile / Figurative Comparison",
+        "category": "Poetics",
+        "tinai": "General",
+        "kg_id": "uvamam",
+    },
+    # English Conceptual Aliases
+    "primary space-time ground": {
+        "canonical": "Mutalporuḷ",
+        "transliteration": "Mutalporuḷ",
+        "tamil_term": "முதற்பொருள்",
+        "english": "Primary Space-Time Ground",
+        "category": "TripartiteSemiotics",
+        "tinai": "General",
+        "kg_id": "mutalporul",
+    },
+    "primary ground": {
+        "canonical": "Mutalporuḷ",
+        "transliteration": "Mutalporuḷ",
+        "tamil_term": "முதற்பொருள்",
+        "english": "Primary Space-Time Ground",
+        "category": "TripartiteSemiotics",
+        "tinai": "General",
+        "kg_id": "mutalporul",
+    },
+    "environmental signifiers": {
+        "canonical": "Karupporuḷ",
+        "transliteration": "Karupporuḷ",
+        "tamil_term": "கருப்பொருள்",
+        "english": "Biotic & Cultural Signifiers",
+        "category": "TripartiteSemiotics",
+        "tinai": "General",
+        "kg_id": "karupporul",
+    },
+    "biotic signifiers": {
+        "canonical": "Karupporuḷ",
+        "transliteration": "Karupporuḷ",
+        "tamil_term": "கருப்பொருள்",
+        "english": "Biotic & Cultural Signifiers",
+        "category": "TripartiteSemiotics",
+        "tinai": "General",
+        "kg_id": "karupporul",
+    },
+    "affective mood": {
+        "canonical": "Uripporuḷ",
+        "transliteration": "Uripporuḷ",
+        "tamil_term": "உரிப்பொருள்",
+        "english": "Affective Mood / Human Interiority",
+        "category": "TripartiteSemiotics",
+        "tinai": "General",
+        "kg_id": "uripporul",
+    },
+    "human interiority": {
+        "canonical": "Uripporuḷ",
+        "transliteration": "Uripporuḷ",
+        "tamil_term": "உரிப்பொருள்",
+        "english": "Affective Mood / Human Interiority",
+        "category": "TripartiteSemiotics",
+        "tinai": "General",
+        "kg_id": "uripporul",
+    },
+    "interior poetics": {
+        "canonical": "Akam",
+        "transliteration": "Akam",
+        "tamil_term": "அகம்",
+        "english": "Interior Love Poetics",
+        "category": "PoeticDomain",
+        "tinai": "General",
+        "kg_id": "akam",
+    },
+    "exterior poetics": {
+        "canonical": "Puṟam",
+        "transliteration": "Puṟam",
+        "tamil_term": "புறம்",
+        "english": "Exterior Heroic & Ethical Poetics",
+        "category": "PoeticDomain",
+        "tinai": "General",
+        "kg_id": "puram",
+    },
+    "poetic union": {
+        "canonical": "Puṇartal",
+        "transliteration": "Puṇartal",
+        "tamil_term": "புணர்தல்",
+        "english": "Lovers' Secret Union / Conjunction",
+        "category": "AffectiveEvent",
+        "tinai": "Kuṟiñci",
+        "kg_id": "punartal",
+    },
+    "patient endurance": {
+        "canonical": "Iruttal",
+        "transliteration": "Iruttal",
+        "tamil_term": "இருத்தல்",
+        "english": "Patient Endurance / Hopeful Waiting",
+        "category": "AffectiveEvent",
+        "tinai": "Mullai",
+        "kg_id": "iruttal",
+    },
+    "feigned sulking": {
+        "canonical": "Ūṭal",
+        "transliteration": "Ūṭal",
+        "tamil_term": "ஊடல்",
+        "english": "Feigned Lovers' Sulking / Estrangement",
+        "category": "AffectiveEvent",
+        "tinai": "Marutam",
+        "kg_id": "udal",
+    },
+    "melancholic pining": {
+        "canonical": "Iraṅkal",
+        "transliteration": "Iraṅkal",
+        "tamil_term": "இரங்கல்",
+        "english": "Melancholic Pining / Anxious Yearning",
+        "category": "AffectiveEvent",
+        "tinai": "Neytal",
+        "kg_id": "irankal",
+    },
+    "anxious yearning": {
+        "canonical": "Iraṅkal",
+        "transliteration": "Iraṅkal",
+        "tamil_term": "இரங்கல்",
+        "english": "Melancholic Pining / Anxious Yearning",
+        "category": "AffectiveEvent",
+        "tinai": "Neytal",
+        "kg_id": "irankal",
+    },
+}
+
+# Authentic Canonical Tamil Script Mapping for Absolute Terminology Preservation
+CANONICAL_TAMIL_TERMS: Dict[str, str] = {
+    "Mutalporuḷ": "முதற்பொருள்",
+    "Karupporuḷ": "கருப்பொருள்",
+    "Uripporuḷ": "உரிப்பொருள்",
+    "Kuṟiñci": "குறிஞ்சி",
+    "Mullai": "முல்லை",
+    "Marutam": "மருதம்",
+    "Neytal": "நெய்தல்",
+    "Pālai": "பாலை",
+    "Cēyōṉ": "சேயோன்",
+    "Māyōṉ": "மாயோன்",
+    "Vēntan": "வேந்தன்",
+    "Varuṇaṉ": "வருணன்",
+    "Koṟṟavai": "கொற்றவை",
+    "Puṇartal": "புணர்தல்",
+    "Pirital": "பிரிதல்",
+    "Iruttal": "இருத்தல்",
+    "Iraṅkal": "இரங்கல்",
+    "Ūṭal": "ஊடல்",
+    "Meyppāṭu": "மெய்ப்பாடு",
+    "Tolkāppiyam": "தொல்காப்பியம்",
+    "Poruḷatikāram": "பொருளதிகாரம்",
+    "Collatikāram": "சொல்லதிகாரம்",
+    "Eḻuttatikāram": "எழுத்ததிகாரம்",
+    "Akattiṇaiyiyal": "அகத்திணையியல்",
+    "Puṟattiṇaiyiyal": "புறத்திணையியல்",
+    "Kaḷaviyal": "களவியல்",
+    "Kaṟpiyal": "கற்பியல்",
+    "Poruḷiyal": "பொருளியல்",
+    "Meyppāṭṭiyal": "மெய்ப்பாட்டியல்",
+    "Uvamaviyal": "உவமவியல்",
+    "Ceyyuḷiyal": "செய்யுளியல்",
+    "Marapiyal": "மரபியல்",
+    "Vaḻuvamaiti": "வழுவமைதி",
+    "Tiṇaivaḻu": "திணைவழு",
+    "Vēṟṟumai": "வேற்றுமை",
+    "Vinai": "வினை",
+    "Peyar": "பெயர்",
+    "Uvamam": "உவமம்",
+    "Akam": "அகம்",
+    "Puṟam": "புறம்",
+    "Aintiṇai": "ஐந்திணை",
+    "Tiṇai": "திணை",
+    "Nilam": "நிலம்",
+    "Poḻutu": "பொழுது",
+    "Vēṅkai": "வேங்கை",
+    "Kāntal": "காந்தல்",
+    "Koṉṟai": "கொன்றை",
+    "Tāmarai": "தாமரை",
+    "Tālai": "தாழை",
+    "Neytal-flower": "நெய்தல்",
+    "Kuraṅku": "குரங்கு",
+    "Mayil": "மயில்",
+    "Yāṉai": "யானை",
+    "Puli": "புலி",
+    "Kāṭai": "காடை",
+    "Māṉ": "மான்",
+    "Kalutam": "கழுதை",
+    "Aṟaneri": "அறநெறி",
+    "Vyāpti": "வியாப்தி",
+    "Pramāṇa": "பிரமாணம்",
+    "Hetu": "ஹேது",
+    "Hetvābhāsa": "ஹேத்வாபாசம்",
+    "Pratijñā": "பிரதிஞ்ஞை",
+    "Udāharaṇa": "உதாரணம்",
+    "Upanaya": "உபநயம்",
+    "Nigamana": "நிகமமனம்",
 }
 
 # Stopwords to remove from search query tokens (without stripping literary terms)
@@ -631,9 +1028,54 @@ class ProcessedQuery:
     # 8. Extra Diagnostics & Metadata
     metadata: Dict[str, Any] = field(default_factory=dict)
 
+    # 9. Multilingual Common Semantic Representation & Grounding
+    detected_language: str = ""
+    language_metadata: Dict[str, Any] = field(default_factory=dict)
+    identified_entities: List[Dict[str, Any]] = field(default_factory=list)
+    identified_concepts: List[Dict[str, Any]] = field(default_factory=list)
+    identified_entities_concepts: List[Dict[str, Any]] = field(default_factory=list)
+    retrieval_representation: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def preserved_tamil_terms(self) -> List[str]:
+        """Returns preserved Tamil script terms extracted for this query."""
+        if self.retrieval_representation and "preserved_tamil_terms" in self.retrieval_representation:
+            return self.retrieval_representation["preserved_tamil_terms"]
+        terms = []
+        for item in (self.identified_entities + self.identified_concepts + self.literary_terms):
+            tt = item.get("tamil_term") or item.get("term")
+            if tt and any('\u0B80' <= c <= '\u0BFF' for c in tt):
+                if tt not in terms:
+                    terms.append(tt)
+        return terms
+
     def to_dict(self) -> Dict[str, Any]:
-        """Returns JSON-serializable dictionary."""
-        return asdict(self)
+        """Returns structured dictionary fulfilling the Query Center backend specification."""
+        d = asdict(self)
+        # Ensure the exact top-level fields requested by the specification are first-class
+        d["original_query"] = self.original_query
+        d["detected_language"] = self.language or self.detected_language
+        d["language_metadata"] = self.language_metadata or {
+            "primary_language": self.language,
+            "language": self.language,
+            "language_code": self.language_code,
+            "script": self.script,
+            "is_tamil": self.is_tamil,
+            "is_english": self.is_english,
+            "is_mixed": self.is_mixed,
+            "tamil_ratio": self.tamil_ratio,
+            "english_ratio": self.english_ratio,
+        }
+        d["normalized_query"] = self.normalized_query
+        d["identified_entities"] = self.identified_entities if self.identified_entities is not None else self.entities
+        d["identified_concepts"] = self.identified_concepts if self.identified_concepts is not None else self.concepts
+        d["identified_entities_concepts"] = (
+            self.identified_entities_concepts
+            if self.identified_entities_concepts
+            else (d["identified_entities"] + d["identified_concepts"])
+        )
+        d["retrieval_representation"] = self.retrieval_representation
+        return d
 
 
 # =============================================================================
@@ -734,6 +1176,34 @@ class QueryPreprocessingService:
             entities, concepts, detected_tinai, source_references, literary_terms
         )
 
+        # 8d. Common Multilingual Semantic Representation & Dense Shared Embedding
+        detected_language = {
+            "primary_language": lang_info["language"],
+            "language": lang_info["language"],
+            "language_code": lang_info["language_code"],
+            "script": lang_info["script"],
+            "is_tamil": lang_info["is_tamil"],
+            "is_english": lang_info["is_english"],
+            "is_mixed": lang_info["is_mixed"],
+            "tamil_ratio": lang_info["tamil_ratio"],
+            "english_ratio": lang_info["english_ratio"],
+            "confidence": 0.95 if (lang_info["is_mixed"] or lang_info["is_tamil"]) else 0.90,
+        }
+
+        common_semantic_query = cls.build_common_semantic_query(
+            normalized_query, detected_tinai, literary_terms, lang_info["language"]
+        )
+
+        retrieval_representation = cls.build_retrieval_representation(
+            semantic_query=common_semantic_query,
+            vector_query=vector_query,
+            bm25_query=bm25_query,
+            bm25_tokens=bm25_tokens,
+            kg_seed_node_ids=kg_seed_node_ids,
+            kg_cypher_params=kg_cypher_params,
+            literary_terms=literary_terms,
+        )
+
         return ProcessedQuery(
             original_query=original_query,
             normalized_query=normalized_query,
@@ -765,6 +1235,12 @@ class QueryPreprocessingService:
                 "has_concepts": len(concepts) > 0,
                 "pipeline_version": "2.6.0",
             },
+            detected_language=lang_info["language"],
+            language_metadata=detected_language,
+            identified_entities=entities,
+            identified_concepts=concepts,
+            identified_entities_concepts=entities + concepts,
+            retrieval_representation=retrieval_representation,
         )
 
     @classmethod
@@ -937,9 +1413,13 @@ class QueryPreprocessingService:
                 canonical = meta["canonical"]
                 if canonical not in seen_canonical:
                     seen_canonical.add(canonical)
+                    tamil_term = meta.get("tamil_term") or CANONICAL_TAMIL_TERMS.get(canonical)
+                    if not tamil_term and any(0x0B80 <= ord(c) <= 0x0BFF for c in surface_form):
+                        tamil_term = surface_form
                     terms.append({
                         "surface_form": surface_form,
                         "canonical": meta["canonical"],
+                        "tamil_term": tamil_term or meta["canonical"],
                         "transliteration": meta["transliteration"],
                         "english": meta["english"],
                         "category": meta["category"],
@@ -978,17 +1458,22 @@ class QueryPreprocessingService:
     def categorize_terms(
         cls, literary_terms: List[Dict[str, Any]]
     ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
-        """Splits terms into concrete entities vs abstract concepts."""
+        """Splits terms into concrete entities vs abstract concepts while strictly preserving original Tamil terminology."""
         entities: List[Dict[str, Any]] = []
         concepts: List[Dict[str, Any]] = []
 
         concrete_categories = {"Deity", "Flora", "Fauna", "Landscape", "Work"}
 
         for t in literary_terms:
+            canonical = t["canonical"]
+            tamil_term = t.get("tamil_term") or CANONICAL_TAMIL_TERMS.get(canonical, canonical)
             item = {
-                "term": t["canonical"],
+                "term": canonical,
+                "canonical": canonical,
+                "tamil_term": tamil_term,
                 "surface_form": t["surface_form"],
                 "transliteration": t["transliteration"],
+                "english": t.get("english", ""),
                 "category": t["category"],
                 "tinai": t.get("tinai", "General"),
                 "kg_id": t.get("kg_id"),
@@ -1070,6 +1555,104 @@ class QueryPreprocessingService:
         return " ".join(components)
 
     @classmethod
+    def build_common_semantic_query(
+        cls,
+        normalized_text: str,
+        detected_tinai: str,
+        literary_terms: List[Dict[str, Any]],
+        language: str = "tamil",
+    ) -> str:
+        """
+        Builds a common cross-lingual semantic representation for Tamil, English,
+        and mixed-language queries.
+        Preserves original Tamil terminology in Tamil script alongside canonical
+        transliterations and English concept glosses so that queries in all languages
+        project into the same neighborhood in the shared embedding space.
+        """
+        components = [normalized_text]
+
+        # 1. Preserved Tamil terminology
+        tamil_terms = []
+        for t in literary_terms:
+            tt = t.get("tamil_term")
+            if tt and tt not in normalized_text and tt not in tamil_terms:
+                tamil_terms.append(tt)
+        if tamil_terms:
+            components.append("தமிழ்: " + " ".join(tamil_terms[:5]))
+
+        # 2. Canonical concept labels & English glosses
+        canonicals = [t["canonical"] for t in literary_terms if t.get("canonical")]
+        english_glosses = [t["english"] for t in literary_terms if t.get("english")]
+        concept_anchors = []
+        for c in canonicals[:4]:
+            if c.lower() not in normalized_text.lower() and c not in concept_anchors:
+                concept_anchors.append(c)
+        for eg in english_glosses[:3]:
+            if eg.lower() not in normalized_text.lower() and eg not in concept_anchors:
+                concept_anchors.append(eg)
+        if concept_anchors:
+            components.append("Concepts: " + ", ".join(concept_anchors))
+
+        # 3. Tiṇai context
+        if detected_tinai and detected_tinai != "General" and detected_tinai.lower() not in normalized_text.lower():
+            components.append(f"Tiṇai: {detected_tinai}")
+
+        return " | ".join(components)
+
+    @classmethod
+    def get_embedding_generator(cls):
+        """Lazy-loads shared SentenceTransformerEmbeddingGenerator instance."""
+        if not hasattr(cls, "_embedding_generator") or cls._embedding_generator is None:
+            from retrieval.embeddings import SentenceTransformerEmbeddingGenerator
+            cls._embedding_generator = SentenceTransformerEmbeddingGenerator()
+        return cls._embedding_generator
+
+    @classmethod
+    def build_retrieval_representation(
+        cls,
+        semantic_query: str,
+        vector_query: str,
+        bm25_query: str,
+        bm25_tokens: List[str],
+        kg_seed_node_ids: List[str],
+        kg_cypher_params: Dict[str, Any],
+        literary_terms: List[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        """
+        Constructs the unified retrieval representation in the shared multilingual semantic space.
+        Generates the dense embedding vector, records preserved Tamil terms, and prepares
+        downstream channel payloads.
+        """
+        generator = cls.get_embedding_generator()
+        emb_vector = generator.encode_one(semantic_query)
+        embedding_list = [round(float(v), 6) for v in emb_vector]
+
+        preserved_tamil_terms = []
+        for t in literary_terms:
+            tt = t.get("tamil_term")
+            if tt and tt not in preserved_tamil_terms:
+                preserved_tamil_terms.append(tt)
+
+        return {
+            "common_semantic_query": semantic_query,
+            "semantic_query": semantic_query,
+            "embedding": embedding_list,
+            "vector_dimension": len(embedding_list),
+            "embedding_model": getattr(generator, "model_name", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"),
+            "model_name": getattr(generator, "model_name", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"),
+            "shared_space": True,
+            "preserved_tamil_terms": preserved_tamil_terms,
+            "canonical_concepts": [t["canonical"] for t in literary_terms],
+            "channel_payloads": {
+                "vector_query": vector_query,
+                "bm25_query": bm25_query,
+                "bm25_tokens": bm25_tokens,
+                "kg_seed_node_ids": kg_seed_node_ids,
+                "kg_cypher_params": kg_cypher_params,
+            },
+        }
+
+    @classmethod
     def build_kg_payload(
         cls,
         entities: List[Dict[str, Any]],
@@ -1101,9 +1684,9 @@ class QueryPreprocessingService:
         if tinai in tinai_to_id and tinai_to_id[tinai] not in seed_ids:
             seed_ids.append(tinai_to_id[tinai])
 
-        # 3. Default fallback if no seeds found
+        # 3. Do not inject synthetic seeds for unmatched queries
         if not seed_ids:
-            seed_ids = ["mutalporul", "tolkappiyam"]
+            seed_ids = []
 
         # 4. Cypher parameters
         sutra_number = None
@@ -1150,9 +1733,43 @@ class QueryPreprocessingService:
             bm25_query="",
             bm25_tokens=[],
             vector_query="",
-            kg_seed_node_ids=["mutalporul"],
-            kg_cypher_params={"seed_ids": ["mutalporul"], "tinai": "General", "sutra_number": None, "search_terms": []},
+            kg_seed_node_ids=[],
+            kg_cypher_params={"seed_ids": [], "tinai": "General", "sutra_number": None, "search_terms": []},
             metadata={"focus": "Relationship", "is_empty": True},
+            detected_language="unknown",
+            language_metadata={
+                "primary_language": "unknown",
+                "language": "unknown",
+                "language_code": "unk",
+                "script": "Empty",
+                "is_tamil": False,
+                "is_english": False,
+                "is_mixed": False,
+                "tamil_ratio": 0.0,
+                "english_ratio": 0.0,
+                "confidence": 0.0,
+            },
+            identified_entities=[],
+            identified_concepts=[],
+            identified_entities_concepts=[],
+            retrieval_representation={
+                "common_semantic_query": "",
+                "semantic_query": "",
+                "embedding": [0.0] * 384,
+                "vector_dimension": 384,
+                "embedding_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+                "model_name": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+                "shared_space": True,
+                "preserved_tamil_terms": [],
+                "canonical_concepts": [],
+                "channel_payloads": {
+                    "vector_query": "",
+                    "bm25_query": "",
+                    "bm25_tokens": [],
+                    "kg_seed_node_ids": [],
+                    "kg_cypher_params": {"seed_ids": [], "tinai": "General", "sutra_number": None, "search_terms": []},
+                },
+            },
         )
 
 

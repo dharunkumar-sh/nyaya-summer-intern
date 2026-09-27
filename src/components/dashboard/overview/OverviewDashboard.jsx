@@ -2,8 +2,7 @@ import OverviewHeroBanner from './OverviewHeroBanner';
 import OverviewKpiGrid from './OverviewKpiGrid';
 import OverviewTinaiLandscapeExplorer from './OverviewTinaiLandscapeExplorer';
 import OverviewPramanaMatrix from './OverviewPramanaMatrix';
-import OverviewHetvabhasaGuard from './OverviewHetvabhasaGuard';
-import OverviewCorpusAtikaramCard from './OverviewCorpusAtikaramCard';
+// import OverviewHetvabhasaGuard from './OverviewHetvabhasaGuard';
 import OverviewModulesQuickNav from './OverviewModulesQuickNav';
 
 export default function OverviewDashboard() {
@@ -24,11 +23,10 @@ export default function OverviewDashboard() {
       {/* 5. Epistemic Instruments (4 Pramāṇas in Tolkāppiyam Epistemology) */}
       <OverviewPramanaMatrix />
 
-      {/* 6. Classical Fallacy Guard (Hetvābhāsa Defeasible Logic) */}
-      <OverviewHetvabhasaGuard />
+      {/* 6. Formal verification has been disabled for the dashboard. */}
+      {/* <OverviewHetvabhasaGuard /> */}
 
       {/* 7. Canonical 3-Atikāram Corpus Architecture */}
-      <OverviewCorpusAtikaramCard />
     </div>
   );
 }

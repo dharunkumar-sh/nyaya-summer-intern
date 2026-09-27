@@ -1,34 +1,46 @@
 """
 Knowledge Graph query engine supporting hierarchical traversal, k-hop subgraph extraction,
-path search with confidence propagation, and evidence tracing.
+path search with confidence propagation, and evidence tracing backed authoritatively by Neo4j Aura.
 """
 from typing import Dict, Any, List, Optional
-from .graph_builder import kg_instance
+from .neo4j_repository import neo4j_repository, Neo4jRepository
 from .ontology import TolkappiyamOntology
 
 
 class KnowledgeGraphQueryEngine:
     """Provides targeted traversal, relationship querying, and subgraph extraction for research queries."""
 
-    def __init__(self, graph_builder=None):
-        self.builder = graph_builder or kg_instance
+    def __init__(self, builder=None, repository: Optional[Neo4jRepository] = None):
+        if isinstance(builder, Neo4jRepository) or (builder is not None and hasattr(builder, "is_available")):
+            self.repo = builder
+            self.builder = None
+        else:
+            self.builder = builder
+            self.repo = repository or neo4j_repository
+
+        if self.builder is None:
+            try:
+                from .graph_builder import kg_instance
+                self.builder = kg_instance
+            except Exception:
+                self.builder = None
 
     def get_entity(self, entity_id: str) -> Optional[Dict[str, Any]]:
         """
         Retrieves a single entity with its hierarchy level, logical layer,
-        attributes, and direct neighbors.
+        attributes, and direct neighbors directly from Neo4j Aura.
         """
-        node = self.builder.store.get_node(entity_id)
-        if not node:
-            return None
-
-        node_dict = node.to_dict()
-        neighbors = self.builder.store.get_neighbors(entity_id, direction="both")
-        evidence = self.builder.store.get_source_evidence(entity_id)
-
-        node_dict["neighbors"] = neighbors
-        node_dict["evidence"] = evidence
-        return node_dict
+        if self.repo and self.repo.is_available():
+            return self.repo.get_entity_detail(entity_id)
+        if self.builder and hasattr(self.builder, "store"):
+            node = self.builder.store.get_node(entity_id)
+            if not node:
+                return None
+            node_dict = node.to_dict()
+            node_dict["neighbors"] = self.builder.store.get_neighbors(entity_id, direction="both")
+            node_dict["evidence"] = self.builder.store.get_source_evidence(entity_id)
+            return node_dict
+        return None
 
     def get_neighbors(
         self,
@@ -37,7 +49,15 @@ class KnowledgeGraphQueryEngine:
         relation: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Finds immediate incoming, outgoing, or bidirectional neighbors of an entity."""
-        return self.builder.store.get_neighbors(entity_id, direction=direction, relation=relation)
+        detail = self.get_entity(entity_id)
+        if not detail:
+            return []
+        neighbors = detail.get("neighbors", [])
+        if direction != "both":
+            neighbors = [n for n in neighbors if n.get("direction") == direction]
+        if relation:
+            neighbors = [n for n in neighbors if n.get("relation") == relation]
+        return neighbors
 
     def find_paths(
         self,
@@ -46,10 +66,13 @@ class KnowledgeGraphQueryEngine:
         max_depth: int = 3,
     ) -> List[Dict[str, Any]]:
         """
-        Finds all paths between two entities with propagated path confidence.
-        Confidence propagation: product of edge confidences along the path.
+        Finds all paths between two entities with propagated path confidence via Neo4j Aura.
         """
-        return self.builder.store.find_paths(source_id, target_id, max_depth=max_depth)
+        if self.repo and self.repo.is_available():
+            return self.repo.find_paths(source_id=source_id, target_id=target_id, max_depth=max_depth)
+        if self.builder and hasattr(self.builder, "store"):
+            return self.builder.store.find_paths(source_id, target_id, max_depth=max_depth)
+        return []
 
     def expand_subgraph(
         self,
@@ -57,27 +80,41 @@ class KnowledgeGraphQueryEngine:
         hops: int = 1,
         layer_filter: Optional[str] = None,
         hierarchy_filter: Optional[str] = None,
+        rel_types: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
-        Extracts a focused multi-hop subgraph around seed node(s) with layer and hierarchy filtering.
+        Extracts a focused multi-hop subgraph around seed node(s) with layer and hierarchy filtering from Neo4j Aura.
         """
-        subgraph = self.builder.store.expand_subgraph(
-            node_ids=node_ids,
-            hops=hops,
-            layer_filter=layer_filter,
-            hierarchy_filter=hierarchy_filter,
-        )
-        subgraph["categories"] = TolkappiyamOntology.get_category_config()
-        subgraph["hierarchy_levels"] = TolkappiyamOntology.get_hierarchy_config()
-        subgraph["logical_layers"] = TolkappiyamOntology.get_layer_config()
-        return subgraph
+        if self.repo and self.repo.is_available():
+            return self.repo.expand_subgraph(
+                node_ids=node_ids,
+                hops=hops,
+                layer_filter=layer_filter,
+                hierarchy_filter=hierarchy_filter,
+                rel_types=rel_types,
+            )
+        if self.builder and hasattr(self.builder, "store"):
+            subgraph = self.builder.store.expand_subgraph(
+                node_ids=node_ids,
+                hops=hops,
+                layer_filter=layer_filter,
+                hierarchy_filter=hierarchy_filter,
+            )
+            subgraph["categories"] = TolkappiyamOntology.get_category_config()
+            subgraph["hierarchy_levels"] = TolkappiyamOntology.get_hierarchy_config()
+            subgraph["logical_layers"] = TolkappiyamOntology.get_layer_config()
+            return subgraph
+        return {"nodes": [], "edges": [], "total_nodes": 0, "total_edges": 0}
 
     def get_source_evidence(self, node_id: str) -> List[Dict[str, Any]]:
         """
         Traces hierarchy ancestors up to Verse (L3), Section (L2), Work (L1), Literature (L0).
         Returns list of source evidence cards with citation and text.
         """
-        return self.builder.store.get_source_evidence(node_id)
+        detail = self.get_entity(node_id)
+        if detail:
+            return detail.get("evidence", [])
+        return []
 
     # -----------------------------------------------------------------------
     # Backward Compatibility Methods
@@ -91,9 +128,6 @@ class KnowledgeGraphQueryEngine:
     ) -> Dict[str, Any]:
         """Backward-compatible query_subgraph method."""
         center = focus_entity_id or "mutalporul"
-        if not self.builder.store.has_node(center):
-            center = "mutalporul"
-
         subgraph = self.expand_subgraph(
             node_ids=[center],
             hops=max_hops,
@@ -103,13 +137,13 @@ class KnowledgeGraphQueryEngine:
 
         if category_filter and category_filter != "All":
             subgraph["nodes"] = [
-                n for n in subgraph["nodes"]
+                n for n in subgraph.get("nodes", [])
                 if n.get("category") == category_filter or n.get("id") == center
             ]
             valid_ids = {n["id"] for n in subgraph["nodes"]}
             subgraph["edges"] = [
-                e for e in subgraph["edges"]
-                if e["source"] in valid_ids and e["target"] in valid_ids
+                e for e in subgraph.get("edges", [])
+                if e.get("source") in valid_ids and e.get("target") in valid_ids
             ]
             subgraph["total_nodes"] = len(subgraph["nodes"])
             subgraph["total_edges"] = len(subgraph["edges"])
@@ -119,3 +153,4 @@ class KnowledgeGraphQueryEngine:
     def get_entity_neighbors(self, entity_id: str) -> List[Dict[str, Any]]:
         """Backward-compatible get_entity_neighbors method."""
         return self.get_neighbors(entity_id, direction="both")
+

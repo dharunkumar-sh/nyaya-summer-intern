@@ -44,21 +44,26 @@ class QueryService:
         ranked_sutras = self.retriever.search(search_str, top_k=5)
         evidence_records = EvidenceRanker.format_evidence_records(ranked_sutras)
 
-        # 3. Knowledge Graph Subgraph Extraction
-        center_node = processed_query.kg_seed_node_ids[0] if processed_query.kg_seed_node_ids else ("kurinci" if tinai == "Kuṟiñci" else "mutalporul")
-        if decomposed["entities"]:
-            first_term = decomposed["entities"][0]["term"]
-            term_to_id = {
-                "சேயோன்": "ceyon",
-                "குறிஞ்சி": "kurinci",
-                "முதற்பொருள்": "mutalporul",
-                "வேங்கை": "venkai",
-                "புணர்தல்": "punartal",
-            }
-            center_node = term_to_id.get(first_term, center_node)
+        # 3. Dynamic Knowledge Graph Subgraph Retrieval from Neo4j Aura
+        has_direct_query_signals = bool(
+            processed_query.detected_tinai
+            or processed_query.kg_seed_node_ids
+            or decomposed.get("entities")
+            or decomposed.get("concepts")
+        )
+        valid_evidence = [
+            e for e in evidence_records
+            if (e.get("relevance_score") or e.get("confidence") or 0.0) >= 0.20
+        ] if not has_direct_query_signals else evidence_records
 
-        subgraph = self.kg_query.query_subgraph(
-            focus_entity_id=center_node,
+        query_input = {
+            "queryText": query_text,
+            "tinai": processed_query.detected_tinai,
+            "evidence": valid_evidence,
+            "seed_ids": processed_query.kg_seed_node_ids or [],
+        }
+        subgraph = graph_retrieval_service.retrieve_query_subgraph(
+            query_input=query_input,
             max_hops=depth,
         )
 

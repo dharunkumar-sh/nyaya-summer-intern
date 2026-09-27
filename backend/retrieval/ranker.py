@@ -1,4 +1,4 @@
-﻿"""
+"""
 Evidence-Ranking Layer for Classical Tamil Literary Knowledge in Hybrid RAG.
 
 Ranks retrieved evidence passages using five deterministic, configurable, and normalized signals:
@@ -45,9 +45,13 @@ def _tokenize_query(query: str, min_len: int = 2) -> List[str]:
     norm = _normalize_text(query)
     tokens = re.findall(r"[\w\u0B80-\u0BFF]+", norm)
     stopwords = {
+        # English functional words
         "a", "an", "the", "and", "or", "in", "on", "at", "to", "for", "with", "by",
         "of", "from", "is", "are", "was", "were", "what", "which", "who", "whom",
         "how", "where", "when", "why", "that", "this", "these", "those", "into", "about",
+        # Tamil functional/grammatical words
+        "என", "என்ற", "என்று", "ஆகும்", "ஆகிய", "ஆன", "மற்றும்", "அல்லது", "அதாவது",
+        "அது", "இது", "அவை", "இவை", "ஒரு", "பல", "படும்", "முறை",
     }
     return [t for t in tokens if len(t) >= min_len and t not in stopwords]
 

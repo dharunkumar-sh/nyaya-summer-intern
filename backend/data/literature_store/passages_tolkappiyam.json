@@ -1,0 +1,347 @@
+[
+  {
+    "id": "tol-porul-akam-003",
+    "work_id": "tolkappiyam",
+    "section_id": "tolkappiyam-porul",
+    "order_index": 1,
+    "passage_number": 3,
+    "original_text": "முதல்கரு உரிப்பொருள் என்ற மூன்றே\nநுவலும் காலை முறைசிறந் தனவே\nபாடலுட் பயின்றவை நாடும் காலை.",
+    "normalized_search_text": "முதல்கரு உரிப்பொருள் என்ற மூன்றே\nநுவலும் காலை முறைசிறந் தனவே\nபாடலுட் பயின்றவை நாடும் காலை.",
+    "transliteration": "mutalkaru uripporuḷ eṉṟa mūṉṟē\nnuvalum kālai muṟaiciṟan taṉavē\npāṭaluṭ payiṉṟavai nāṭum kālai.",
+    "english_translation": "Mutalporuḷ (spatio-temporal habitat), Karupporuḷ (biotic constituents), and Uripporuḷ (psychological mood)—these three are of superior order in verse composition when closely investigated.",
+    "category": "Epistemic Tripartite Semioc",
+    "tinai": "General",
+    "lines": [],
+    "commentaries": [],
+    "entities": [
+      "Mutalporuḷ",
+      "Karupporuḷ",
+      "Uripporuḷ",
+      "Pāṭal",
+      "Ceyyuḷ"
+    ],
+    "triples": [
+      {
+        "subject": "Akattiṇai",
+        "predicate": "hasConstituent",
+        "object": "Mutalporuḷ"
+      },
+      {
+        "subject": "Akattiṇai",
+        "predicate": "hasConstituent",
+        "object": "Karupporuḷ"
+      },
+      {
+        "subject": "Akattiṇai",
+        "predicate": "hasConstituent",
+        "object": "Uripporuḷ"
+      },
+      {
+        "subject": "Mutalporuḷ",
+        "predicate": "deterministicallyGrounds",
+        "object": "Uripporuḷ"
+      },
+      {
+        "subject": "Karupporuḷ",
+        "predicate": "manifestsSignifierFor",
+        "object": "Uripporuḷ"
+      }
+    ],
+    "metadata": {
+      "iyal": "Akattiṇaiyiyal",
+      "nyaya_mapping": {
+        "member": "Hetu",
+        "pramana": "Śabda Pramāṇa",
+        "axiom": "InvariantOntologicalDependency(Uripporuḷ, Mutalporuḷ)"
+      }
+    },
+    "provenance": null
+  },
+  {
+    "id": "tol-porul-akam-004",
+    "work_id": "tolkappiyam",
+    "section_id": "tolkappiyam-porul",
+    "order_index": 2,
+    "passage_number": 4,
+    "original_text": "முதல்எனப் படுவது நிலம்பொழுது இரண்டின்\nஇயல்பென மொழிப இயல்புணர்ந் தோரே.",
+    "normalized_search_text": "முதல்எனப் படுவது நிலம்பொழுது இரண்டின்\nஇயல்பென மொழிப இயல்புணர்ந் தோரே.",
+    "transliteration": "mutaleṉap paṭuvatu nilampoḻutu iraṇṭiṉ\niyalpeṉa moḻipa iyalpuṇarn tōrē.",
+    "english_translation": "What is termed Mutalporuḷ (primary ground) is the dual nature of Nilam (spatial landscape) and Poḻutu (temporal season/hour), as declared by those who know natural orders.",
+    "category": "Ontological Definition",
+    "tinai": "General",
+    "lines": [],
+    "commentaries": [],
+    "entities": [
+      "Mutalporuḷ",
+      "Nilam",
+      "Poḻutu",
+      "Kālam"
+    ],
+    "triples": [
+      {
+        "subject": "Mutalporuḷ",
+        "predicate": "consistsOf",
+        "object": "Nilam"
+      },
+      {
+        "subject": "Mutalporuḷ",
+        "predicate": "consistsOf",
+        "object": "Poḻutu"
+      },
+      {
+        "subject": "Nilam",
+        "predicate": "isSpaceDimensionOf",
+        "object": "Tiṇai"
+      },
+      {
+        "subject": "Poḻutu",
+        "predicate": "isTimeDimensionOf",
+        "object": "Tiṇai"
+      }
+    ],
+    "metadata": {
+      "iyal": "Akattiṇaiyiyal",
+      "nyaya_mapping": {
+        "member": "Pratijñā",
+        "pramana": "Śabda Pramāṇa",
+        "axiom": "Mutalporuḷ(x) ↔ SpatialLocus(x) ∧ TemporalLocus(x)"
+      }
+    },
+    "provenance": null
+  },
+  {
+    "id": "tol-porul-akam-005",
+    "work_id": "tolkappiyam",
+    "section_id": "tolkappiyam-porul",
+    "order_index": 3,
+    "passage_number": 5,
+    "original_text": "மாயோன் மேய காடுறை உலகமும்\nசேயோன் மேய மைவரை உலகமும்\nவேந்தன் மேய தீம்புனல் உலகமும்\nவருணன் மேய பெருமணல் உலகமும்\nமுல்லை குறிஞ்சி மருதம் நெய்தல்எனச்\nசொல்லிய முறையால் சொல்லவும் படுமே.",
+    "normalized_search_text": "மாயோன் மேய காடுறை உலகமும்\nசேயோன் மேய மைவரை உலகமும்\nவேந்தன் மேய தீம்புனல் உலகமும்\nவருணன் மேய பெருமணல் உலகமும்\nமுல்லை குறிஞ்சி மருதம் நெய்தல்எனச்\nசொல்லிய முறையால் சொல்லவும் படுமே.",
+    "transliteration": "māyōṉ mēya kāṭuṟai ulakamum\ncēyōṉ mēya maivarai ulakamum\nvēntan mēya tīmpuṉal ulakamum\nvaruṇaṉ mēya perumaṇal ulakamum\nmullai kuṟiñci marutam neytaleṉac\ncolliya muṟaiyāl collavum paṭumē.",
+    "english_translation": "The forested realm overseen by Māyōṉ (Mullai), the misty dark mountain realm overseen by Cēyōṉ (Kuṟiñci), the sweet-water riverine realm overseen by Vēntan (Marutam), and the vast sand realm overseen by Varuṇaṉ (Neytal)—are thus named in exact ordained order.",
+    "category": "Ecological Deity & Habitat Concordance",
+    "tinai": "Kuṟiñci",
+    "lines": [],
+    "commentaries": [],
+    "entities": [
+      "Cēyōṉ",
+      "Kuṟiñci",
+      "Maivarai",
+      "Māyōṉ",
+      "Mullai",
+      "Vēntan",
+      "Marutam",
+      "Varuṇaṉ",
+      "Neytal"
+    ],
+    "triples": [
+      {
+        "subject": "Cēyōṉ",
+        "predicate": "presidesOver",
+        "object": "Kuṟiñci"
+      },
+      {
+        "subject": "Kuṟiñci",
+        "predicate": "hasHabitat",
+        "object": "Maivarai (Mountain)"
+      },
+      {
+        "subject": "Māyōṉ",
+        "predicate": "presidesOver",
+        "object": "Mullai"
+      },
+      {
+        "subject": "Mullai",
+        "predicate": "hasHabitat",
+        "object": "Kāṭu (Forest)"
+      },
+      {
+        "subject": "Vēntan",
+        "predicate": "presidesOver",
+        "object": "Marutam"
+      },
+      {
+        "subject": "Marutam",
+        "predicate": "hasHabitat",
+        "object": "Tīmpuṉal (River Plains)"
+      },
+      {
+        "subject": "Varuṇaṉ",
+        "predicate": "presidesOver",
+        "object": "Neytal"
+      },
+      {
+        "subject": "Neytal",
+        "predicate": "hasHabitat",
+        "object": "Perumaṇal (Littoral Coast)"
+      }
+    ],
+    "metadata": {
+      "iyal": "Akattiṇaiyiyal",
+      "nyaya_mapping": {
+        "member": "Udāharaṇa",
+        "pramana": "Upamāna + Pratyakṣa",
+        "axiom": "∀x [MountainTerrain(x) ∧ CēyōṉHabitat(x) ⇒ KuṟiñciTiṇai(x)]"
+      }
+    },
+    "provenance": null
+  },
+  {
+    "id": "tol-porul-akam-014",
+    "work_id": "tolkappiyam",
+    "section_id": "tolkappiyam-porul",
+    "order_index": 4,
+    "passage_number": 14,
+    "original_text": "புணர்தல் பிரிதல் இருத்தல் இரங்கல்\nஊடல் இவற்றின் நிமித்தம்என்று இவை\nதேருங் காலைத் திணைக்குரிப் பொருளே.",
+    "normalized_search_text": "புணர்தல் பிரிதல் இருத்தல் இரங்கல்\nஊடல் இவற்றின் நிமித்தம்என்று இவை\nதேருங் காலைத் திணைக்குரிப் பொருளே.",
+    "transliteration": "puṇartal pirital iruttal iraṅkal\nūṭal ivaṟṟiṉ nimittameṉṟu ivai\ntēruṅ kālait tiṇaikkurip poruḷē.",
+    "english_translation": "Union (Puṇartal), separation (Pirital), patient endurance (Iruttal), melancholic pining (Iraṅkal), and lovers' feigned estrangement (Ūṭal), along with their proximate conditions—these constitute the essential Uripporuḷ (affective moods) of the respective Tiṇais.",
+    "category": "Affective Mood Invariance",
+    "tinai": "Kuṟiñci",
+    "lines": [],
+    "commentaries": [],
+    "entities": [
+      "Puṇartal",
+      "Pirital",
+      "Iruttal",
+      "Iraṅkal",
+      "Ūṭal",
+      "Uripporuḷ"
+    ],
+    "triples": [
+      {
+        "subject": "Kuṟiñci",
+        "predicate": "hasUripporuḷ",
+        "object": "Puṇartal (Intimate Union)"
+      },
+      {
+        "subject": "Pālai",
+        "predicate": "hasUripporuḷ",
+        "object": "Pirital (Separation)"
+      },
+      {
+        "subject": "Mullai",
+        "predicate": "hasUripporuḷ",
+        "object": "Iruttal (Patient Endurance)"
+      },
+      {
+        "subject": "Neytal",
+        "predicate": "hasUripporuḷ",
+        "object": "Iraṅkal (Anxious Pining)"
+      },
+      {
+        "subject": "Marutam",
+        "predicate": "hasUripporuḷ",
+        "object": "Ūṭal (Feigned Sulking)"
+      }
+    ],
+    "metadata": {
+      "iyal": "Akattiṇaiyiyal",
+      "nyaya_mapping": {
+        "member": "Upanaya",
+        "pramana": "Anumāna",
+        "axiom": "Subsume(TargetPassage, Kuṟiñci_Semiotic_Axioms)"
+      }
+    },
+    "provenance": null
+  },
+  {
+    "id": "tol-porul-mey-001",
+    "work_id": "tolkappiyam",
+    "section_id": "tolkappiyam-porul",
+    "order_index": 5,
+    "passage_number": 248,
+    "original_text": "பண்ணைத் தோன்றிய எண்வகை பொருளும்\nகண்ணிய புறனே நானான்கு என்ப.",
+    "normalized_search_text": "பண்ணைத் தோன்றிய எண்வகை பொருளும்\nகண்ணிய புறனே நானான்கு என்ப.",
+    "transliteration": "paṇṇait tōṉṟiya eṇvakai poruḷum\nkaṇṇiya puṟaṉē nānāṉku eṉpa.",
+    "english_translation": "The eightfold emotional manifestations (Meyppāṭu) appearing in dramatic and poetic contexts each generate four distinct causes, yielding thirty-two empirical manifestations.",
+    "category": "Aesthetic Realization",
+    "tinai": "General",
+    "lines": [],
+    "commentaries": [],
+    "entities": [
+      "Meyppāṭu",
+      "AestheticRealization",
+      "EightRasas",
+      "Poruḷ"
+    ],
+    "triples": [
+      {
+        "subject": "Meyppāṭṭiyal",
+        "predicate": "formulates",
+        "object": "EightEmotionalAesthetics"
+      },
+      {
+        "subject": "Uripporuḷ",
+        "predicate": "manifestsAs",
+        "object": "Meyppāṭu"
+      }
+    ],
+    "metadata": {
+      "iyal": "Meyppāṭṭiyal",
+      "nyaya_mapping": {
+        "member": "Nigamana",
+        "pramana": "Abādhita Pramāṇa",
+        "axiom": "∴ EpistemicSoundness(Tolkāppiyam) = 1.0"
+      }
+    },
+    "provenance": null
+  },
+  {
+    "id": "tol-porul-akam-018",
+    "work_id": "tolkappiyam",
+    "section_id": "tolkappiyam-porul",
+    "order_index": 6,
+    "passage_number": 18,
+    "original_text": "தெய்வம் உணாவே மாமரம் புட்பறை\nசெய்தி யாழின் பகுதியொடு தொகைஇ\nஅவ்வகை பிறவும் கருவென மொழிப.",
+    "normalized_search_text": "தெய்வம் உணாவே மாமரம் புட்பறை\nசெய்தி யாழின் பகுதியொடு தொகைஇ\nஅவ்வகை பிறவும் கருவென மொழிப.",
+    "transliteration": "teyvam uṇāvē māmaram puṭpaṟai\nceyti yāḻiṉ pakutiyoṭu tokaii\navvakai piṟavum karuveṉa moḻipa.",
+    "english_translation": "Deity, sustenance, animals, trees, birds, drums, occupational activity, lute varieties, and other such regional flora, fauna, and implements are designated as Karupporuḷ.",
+    "category": "Biotic Constituents",
+    "tinai": "General",
+    "lines": [],
+    "commentaries": [],
+    "entities": [
+      "Teyvam",
+      "Uṇā",
+      "Mā",
+      "Maram",
+      "Puḷ",
+      "Paṟai",
+      "Ceyti",
+      "Yāḻ",
+      "Karupporuḷ"
+    ],
+    "triples": [
+      {
+        "subject": "Karupporuḷ",
+        "predicate": "includesComponent",
+        "object": "Deity (Teyvam)"
+      },
+      {
+        "subject": "Karupporuḷ",
+        "predicate": "includesComponent",
+        "object": "Flora (Maram)"
+      },
+      {
+        "subject": "Karupporuḷ",
+        "predicate": "includesComponent",
+        "object": "Fauna (Mā & Puḷ)"
+      },
+      {
+        "subject": "Karupporuḷ",
+        "predicate": "includesComponent",
+        "object": "Music (Yāḻ & Paṟai)"
+      }
+    ],
+    "metadata": {
+      "iyal": "Akattiṇaiyiyal",
+      "nyaya_mapping": {
+        "member": "Hetu",
+        "pramana": "Pratyakṣa Pramāṇa",
+        "axiom": "Karupporuḷ(x) → ConcreteBioticSignifier(x)"
+      }
+    },
+    "provenance": null
+  }
+]

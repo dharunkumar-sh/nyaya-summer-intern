@@ -24,24 +24,21 @@ class LLMClient:
         tinai: str,
         evidence_items: List[Dict[str, Any]],
         structured_context: Optional[Any] = None,
+        lang_info: Optional[Dict[str, Any]] = None,
+        original_query: Optional[str] = None,
     ) -> FinalAnswerSchema:
         """Synthesizes final verified answer and scholarly justification."""
         from .openrouter_client import openrouter_client
+        from retrieval.language_utils import detect_query_language, format_insufficient_evidence_response
+
+        if lang_info is None or not isinstance(lang_info, dict):
+            lang_info = detect_query_language(original_query or query)
 
         # Strict guard: Insufficient retrieval must produce an explicit insufficient-evidence response
         if structured_context and hasattr(structured_context, "is_sufficient") and not structured_context.is_sufficient:
             reason = getattr(structured_context, "insufficient_reason", None) or "Insufficient canonical evidence retrieved."
-            return FinalAnswerSchema(
-                tamilAnswer="தீர்மானிக்கப் போதுமான தொல்காப்பியச் சான்றுகள் கிடைக்கவில்லை.",
-                englishAnswer="Insufficient canonical evidence retrieved to synthesize a grounded answer.",
-                subtitle=f"Evidence threshold unmet: {reason}",
-                confidenceScore=0.0,
-                starsCount=0.0,
-                verdictStatus="Insufficient Canonical Evidence (போதிய சான்றுகள் இல்லை)",
-                justificationTamil=f"வினாவிற்குரிய மூலச் சான்றுகளின் பொருத்தம் போதாமையால் முடிவு நிறுவப்படவில்லை ({reason}).",
-                justificationEnglish=f"Retrieved canonical passages did not meet the required relevance criteria ({reason}). Speculative answers are strictly disallowed.",
-                keySources=[],
-            )
+            insufficient_data = format_insufficient_evidence_response(lang_info, reason)
+            return FinalAnswerSchema(**insufficient_data)
 
         if Config.LLM_PROVIDER == "openrouter":
             return openrouter_client.synthesize_grounded_answer(
@@ -49,6 +46,8 @@ class LLMClient:
                 structured_context=structured_context,
                 tinai=tinai,
                 evidence_records=evidence_items,
+                lang_info=lang_info,
+                original_query=original_query,
             )
 
         # Build key sources from structured context or retrieved evidence
@@ -79,32 +78,58 @@ class LLMClient:
                     )
                 )
 
+        # Dynamic Uripporuḷ mapping per Tiṇai
+        tinai_uripporul = {
+            "Kuṟiñci": ("புணர்தலும் புணர்தல் நிமித்தமும் (Union)", "Puṇartal (Union and Erotic Conjunction)"),
+            "Mullai": ("இருத்தலும் இருத்தல் நிமித்தமும் (Patient Waiting)", "Iruttal (Patient Waiting / Domestic Endurance)"),
+            "Marutam": ("ஊடலும் ஊடல் நிமித்தமும் (Sulking)", "Ūṭal (Lovers' Sulking and Estrangement)"),
+            "Neytal": ("இரங்கலும் இரங்கல் நிமித்தமும் (Pining)", "Iraṅkal (Melancholic Pining and Longing)"),
+            "Pālai": ("பிரிதலும் பிரிதல் நிமித்தமும் (Separation)", "Pirital (Separation and Hardship Journey)"),
+        }
+        uri_ta, uri_en = tinai_uripporul.get(
+            tinai,
+            ("அகத்திணை ஒழுக்கம் (Affective Interiority)", "Akat-tiṇai Olukkam (Aesthetic Affective Interiority)")
+        )
+
+        source_citations = ", ".join([s.sutra for s in key_sources[:3]]) if key_sources else "சூத்திரம் 3, 5, 14"
+        source_ids = ", ".join([s.id for s in key_sources[:3]]) if key_sources else "E1, E2, E3"
+
         tamil_verdict = f"{tinai}த் திணை அக ஒழுக்கம் ஐயமற நிறுவப்பட்டது."
         english_verdict = f"{tinai} eco-semiotic affective mood is conclusively established."
 
         justification_ta = (
-            f"தொல்காப்பிய அகத்திணை முறைமையின்படி (சூத்திரம் 3, 5, 14), {tinai} நிலக் கூறுகளும் சூழலும் "
-            f"தலைவன் தலைவியின் புணர்தல் ஒழுக்கத்திற்கு இன்றியமையாத முதன்மைக் குறியீடுகளாக விளங்குகின்றன. "
-            f"மீட்கப்பட்ட சான்றுகள் E1, E2, E3 இவ்வியாப்தி நியதியை ஐயமற நிறுவுகின்றன."
+            f"தொல்காப்பிய அகத்திணை முறைமையின்படி ({source_citations}), {tinai} நிலக் கூறுகளும் சூழலும் "
+            f"தலைவன் தலைவியின் {uri_ta} ஒழுக்கத்திற்கு இன்றியமையாத முதன்மைக் குறியீடுகளாக விளங்குகின்றன. "
+            f"மீட்கப்பட்ட சான்றுகள் ({source_ids}) இவ்வியாப்தி நியதியை ஐயமற நிறுவுகின்றன."
         )
 
         justification_en = (
-            f"Under Tolkāppiyam Poruḷatikāram poetics, terrestrial habitat (Mutalporuḷ) and seasonal biota (Karupporuḷ) "
-            f"deterministically ground human emotional interiority (Uripporuḷ: Puṇartal in {tinai}). "
-            f"The retrieved canonical sūtras prove this invariable concomitance with 100% epistemic validity."
+            f"Under Tolkāppiyam Poruḷatikāram poetics ({source_citations}), terrestrial habitat (Mutalporuḷ) and seasonal biota (Karupporuḷ) "
+            f"deterministically ground human emotional interiority (Uripporuḷ: {uri_en} in {tinai}). "
+            f"The retrieved canonical sūtras ({source_ids}) prove this invariable concomitance with sound epistemic validity."
         )
 
-        top_score = 0.85
-        if evidence_items:
-            first_ev = evidence_items[0]
-            top_score = float(first_ev.get("relevance_score") or first_ev.get("confidence") or first_ev.get("confidenceScore") or 0.85)
+        from reasoning.confidence_evaluator import ConfidenceEvaluator
 
-        calc_stars = round(max(1.0, min(5.0, top_score * 5.0)), 1)
+        conf_eval = ConfidenceEvaluator.evaluate(
+            query=query,
+            evidence_records=evidence_items,
+            structured_context=structured_context,
+        )
+        top_score = conf_eval.confidence_score
+        calc_stars = conf_eval.confidence_stars
+
+        target_lang = lang_info.get("target_response_language", "english")
+        subtitle = (
+            f"முதற்பொருளும் கருப்பொருளும் {tinai} உரிப்பொருளை ({uri_ta.split('(')[0].strip()}) நிறுவுகின்றன."
+            if target_lang == "tamil"
+            else f"Mutal (Space-Time) and Karu (Biota) deterministically evoke {uri_en.split('(')[0].strip()} in {tinai}."
+        )
 
         return FinalAnswerSchema(
             tamilAnswer=tamil_verdict,
             englishAnswer=english_verdict,
-            subtitle=f"Mutal (Space-Time) and Karu (Biota) deterministically evoke Puṇartal in {tinai}.",
+            subtitle=subtitle,
             confidenceScore=round(top_score, 4),
             starsCount=calc_stars,
             verdictStatus="Sound Canonical Invariance (தொல்காப்பிய முறைமை நெறி)",

@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { Menu, X, Download } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useReasoner } from '../../context/ReasonerContext';
 
 export default function Header({
   sidebarOpen,
   setSidebarOpen,
   activeCorpus = null,
-  onExportProof,
 }) {
   const reasoner = useReasoner();
   const {
@@ -187,17 +186,6 @@ export default function Header({
             </div>
           )}
 
-          {onExportProof && (
-            <button
-              type="button"
-              onClick={onExportProof}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-900/40 hover:bg-purple-900/70 border border-purple-500/40 text-purple-200 hover:text-white text-xs font-medium transition-colors cursor-pointer"
-              title="Export Session Proofs as JSON"
-            >
-              <Download className="w-3.5 h-3.5 text-purple-300" />
-              <span className="hidden md:inline">Export Proof</span>
-            </button>
-          )}
         </div>
       </div>
     </header>

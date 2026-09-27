@@ -658,6 +658,9 @@ def answer_query():
         if param_key in body and param_key not in filters and body[param_key]:
             filters[param_key] = str(body[param_key]).strip()
 
+    detected_language = body.get("detected_language") or body.get("detectedLanguage") or body.get("language")
+    original_query = body.get("original_query") or body.get("originalQuery") or query
+
     try:
         answer_result = rag_engine.answer_query(
             query=query,
@@ -668,6 +671,8 @@ def answer_query():
             max_relationships=max_relationships,
             min_relevance_threshold=min_relevance_threshold,
             min_evidence_count=min_evidence_count,
+            detected_language=detected_language,
+            original_query=original_query,
         )
 
         is_sufficient = not answer_result.get("insufficient_evidence", False)
@@ -682,6 +687,8 @@ def answer_query():
             message=msg,
             meta={
                 "query": query,
+                "original_query": original_query,
+                "detected_language": answer_result.get("detected_language"),
                 "is_sufficient": is_sufficient,
                 "provider": answer_result.get("reasoning_metadata", {}).get("provider", "openrouter"),
                 "model": answer_result.get("reasoning_metadata", {}).get("model", "unknown"),

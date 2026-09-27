@@ -40,7 +40,7 @@ class Neo4jGraphStore(GraphStore):
         return driver is not None
 
     def add_node(self, node: KGNode) -> None:
-        """Upserts a node into Neo4j with primary and category labels."""
+        """Upserts a node into Neo4j with canonical primary label and standardized properties."""
         if not self.is_available():
             logger.warning(f"Neo4j unavailable. Skipped node add '{node.id}'")
             return
@@ -51,26 +51,35 @@ class Neo4jGraphStore(GraphStore):
             or "".join(c for c in node.type if c.isalnum())
             or "Entity"
         )
-        hier_label = node.hierarchy_level
 
         query = f"""
         MERGE (n:KGNode {{id: $id}})
         SET n:{type_label},
-            n:{hier_label},
             n.label = $label,
+            n.name = coalesce($name, $label, $id),
+            n.text = coalesce($text, ''),
             n.type = $type,
             n.hierarchy_level = $hierarchy_level,
             n.source = $source,
+            n.source_id = $source_id,
+            n.context = $context,
             n.confidence = $confidence,
+            n.validation_status = $validation_status,
             n.metadata_json = $metadata_json
         """
+        meta = node.metadata or {}
         params = {
             "id": node.id,
             "label": node.label,
+            "name": getattr(node, "name", None) or meta.get("name") or node.label,
+            "text": getattr(node, "text", None) or meta.get("text") or meta.get("original_text") or "",
             "type": node.type,
             "hierarchy_level": node.hierarchy_level,
             "source": node.source,
+            "source_id": meta.get("source_id") or node.id,
+            "context": meta.get("tinai") or meta.get("context") or "General",
             "confidence": float(node.confidence),
+            "validation_status": meta.get("validation_status") or "canonical_verified",
             "metadata_json": json.dumps(node.metadata, ensure_ascii=False),
         }
         self.service.execute_write(query, params)

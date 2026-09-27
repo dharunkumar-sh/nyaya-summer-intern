@@ -176,7 +176,7 @@ export default function VerseGroundingCard({ currentQuery: propQuery }) {
                 type="button"
                 onClick={handleFocusInGraph}
                 className="inline-flex items-center gap-1 text-[11px] text-blue-700 hover:text-blue-900 font-semibold cursor-pointer"
-                title="Focus this node in Cytoscape Knowledge Graph"
+                title="Focus this node in Knowledge Graph"
               >
                 <Network className="w-3 h-3" />
                 <span>Highlight in Knowledge Graph</span>

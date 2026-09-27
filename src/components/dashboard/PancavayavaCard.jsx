@@ -120,6 +120,12 @@ export default function PancavayavaCard({ currentQuery: propQuery, selectedEvide
   const hasError = Boolean(reasoner.reasoningError || reasoner.reasoningStatus === 'error');
   const isEmpty = !isLoading && !isInsufficient && !hasError && stages.length === 0;
 
+  const handleStageClick = (index) => {
+    if (typeof reasoner.setSelectedStageIndex === 'function') {
+      reasoner.setSelectedStageIndex(index);
+    }
+  };
+
   // 1. Loading State
   if (isLoading) {
     return (
@@ -128,6 +134,7 @@ export default function PancavayavaCard({ currentQuery: propQuery, selectedEvide
         subtitle="Complete deductively sound reasoning chain grounding Classical Tamil verse"
         icon={Cpu}
         accent="orange"
+        headerClassName="cursor-default"
       >
         <div className="space-y-3.5 py-2">
           <div className="flex items-center gap-2 text-xs text-amber-800 bg-amber-50 p-3 rounded-lg border border-amber-200 animate-pulse">
@@ -154,6 +161,7 @@ export default function PancavayavaCard({ currentQuery: propQuery, selectedEvide
         subtitle="Classical Nyāya Epistemic Boundary"
         icon={Cpu}
         accent="orange"
+        headerClassName="cursor-default"
       >
         <div className="p-4 rounded-xl bg-amber-50/90 border border-amber-200 text-amber-950 space-y-2">
           <div className="flex items-center gap-2 font-bold text-xs text-amber-900">
@@ -176,6 +184,7 @@ export default function PancavayavaCard({ currentQuery: propQuery, selectedEvide
         subtitle="Inference Deduction Error"
         icon={Cpu}
         accent="orange"
+        headerClassName="cursor-default"
       >
         <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-900 space-y-2">
           <div className="flex items-center gap-2 font-bold text-xs text-red-800">
@@ -216,6 +225,7 @@ export default function PancavayavaCard({ currentQuery: propQuery, selectedEvide
       subtitle="Sequential 5-Stage Deductive Inference (Pratijñā → Hetu → Udāharaṇa → Upanaya → Nigamana)"
       icon={Cpu}
       accent="orange"
+      headerClassName="cursor-default"
       actions={
         <div className="flex items-center gap-2 flex-wrap">
           <Badge variant="green" size="xs" dot>
@@ -241,7 +251,7 @@ export default function PancavayavaCard({ currentQuery: propQuery, selectedEvide
             </span>
           </div>
           <span className="font-mono text-purple-700 font-semibold text-xs shrink-0">
-            Proof Integrity: 100%
+            Proof Soundness: {reasoner.confidenceEvaluation?.confidencePercentage ?? (typeof reasoner.validationResults?.soundnessScore === 'number' ? Math.round(reasoner.validationResults.soundnessScore * 100) : 100)}%
           </span>
         </div>
       }
@@ -252,16 +262,19 @@ export default function PancavayavaCard({ currentQuery: propQuery, selectedEvide
           const stepNum = stage.stageNumber || index + 1;
           const config = NYAYA_CANONICAL_STAGES[index] || NYAYA_CANONICAL_STAGES[0];
           const IconComp = config.icon;
-          const isConnected = stage.linkedEvidenceId && stage.linkedEvidenceId === activeEvidenceId;
+          const isConnected = Boolean(stage.linkedEvidenceId && stage.linkedEvidenceId === activeEvidenceId);
           const isSelectedStage = reasoner.selectedStageIndex === index;
 
           return (
             <div key={stepNum} className="relative">
               <div
-                className={`relative p-3.5 sm:p-4 rounded-xl border transition-all duration-150 ${config.accent} border-l-4 shadow-2xs ${
-                  isConnected || isSelectedStage
+                onClick={() => handleStageClick(index)}
+                className={`relative p-3.5 sm:p-4 rounded-xl border transition-all duration-150 cursor-pointer hover:border-slate-400/80 ${config.accent} border-l-4 shadow-2xs ${
+                  isSelectedStage
                     ? `${config.bgActive} ring-2 ${config.ringColor} shadow-xs`
-                    : 'border-slate-200/90 bg-slate-50/40'
+                    : isConnected
+                      ? 'border-purple-300 bg-purple-50/30 hover:bg-purple-50/50'
+                      : 'border-slate-200/90 bg-slate-50/40 hover:bg-slate-50/80'
                 }`}
               >
                 {/* Stage Header */}
@@ -288,18 +301,30 @@ export default function PancavayavaCard({ currentQuery: propQuery, selectedEvide
                   </div>
 
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    {stage.linkedEvidenceId && (
+                    {typeof stage.confidence === 'number' && (
                       <span
-                        className={`inline-flex items-center gap-1 text-[10px] font-bold font-mono px-2 py-0.5 rounded-full ${
-                          isConnected
-                            ? 'bg-purple-700 text-white shadow-2xs'
-                            : 'bg-slate-100 text-slate-700 border border-slate-200'
-                        }`}
+                        className="text-[10px] font-mono font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200"
+                        title="Dynamic Stage Confidence"
                       >
-                        <Network className="w-2.5 h-2.5" />
-                        <span>[{stage.linkedEvidenceId}]</span>
+                        {Math.round(stage.confidence * 100)}%
                       </span>
                     )}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStageClick(index, stage, config);
+                      }}
+                      className={`inline-flex items-center gap-1 text-[10px] font-bold font-mono px-2 py-0.5 rounded-md transition-colors cursor-pointer ${
+                        isConnected || isSelectedStage
+                          ? 'bg-purple-700 text-white shadow-2xs'
+                          : 'bg-slate-200/80 text-slate-700 hover:bg-purple-100 hover:text-purple-800'
+                      }`}
+                      title="Locate & synchronize this reasoning step with D3 Knowledge Graph"
+                    >
+                      <Network className="w-2.5 h-2.5" />
+                      <span>{stage.linkedEvidenceId ? `[${stage.linkedEvidenceId}]` : 'D3 Sync'}</span>
+                    </button>
                     <Badge variant={config.badgeVariant} size="xs">
                       {stage.pramanaMode ? stage.pramanaMode.split(' ')[0] : 'Pramāṇa'}
                     </Badge>
@@ -350,4 +375,3 @@ export default function PancavayavaCard({ currentQuery: propQuery, selectedEvide
     </Card>
   );
 }
-

@@ -1,0 +1,14 @@
+[
+  {
+    "id": "uploaded-work-uploaded-sec",
+    "work_id": "uploaded-work",
+    "order_index": 1,
+    "name_tamil": "uploaded-sec",
+    "name_english": "uploaded-sec",
+    "section_type": "section",
+    "parent_section_id": null,
+    "total_passages": 1,
+    "description": null,
+    "metadata": {}
+  }
+]

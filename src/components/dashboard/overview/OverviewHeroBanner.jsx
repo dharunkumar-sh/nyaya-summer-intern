@@ -1,11 +1,7 @@
 import {
   Sparkles,
-  Cpu,
   Database,
   ArrowRight,
-  Zap,
-  Library,
-  Network,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Badge from "../../common/Badge";
@@ -13,22 +9,15 @@ import { useReasoner } from "../../../context/ReasonerContext";
 
 export default function OverviewHeroBanner() {
   const navigate = useNavigate();
-  const { corpus, dashboardSummary, queryStats, systemStatus, isNeo4jOnline } = useReasoner();
+  const { corpus, dashboardSummary, systemStatus, isNeo4jOnline } = useReasoner();
 
   const corpusData = dashboardSummary?.corpus || corpus;
   const dbInfo = systemStatus?.services?.database;
   const neo4jActive = isNeo4jOnline ?? (dbInfo?.connected ?? (dashboardSummary?.system_status?.neo4j_connected ?? false));
-  const searchRag = dashboardSummary?.search_and_rag;
   const reasoningData = dashboardSummary?.reasoning_and_soundness;
 
   const corpusName = corpusData?.name || "Tolkāppiyam";
   const totalSutras = corpusData?.total_sutras_canonical || corpusData?.totalSutras || (corpusData?.canonical_sutras ?? 1610);
-  const engineName = reasoningData?.framework?.split('(')[0]?.trim() || "Pañcāvayava Syllogism";
-  const avgLatency = queryStats?.latencyMs
-    ? `${queryStats.latencyMs} ms`
-    : searchRag?.average_inference_ms
-    ? `${searchRag.average_inference_ms} ms`
-    : (systemStatus?.services?.application?.latency_ms ? `${systemStatus.services.application.latency_ms} ms` : "--");
   const soundnessText = reasoningData ? `${reasoningData.soundness_rate}% Sound` : (dashboardSummary ? '100% Sound' : 'Pending Verification');
 
   return (
@@ -84,22 +73,6 @@ export default function OverviewHeroBanner() {
                 ({totalSutras.toLocaleString()} Sūtras)
               </span>
             </div>
-
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/80 text-slate-300">
-              <Cpu className="w-3.5 h-3.5 text-amber-400" />
-              <span className="text-slate-400">Engine:</span>
-              <span className="font-semibold text-slate-100">
-                {engineName}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/80 text-slate-300">
-              <Zap className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-slate-400">Avg Latency:</span>
-              <span className="font-mono font-semibold text-emerald-400">
-                {avgLatency}
-              </span>
-            </div>
           </div>
         </div>
 
@@ -114,26 +87,6 @@ export default function OverviewHeroBanner() {
             <span>Formulate Query</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
           </button>
-
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => navigate("/sutras")}
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white text-xs font-medium transition-colors cursor-pointer"
-            >
-              <Library className="w-3.5 h-3.5 text-blue-400" />
-              <span>Sūtras</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate("/knowledge-graph")}
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white text-xs font-medium transition-colors cursor-pointer"
-            >
-              <Network className="w-3.5 h-3.5 text-purple-400" />
-              <span>KG Graph</span>
-            </button>
-          </div>
         </div>
       </div>
     </div>

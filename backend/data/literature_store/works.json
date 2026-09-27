@@ -1,0 +1,85 @@
+[
+  {
+    "work_id": "tolkappiyam",
+    "title_tamil": "தொல்காப்பியம்",
+    "title_english": "Tolkāppiyam",
+    "author": "Tolkāppiyar",
+    "period": "Classical Sangam / Pre-Sangam",
+    "category": "Grammar & Poetics",
+    "total_sections": 3,
+    "total_passages": 6,
+    "description": "Canonical Classical Tamil treatise on orthography, phonology, morphology, syntax, and poetics.",
+    "level": "L0_CORPUS",
+    "metadata": {},
+    "provenance": null
+  },
+  {
+    "work_id": "kuruntokai",
+    "title_tamil": "தமிழ் இலக்கியம்",
+    "title_english": "kuruntokai",
+    "author": null,
+    "period": "Classical Sangam",
+    "category": "Classical Literature",
+    "total_sections": 1,
+    "total_passages": 1,
+    "description": null,
+    "level": "L0_CORPUS",
+    "metadata": {},
+    "provenance": {
+      "source_filename": "kuruntokai_sample.csv",
+      "file_format": "csv",
+      "checksum": "987ef8205037c3a7a098b15b86f9ee031ace91b6b1f83bbf3bdede6a8513dba6",
+      "ingested_at": "2026-09-25T06:12:28.565929+00:00",
+      "editor_or_compiler": "U. V. Swaminatha Iyer",
+      "edition": "First Critical Edition 1937",
+      "source_url": "https://tamilheritage.org/kuruntokai",
+      "raw_content_length": 310
+    }
+  },
+  {
+    "work_id": "api-ingest-test",
+    "title_tamil": "இறைச்சிக் கவிதை",
+    "title_english": "Iraicci Poetry",
+    "author": null,
+    "period": "Sangam",
+    "category": "Classical Literature",
+    "total_sections": 1,
+    "total_passages": 1,
+    "description": null,
+    "level": "L0_CORPUS",
+    "metadata": {},
+    "provenance": {
+      "source_filename": "payload.json",
+      "file_format": "json",
+      "checksum": "2571ffe6026c6d059561c1c129fb3ad5e88cb8ec8de2de7ae8ad4fe6a6565d4c",
+      "ingested_at": "2026-09-25T06:12:28.648624+00:00",
+      "editor_or_compiler": null,
+      "edition": null,
+      "source_url": null,
+      "raw_content_length": 650
+    }
+  },
+  {
+    "work_id": "uploaded-work",
+    "title_tamil": "தமிழ் இலக்கியம்",
+    "title_english": "uploaded-work",
+    "author": null,
+    "period": "Classical Sangam",
+    "category": "Classical Literature",
+    "total_sections": 1,
+    "total_passages": 1,
+    "description": null,
+    "level": "L0_CORPUS",
+    "metadata": {},
+    "provenance": {
+      "source_filename": "literature_upload.csv",
+      "file_format": "csv",
+      "checksum": "2ea867b7fbeae10cf68c8f739dec4b52ca32962754d46f1e3f2fd013f9b5895e",
+      "ingested_at": "2026-09-25T06:12:28.718415+00:00",
+      "editor_or_compiler": null,
+      "edition": null,
+      "source_url": null,
+      "raw_content_length": 137
+    }
+  }
+]

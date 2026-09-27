@@ -264,7 +264,7 @@ export const graphApi = {
     http.get('/api/kg/health', { signal, timeoutMs }),
 
   /**
-   * Retrieves graph elements (nodes & relationships) for Cytoscape.js.
+   * Retrieves graph elements (nodes & relationships) for Knowledge Graph visualization.
    * Endpoint: GET /api/kg/graph
    */
   getElements: ({
@@ -272,7 +272,7 @@ export const graphApi = {
     hops = 2,
     limit = 250,
     source = 'auto',
-    includeOntology = false,
+    includeOntology = true,
     category = null,
     signal = null,
     timeoutMs = 15000,
@@ -306,11 +306,177 @@ export const graphApi = {
     ),
 
   /**
+   * Retrieves dynamic query-driven Knowledge Graph subgraph from Neo4j Aura.
+   * Endpoint: POST /api/kg/query
+   */
+  queryGraph: ({
+    query = '',
+    depth = 2,
+    hops = 2,
+    limit = 150,
+    signal = null,
+    timeoutMs = 15000,
+  } = {}) =>
+    http.post(
+      '/api/kg/query',
+      {
+        query,
+        hops: depth || hops,
+        limit,
+      },
+      { signal, timeoutMs }
+    ),
+
+  /**
+   * Retrieves dynamic query-aware Knowledge Graph subgraph matching user query / hybrid retrieval evidence.
+   * Endpoint: POST /api/kg/query-subgraph
+   */
+  getQuerySubgraph: ({
+    query = '',
+    seedIds = [],
+    passages = [],
+    entities = [],
+    concepts = [],
+    events = [],
+    rules = [],
+    hops = 2,
+    relationshipTypes = null,
+    limit = 150,
+    includeIsolated = true,
+    signal = null,
+    timeoutMs = 15000,
+  } = {}) =>
+    http.post(
+      '/api/kg/query-subgraph',
+      {
+        query,
+        seed_ids: seedIds,
+        passages,
+        entities,
+        concepts,
+        events,
+        rules,
+        hops,
+        relationship_types: relationshipTypes,
+        limit,
+        include_isolated: includeIsolated,
+      },
+      { signal, timeoutMs }
+    ),
+
+  /**
    * Retrieves detailed schema, attributes, and neighbors for a single entity.
    * Endpoint: GET /api/kg/entity/<id>
    */
   getEntityDetail: (entityId, { signal = null, timeoutMs = 10000 } = {}) =>
     http.get(`/api/kg/entity/${encodeURIComponent(entityId)}`, { signal, timeoutMs }),
+
+  /**
+   * Retrieves directly connected and multi-hop nodes, relationships, directions, and lineage from Neo4j Aura.
+   * Endpoint: GET /api/kg/node/<id>/connected
+   */
+  getNodeConnected: (
+    nodeId,
+    {
+      hops = 1,
+      depth = null,
+      limit = 150,
+      allowedTypes = null,
+      excludedTypes = null,
+      relationshipTypes = null,
+      direction = 'both',
+      signal = null,
+      timeoutMs = 15000,
+    } = {}
+  ) => {
+    const effectiveHops = depth !== null && depth !== undefined ? depth : hops;
+    const params = {
+      hops: effectiveHops,
+      depth: effectiveHops,
+      limit,
+      direction,
+      ...(allowedTypes
+        ? { allowed_types: Array.isArray(allowedTypes) ? allowedTypes.join(',') : allowedTypes }
+        : {}),
+      ...(excludedTypes
+        ? { excluded_types: Array.isArray(excludedTypes) ? excludedTypes.join(',') : excludedTypes }
+        : {}),
+      ...(relationshipTypes
+        ? { rel_types: Array.isArray(relationshipTypes) ? relationshipTypes.join(',') : relationshipTypes }
+        : {}),
+    };
+    return http.get(`/api/kg/node/${encodeURIComponent(nodeId)}/connected`, {
+      params,
+      signal,
+      timeoutMs,
+    });
+  },
+
+  /**
+   * Performs bounded multi-hop traversal with configurable depth, type filters, and parent-child paths.
+   * Endpoint: POST /api/kg/node/traverse
+   */
+  traverseNode: (
+    nodeId,
+    {
+      hops = 2,
+      depth = null,
+      limit = 150,
+      allowedTypes = null,
+      excludedTypes = null,
+      relationshipTypes = null,
+      direction = 'both',
+      signal = null,
+      timeoutMs = 15000,
+    } = {}
+  ) =>
+    http.post(
+      '/api/kg/node/traverse',
+      {
+        node_id: nodeId,
+        hops: depth !== null && depth !== undefined ? depth : hops,
+        depth: depth !== null && depth !== undefined ? depth : hops,
+        limit,
+        direction,
+        allowed_types: allowedTypes,
+        excluded_types: excludedTypes,
+        relationship_types: relationshipTypes,
+      },
+      { signal, timeoutMs }
+    ),
+
+  /**
+   * Expands node neighborhood with connected nodes and relationships from Neo4j Aura.
+   * Endpoint: POST /api/kg/node/connected
+   */
+  expandNode: (
+    nodeId,
+    {
+      hops = 1,
+      depth = null,
+      limit = 150,
+      allowedTypes = null,
+      excludedTypes = null,
+      relationshipTypes = null,
+      direction = 'both',
+      signal = null,
+      timeoutMs = 15000,
+    } = {}
+  ) =>
+    http.post(
+      '/api/kg/node/connected',
+      {
+        node_id: nodeId,
+        hops: depth !== null && depth !== undefined ? depth : hops,
+        depth: depth !== null && depth !== undefined ? depth : hops,
+        limit,
+        direction,
+        allowed_types: allowedTypes,
+        excluded_types: excludedTypes,
+        relationship_types: relationshipTypes,
+      },
+      { signal, timeoutMs }
+    ),
 
   /**
    * Multi-hop path search with propagated path confidence.
@@ -328,6 +494,83 @@ export const graphApi = {
       signal,
       timeoutMs,
     }),
+
+  /**
+   * Executes strict mutation on Neo4j Aura and retrieves updated fresh subgraph.
+   * Endpoint: POST /api/kg/mutate
+   */
+  mutateGraph: ({
+    action,
+    entity = null,
+    relationship = null,
+    concept = null,
+    evidence = null,
+    query = '',
+    hops = 2,
+    limit = 150,
+    signal = null,
+    timeoutMs = 20000,
+  } = {}) =>
+    http.post(
+      '/api/kg/mutate',
+      {
+        action,
+        entity,
+        relationship,
+        concept,
+        evidence,
+        query,
+        hops,
+        limit,
+      },
+      { signal, timeoutMs }
+    ),
+
+  /**
+   * Idempotently upserts an entity into Neo4j Aura and retrieves fresh subgraph.
+   * Endpoint: POST /api/kg/entity
+   */
+  upsertEntity: ({
+    entity,
+    query = '',
+    hops = 2,
+    limit = 150,
+    signal = null,
+    timeoutMs = 20000,
+  } = {}) =>
+    http.post(
+      '/api/kg/entity',
+      {
+        entity,
+        query,
+        hops,
+        limit,
+      },
+      { signal, timeoutMs }
+    ),
+
+  /**
+   * Idempotently upserts a relationship into Neo4j Aura and retrieves fresh subgraph.
+   * Endpoint: POST /api/kg/relationship
+   */
+  upsertRelationship: ({
+    relationship,
+    query = '',
+    hops = 2,
+    limit = 150,
+    signal = null,
+    timeoutMs = 20000,
+  } = {}) =>
+    http.post(
+      '/api/kg/relationship',
+      {
+        relationship,
+        query,
+        hops,
+        limit,
+      },
+      { signal, timeoutMs }
+    ),
 };
 
 /**
@@ -442,6 +685,10 @@ export const ragApi = {
   generateGroundedAnswer: ({
     query = '',
     queryText = '',
+    originalQuery = '',
+    original_query = '',
+    detectedLanguage = null,
+    detected_language = null,
     topK = 5,
     depth = 2,
     maxContextChars = 4000,
@@ -462,6 +709,8 @@ export const ragApi = {
 
     const payload = {
       query: cleanQuery,
+      original_query: (originalQuery || original_query || cleanQuery).trim(),
+      detected_language: detectedLanguage || detected_language || null,
       top_k: Math.min(Math.max(parseInt(topK, 10) || 5, 1), 20),
       max_graph_depth: Math.min(Math.max(parseInt(depth, 10) || 2, 1), 4),
       max_context_chars: Math.min(Math.max(parseInt(maxContextChars, 10) || 4000, 500), 12000),
@@ -566,15 +815,30 @@ export const evidenceApi = {
    */
   getGroundedGraph: ({
     query = '',
+    seedIds = [],
+    passages = [],
+    entities = [],
+    concepts = [],
     hopDepth = 2,
     maxNodes = 50,
     maxPaths = 20,
+    relationshipTypes = null,
     signal = null,
     timeoutMs = 15000,
   } = {}) =>
     http.post(
       '/api/query/graph-retrieval',
-      { query, hopDepth, maxNodes, maxPaths },
+      {
+        query,
+        seed_ids: seedIds,
+        passages,
+        entities,
+        concepts,
+        hopDepth,
+        maxNodes,
+        maxPaths,
+        relationship_types: relationshipTypes,
+      },
       { signal, timeoutMs }
     ),
 };
@@ -667,6 +931,39 @@ export const reasoningApi = {
     ),
 
   /**
+   * Dynamically validates confidence score across evidence, graph traversal, and reasoning consistency.
+   * Endpoint: POST /api/reasoning/confidence/validate
+   */
+  validateConfidence: ({
+    query = '',
+    evidenceRecords = [],
+    selectedEvidenceId = null,
+    graphNodes = [],
+    selectedGraphNodeId = null,
+    reasoningStages = [],
+    premises = [],
+    vyaptiRule = null,
+    tinai = null,
+    signal = null,
+    timeoutMs = 12000,
+  } = {}) =>
+    http.post(
+      '/api/reasoning/confidence/validate',
+      {
+        query,
+        evidenceRecords,
+        selectedEvidenceId,
+        graphNodes,
+        selectedGraphNodeId,
+        reasoningStages,
+        premises,
+        vyaptiRule,
+        tinai,
+      },
+      { signal, timeoutMs }
+    ),
+
+  /**
    * Retrieves canonical research inquiries for benchmark testing.
    * Endpoint: GET /api/query/examples
    */
@@ -701,94 +998,9 @@ export const systemStatusApi = {
 };
 
 /**
- * 4.8 Corpus & Literature Domain (Hierarchy L0 -> L1 -> L2 -> L3)
+ * 4.8 Corpus Metadata Domain
  */
 export const corpusApi = {
-  /**
-   * Retrieves top-level literature corpus metadata (Hierarchy Level L0).
-   * Endpoint: GET /api/corpus/literature
-   */
-  getLiterature: ({ signal = null, timeoutMs = 10000 } = {}) =>
-    http.get('/api/corpus/literature', { signal, timeoutMs }),
-
-  /**
-   * Retrieves canonical treatises / works (Hierarchy Level L1).
-   * Endpoint: GET /api/corpus/works
-   */
-  getWorks: ({ signal = null, timeoutMs = 10000 } = {}) =>
-    http.get('/api/corpus/works', { signal, timeoutMs }),
-
-  /**
-   * Retrieves canonical work details by identifier.
-   * Endpoint: GET /api/corpus/works/<id>
-   */
-  getWorkById: (workId, { signal = null, timeoutMs = 10000 } = {}) =>
-    http.get(`/api/corpus/works/${encodeURIComponent(workId)}`, { signal, timeoutMs }),
-
-  /**
-   * Retrieves sections / Atikārams / Iyals (Hierarchy Level L2).
-   * Endpoint: GET /api/corpus/sections
-   */
-  getSections: ({
-    parentAtikaram = null,
-    atikaram = null,
-    book = null,
-    work = null,
-    workId = null,
-    signal = null,
-    timeoutMs = 10000,
-  } = {}) => {
-    const params = {
-      ...(parentAtikaram ? { parent_atikaram: parentAtikaram } : {}),
-      ...(atikaram ? { atikaram } : {}),
-      ...(book ? { book } : {}),
-      ...(work || workId ? { work: work || workId } : {}),
-    };
-    return http.get('/api/corpus/sections', { params, signal, timeoutMs });
-  },
-
-  /**
-   * Retrieves single section details by identifier.
-   * Endpoint: GET /api/corpus/sections/<id>
-   */
-  getSectionById: (sectionId, { signal = null, timeoutMs = 10000 } = {}) =>
-    http.get(`/api/corpus/sections/${encodeURIComponent(sectionId)}`, { signal, timeoutMs }),
-
-  /**
-   * Retrieves canonical literary passages / sūtras (Hierarchy Level L3) with filtering and pagination.
-   * Endpoint: GET /api/corpus/passages
-   */
-  getPassages: ({
-    section = null,
-    chapter = null,
-    tinai = null,
-    work = null,
-    query = null,
-    q = null,
-    page = 1,
-    pageSize = 10,
-    signal = null,
-    timeoutMs = 15000,
-  } = {}) => {
-    const params = {
-      page,
-      page_size: pageSize,
-      ...(section && section !== 'all' ? { section } : {}),
-      ...(chapter && chapter !== 'all' ? { chapter } : {}),
-      ...(tinai && tinai !== 'All' && tinai !== 'all' ? { tinai } : {}),
-      ...(work && work !== 'all' ? { work } : {}),
-      ...(query || q ? { q: (query || q).trim() } : {}),
-    };
-    return http.get('/api/corpus/passages', { params, signal, timeoutMs });
-  },
-
-  /**
-   * Retrieves single passage details by deterministic ID.
-   * Endpoint: GET /api/corpus/passages/<id>
-   */
-  getPassageById: (id, { signal = null, timeoutMs = 10000 } = {}) =>
-    http.get(`/api/corpus/passages/${encodeURIComponent(id)}`, { signal, timeoutMs }),
-
   /**
    * Retrieves canonical corpus overview and Atikāram summary.
    * Endpoint: GET /api/corpus/info
@@ -835,19 +1047,16 @@ export const getGraphStatistics = graphApi.getStatistics;
 export const getGraphHealth = graphApi.getHealth;
 export const getGraphElements = graphApi.getElements;
 export const getCorpusInfo = corpusApi.getCorpusInfo;
-export const getLiterature = corpusApi.getLiterature;
-export const getWorks = corpusApi.getWorks;
-export const getWorkById = corpusApi.getWorkById;
-export const getSections = corpusApi.getSections;
-export const getSectionById = corpusApi.getSectionById;
-export const getPassages = corpusApi.getPassages;
-export const getPassageById = corpusApi.getPassageById;
-export const getCorpusPassages = corpusApi.getPassages;
 export const getCorpusStatistics = corpusApi.getCorpusStatistics;
 export const validateFallacies = reasoningApi.validateFallacies;
+export const validateConfidence = reasoningApi.validateConfidence;
 export const getProofTrace = reasoningApi.getProofTrace;
 export const deduceReasoning = reasoningApi.deduce;
 export const getDashboardSummary = dashboardApi.getDashboardSummary;
 export const getSystemStatus = systemStatusApi.getStatus;
 export const pingSystem = systemStatusApi.ping;
-
+export const queryGraph = graphApi.queryGraph;
+export const getQuerySubgraph = graphApi.getQuerySubgraph;
+export const mutateGraph = graphApi.mutateGraph;
+export const upsertEntity = graphApi.upsertEntity;
+export const upsertRelationship = graphApi.upsertRelationship;

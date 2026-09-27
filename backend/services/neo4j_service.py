@@ -92,6 +92,8 @@ class Neo4jService:
         )
 
         self._driver: Optional[Driver] = None
+        self._connectivity_cache: Optional[Dict[str, Any]] = None
+        self._connectivity_cache_time: float = 0.0
 
     @property
     def database(self) -> str:
@@ -150,28 +152,37 @@ class Neo4jService:
             self._driver = None
             return None
 
-    def verify_connectivity(self, database: Optional[str] = None) -> Dict[str, Any]:
+    def verify_connectivity(self, database: Optional[str] = None, force_refresh: bool = False) -> Dict[str, Any]:
         """
         Pings Neo4j Aura using official driver verify_connectivity() functionality.
         Returns a diagnostic dictionary without exposing credentials.
+        Caches results for 5.0 seconds to eliminate DNS lookup latency spikes on repeated requests.
         """
+        now = time.time()
+        if not force_refresh and self._connectivity_cache is not None:
+            if now - self._connectivity_cache_time < 5.0:
+                return self._connectivity_cache
+
         target_db = database or self._default_database
         driver = self.get_driver()
         if driver is None:
-            return {
+            res = {
                 "status": "DISCONNECTED",
                 "connected": False,
                 "uri": self.masked_uri,
                 "database": target_db,
                 "error": "Driver not initialized (missing or unconfigured credentials)",
             }
+            self._connectivity_cache = res
+            self._connectivity_cache_time = now
+            return res
 
         start_time = time.perf_counter()
         try:
             driver.verify_connectivity()
             latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
             server_info = driver.get_server_info()
-            return {
+            res = {
                 "status": "CONNECTED",
                 "connected": True,
                 "uri": self.masked_uri,
@@ -183,7 +194,7 @@ class Neo4jService:
         except AuthError as e:
             safe_err = sanitize_text(str(e), self.password)
             logger.error(f"Neo4j Authentication failed: {safe_err}")
-            return {
+            res = {
                 "status": "AUTH_FAILED",
                 "connected": False,
                 "uri": self.masked_uri,
@@ -193,7 +204,7 @@ class Neo4jService:
         except ServiceUnavailable as e:
             safe_err = sanitize_text(str(e), self.password)
             logger.warning(f"Neo4j Aura instance unreachable: {safe_err}")
-            return {
+            res = {
                 "status": "UNREACHABLE",
                 "connected": False,
                 "uri": self.masked_uri,
@@ -203,13 +214,17 @@ class Neo4jService:
         except Exception as e:
             safe_err = sanitize_text(str(e), self.password)
             logger.error(f"Neo4j connectivity check error: {safe_err}")
-            return {
+            res = {
                 "status": "ERROR",
                 "connected": False,
                 "uri": self.masked_uri,
                 "database": target_db,
                 "error": "Failed to connect to Neo4j Aura",
             }
+
+        self._connectivity_cache = res
+        self._connectivity_cache_time = now
+        return res
 
     def startup_check(self, raise_on_failure: bool = False) -> Dict[str, Any]:
         """

@@ -55,10 +55,19 @@ class BM25Retriever:
         if not sutras:
             return
 
-        tokenized_corpus = [
-            TamilTokenizer.tokenize_words(s.get("tamil_text", ""), remove_stopwords=False)
-            for s in sutras
-        ]
+        tokenized_corpus = []
+        for s in sutras:
+            combined = " ".join([
+                str(s.get("tamil_text", "")),
+                str(s.get("english_translation", "")),
+                str(s.get("transliteration", "")),
+                str(s.get("tinai", "")),
+                str(s.get("category", "")),
+                " ".join(str(e) for e in s.get("entities", [])),
+            ])
+            tokens = [t.lower() for t in TamilTokenizer.tokenize_words(combined, remove_stopwords=False) if t.strip()]
+            tokenized_corpus.append(tokens)
+
         self.bm25 = BM25Plus(tokenized_corpus)
         self.records = sutras
         logger.info(f"BM25 Index built over {len(self.records)} canonical sūtras")
@@ -68,10 +77,21 @@ class BM25Retriever:
         if not chunks:
             return
 
-        tokenized_corpus = [
-            TamilTokenizer.tokenize_words(c.text, remove_stopwords=False)
-            for c in chunks
-        ]
+        tokenized_corpus = []
+        for c in chunks:
+            extra = ""
+            if hasattr(c, "metadata") and isinstance(c.metadata, dict):
+                extra = " ".join([
+                    str(c.metadata.get("english_translation", "")),
+                    str(c.metadata.get("transliteration", "")),
+                    str(c.metadata.get("tinai", "")),
+                    str(c.metadata.get("category", "")),
+                    " ".join(str(e) for e in c.metadata.get("entities", [])),
+                ])
+            combined = f"{c.text} {extra}".strip()
+            tokens = [t.lower() for t in TamilTokenizer.tokenize_words(combined, remove_stopwords=False) if t.strip()]
+            tokenized_corpus.append(tokens)
+
         self.bm25 = BM25Plus(tokenized_corpus)
         self.chunks = chunks
         self.records = chunks
@@ -91,7 +111,7 @@ class BM25Retriever:
         if not self.bm25 or len(self.records) == 0:
             return []
 
-        query_tokens = TamilTokenizer.tokenize_words(query, remove_stopwords=False)
+        query_tokens = [t.lower() for t in TamilTokenizer.tokenize_words(query, remove_stopwords=False) if t.strip()]
         if not query_tokens:
             return []
 

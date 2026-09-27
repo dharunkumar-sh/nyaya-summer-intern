@@ -30,14 +30,77 @@ class DenseNgramEmbeddingGenerator:
         self.idf: np.ndarray = np.empty(0, dtype=np.float32)
         self.is_fitted = False
 
+    CONCEPT_ALIGNMENT_MAP: Dict[str, str] = {
+        "kurinci": "குறிஞ்சி",
+        "kurinji": "குறிஞ்சி",
+        "montane": "குறிஞ்சி",
+        "mountain": "குறிஞ்சி",
+        "mullai": "முல்லை",
+        "pastoral": "முல்லை",
+        "forest": "முல்லை",
+        "marutam": "மருதம்",
+        "riverine": "மருதம்",
+        "river": "மருதம்",
+        "neytal": "நெய்தல்",
+        "seashore": "நெய்தல்",
+        "coastal": "நெய்தல்",
+        "littoral": "நெய்தல்",
+        "palai": "பாலை",
+        "desert": "பாலை",
+        "mutalporul": "முதற்பொருள்",
+        "primary": "முதற்பொருள்",
+        "ground": "முதற்பொருள்",
+        "karupporul": "கருப்பொருள்",
+        "biotic": "கருப்பொருள்",
+        "signifiers": "கருப்பொருள்",
+        "uripporul": "உரிப்பொருள்",
+        "affective": "உரிப்பொருள்",
+        "mood": "உரிப்பொருள்",
+        "interiority": "உரிப்பொருள்",
+        "union": "புணர்தல்",
+        "punartal": "புணர்தல்",
+        "separation": "பிரிதல்",
+        "pirital": "பிரிதல்",
+        "endurance": "இருத்தல்",
+        "waiting": "இருத்தல்",
+        "iruttal": "இருத்தல்",
+        "pining": "இரங்கல்",
+        "irankal": "இரங்கல்",
+        "sulking": "ஊடல்",
+        "quarrel": "ஊடல்",
+        "udal": "ஊடல்",
+        "meyppatu": "மெய்ப்பாடு",
+        "rasa": "மெய்ப்பாடு",
+        "sentiment": "மெய்ப்பாடு",
+        "tolkappiyam": "தொல்காப்பியம்",
+        "valuvamaiti": "வழுவமைதி",
+        "vazhuvamaiti": "வழுவமைதி",
+        "tolerance": "வழுவமைதி",
+        "exception": "வழுவமைதி",
+        "ceyon": "சேயோன்",
+        "mayon": "மாயோன்",
+        "ventan": "வேந்தன்",
+        "varunan": "வருணன்",
+        "korravai": "கொற்றவை",
+    }
+
     def _extract_ngrams(self, text: str) -> List[str]:
-        """Extracts character n-grams with word boundary markers."""
+        """Extracts character n-grams with word boundary markers and cross-lingual concept projection."""
         cleaned = TamilNormalizer.normalize(text)
         words = cleaned.split()
+
+        # Project English / transliterated words to shared Tamil canonical concepts
+        text_lower = text.lower()
+        projected_tamil_words: List[str] = []
+        for eng_key, tam_val in self.CONCEPT_ALIGNMENT_MAP.items():
+            if eng_key in text_lower and tam_val not in words:
+                projected_tamil_words.append(tam_val)
+
+        all_words = list(words) + projected_tamil_words
         ngrams = []
         min_n, max_n = self.ngram_range
 
-        for word in words:
+        for word in all_words:
             w = f" {word} "
             w_len = len(w)
             for n in range(min_n, min(max_n + 1, w_len + 1)):
@@ -126,6 +189,7 @@ class SentenceTransformerEmbeddingGenerator:
     ):
         self.model_name = model_name
         self.fallback_dim = fallback_dim
+        self.shared_space = True
         self._st_model = None
         self._fallback_encoder = DenseNgramEmbeddingGenerator(fixed_dim=fallback_dim)
         self._init_model()
@@ -197,3 +261,10 @@ def cosine_similarity(vec_a: np.ndarray, vec_b: np.ndarray) -> float:
 
 # Backward compatibility alias
 EmbeddingGenerator = DenseNgramEmbeddingGenerator
+
+
+def get_embedding_generator(model_name: Optional[str] = None) -> SentenceTransformerEmbeddingGenerator:
+    """Factory helper to obtain the multilingual SentenceTransformer embedding generator."""
+    if model_name:
+        return SentenceTransformerEmbeddingGenerator(model_name=model_name)
+    return SentenceTransformerEmbeddingGenerator()

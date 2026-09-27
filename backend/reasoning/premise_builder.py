@@ -1,4 +1,4 @@
-﻿"""
+"""
 Evidence-Grounded Premise Builder for Nyāya Syllogistic Inference.
 
 Extracts formal epistemic premises (Pakṣa, Hetu, and Dṛṣṭānta) directly from
@@ -26,38 +26,35 @@ class EvidenceGroundedPremiseBuilder:
     ) -> List[PremiseNode]:
         """
         Converts retrieved evidence items (EvidenceItem or dict) into structured PremiseNodes.
+        Requires genuine retrieved canonical evidence; returns an empty list if no evidence is provided.
         """
         if not evidence_items:
-            # Fallback default canonical premise if empty evidence
-            p1 = PremiseNode(
-                id="P1",
-                label="P1",
-                statement=f"In classical Tamil poetics, affective interiority cannot manifest without terrestrial habitat (Mutalporuḷ in {tinai}).",
-                tamil_statement=f"தொல்காப்பிய அகத்திணை முறைமையின்படி, {tinai} நிலத்தின் முதற்பொருளும் காலமும் அக ஒழுக்கத்தின் அடித்தளமாகும்.",
-                formal_logic=f"Premise(P1) : ∀verse [AffectiveState(verse) → GroundedIn(Mutalporuḷ, {tinai})]",
-                pramana_mode="Śabda Pramāṇa (Canonical Definition)",
-                grounded_passage_ids=["tol-porul-akam-003"],
-                grounded_sutra="Tolkāppiyam Poruḷatikāram (Akattiṇaiyiyal) Sūtra 3",
-                tinai=tinai,
-                concept_category="Mutalporuḷ",
-                confidence=0.95,
-            )
-            return [p1]
+            return []
 
         premises: List[PremiseNode] = []
 
         # Iterate through evidence items and construct grounded premises
         for idx, item in enumerate(evidence_items):
-            pid = getattr(item, "passage_id", None) or (item.get("passage_id") if isinstance(item, dict) else f"evidence-{idx+1}")
-            text = getattr(item, "text", "") or (item.get("text", "") if isinstance(item, dict) else "")
+            pid = getattr(item, "passage_id", None) or (item.get("passage_id") or item.get("id") if isinstance(item, dict) else "")
+            if not pid:
+                continue
+
+            text = getattr(item, "text", "") or (item.get("text") or item.get("original_text") if isinstance(item, dict) else "")
             src = getattr(item, "source", {}) or (item.get("source", {}) if isinstance(item, dict) else {})
             if not isinstance(src, dict):
                 src = {}
 
             score = getattr(item, "relevance_score", 0.95) or (item.get("relevance_score", 0.95) if isinstance(item, dict) else 0.95)
-            sutra_ref = src.get("reference") or f"{src.get('work', 'Tolkāppiyam')} {src.get('section', 'Poruḷ')} Sūtra {src.get('sutra_number', idx+1)}"
-            item_tinai = src.get("tinai") or tinai
-            category = src.get("category") or ("Mutalporuḷ" if idx == 0 else "Karupporuḷ")
+            sutra_num = src.get("sutra_number") or (item.get("sutra_number") if isinstance(item, dict) else None)
+            work = src.get("work") or src.get("work_name") or (item.get("work_name") if isinstance(item, dict) else "Tolkāppiyam")
+            section = src.get("section") or src.get("section_name") or (item.get("section_name") if isinstance(item, dict) else "Poruḷatikāram")
+            chapter = src.get("chapter") or src.get("chapter_name") or (item.get("chapter_name") if isinstance(item, dict) else "")
+            sutra_ref = src.get("reference") or src.get("source_reference") or (item.get("source_reference") if isinstance(item, dict) else None)
+            if not sutra_ref:
+                sutra_ref = f"{work} {section} {chapter} Sūtra {sutra_num if sutra_num else ''}".replace("  ", " ").strip()
+            item_tinai = src.get("tinai") or (item.get("tinai") if isinstance(item, dict) else tinai) or tinai
+            raw_cat = src.get("category") or (item.get("category") if isinstance(item, dict) else None)
+            category_str = str(raw_cat if raw_cat is not None else ("Mutalporuḷ" if idx == 0 else "Karupporuḷ"))
 
             code = f"P{idx + 1}"
 
@@ -66,13 +63,13 @@ class EvidenceGroundedPremiseBuilder:
             if len(clean_snippet) > 160:
                 clean_snippet = clean_snippet[:157] + "..."
 
-            if idx == 0 or "mutal" in category.lower():
+            if idx == 0 or "mutal" in category_str.lower():
                 stmt = f"Canonical treatise establishes terrestrial and temporal habitat: '{clean_snippet}'."
                 tamil_stmt = f"முதற்பொருள் சான்றாதாரத்தின்படி நிலமும் பொழுதும் அகப்பொருளுக்கு நிலைக்களனாக அமைகின்றன: {sutra_ref}."
                 logic = f"Premise({code}) : TerrestrialHabitat(x, {item_tinai}) ∧ CanonicalDefinition({pid})"
                 pramana = "Śabda Pramāṇa (Canonical Definition)"
                 cat = "Mutalporuḷ"
-            elif idx == 1 or "karu" in category.lower():
+            elif idx == 1 or "karu" in category_str.lower():
                 stmt = f"Biotic and environmental signifiers ground poetic behavior: '{clean_snippet}'."
                 tamil_stmt = f"கருப்பொருள் கூறுகளான சூழலியல் குறியீடுகள் அக ஒழுக்கத்தை வழிநடத்துகின்றன: {sutra_ref}."
                 logic = f"Premise({code}) : BioticSignifier(x, {item_tinai}) ∧ EmpiricalGround({pid})"

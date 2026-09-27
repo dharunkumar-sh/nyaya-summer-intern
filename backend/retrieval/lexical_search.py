@@ -88,6 +88,25 @@ class LexicalSearchEngine:
     """
 
     DEFAULT_CACHE_FILENAME = "lexical_bm25_index.json"
+    INDEX_VERSION = "2.6.1-multilingual"
+
+    @staticmethod
+    def strip_diacritics(text: str) -> str:
+        """Removes ISO 15919 diacritical marks to ensure robust fuzzy transliteration matching."""
+        if not text:
+            return ""
+        replacements = {
+            'ā': 'a', 'ē': 'e', 'ī': 'i', 'ō': 'o', 'ū': 'u',
+            'ṟ': 'r', 'ṉ': 'n', 'ṇ': 'n', 'ḷ': 'l', 'ṭ': 't',
+            'ñ': 'n', 'ṅ': 'n', 'ś': 's', 'ṣ': 's', 'ḻ': 'l',
+            'Ā': 'A', 'Ē': 'E', 'Ī': 'I', 'Ō': 'O', 'Ū': 'U',
+            'Ṟ': 'R', 'Ṉ': 'N', 'Ṇ': 'N', 'Ḷ': 'L', 'Ṭ': 'T',
+            'Ñ': 'N', 'Ṅ': 'N', 'Ś': 'S', 'Ṣ': 'S', 'Ḻ': 'L',
+        }
+        res = text
+        for char, rep in replacements.items():
+            res = res.replace(char, rep)
+        return res
 
     def __init__(
         self,
@@ -124,6 +143,7 @@ class LexicalSearchEngine:
     def _compute_dataset_hash(self) -> str:
         """Computes SHA256 checksum of the source dataset files for cache validation."""
         hasher = hashlib.sha256()
+        hasher.update(b"v2_bilingual_index_salt")
         target_path = self.corpus_path if self.corpus_path.exists() else self.raw_canonical_path
         if target_path.exists():
             with open(target_path, "rb") as f:
@@ -165,11 +185,22 @@ class LexicalSearchEngine:
         if cat:
             concepts.add(str(cat).strip())
 
-        # 2. Tiṇai
+        # 2. Tiṇai & Habitat landscape descriptors
         tinai = meta.get("tinai") or rec.get("tinai")
         if tinai and tinai != "General":
             concepts.add(f"{tinai} Tiṇai")
             concepts.add(str(tinai).strip())
+            tinai_lower = str(tinai).lower()
+            if "neytal" in tinai_lower:
+                concepts.update(["seashore", "coastal", "littoral", "marine", "sea", "sand"])
+            elif "kurinci" in tinai_lower or "kurinji" in tinai_lower:
+                concepts.update(["mountain", "montane", "slopes", "hills"])
+            elif "mullai" in tinai_lower:
+                concepts.update(["forest", "pastoral", "woodland", "jungle"])
+            elif "marutam" in tinai_lower:
+                concepts.update(["riverine", "river", "agricultural", "plains"])
+            elif "palai" in tinai_lower:
+                concepts.update(["arid", "desert", "wasteland"])
 
         # 3. Triples (Subjects, Objects, Predicates)
         triples = meta.get("triples") or rec.get("triples") or []
@@ -181,10 +212,14 @@ class LexicalSearchEngine:
                 if subj:
                     concepts.add(str(subj).strip())
                 if obj:
-                    clean_obj = str(obj).split("(")[0].strip()
+                    obj_str = str(obj).strip()
+                    clean_obj = obj_str.split("(")[0].strip()
                     if clean_obj:
                         concepts.add(clean_obj)
-                    concepts.add(str(obj).strip())
+                    concepts.add(obj_str)
+                    paren_match = re.findall(r"\(([^)]+)\)", obj_str)
+                    for pm in paren_match:
+                        concepts.add(pm.strip())
                 if pred:
                     concepts.add(str(pred).strip())
 
@@ -240,11 +275,50 @@ class LexicalSearchEngine:
             if verse_val:
                 source_ref += f" Sūtra {verse_val}"
 
-            # Tokenize passage text
+            # Tokenize passage text and augment with bilingual metadata tokens
             tokens = p.get("tokens")
             if not tokens:
                 tokens = TamilTokenizer.tokenize_words(norm_text, remove_stopwords=False)
             norm_tokens = [TamilNormalizer.normalize(t).lower() for t in tokens if t.strip()]
+
+            # Bilingual enrichment: add transliteration, translation, tinai, and concept tokens
+            aux_text = " ".join([
+                str(translation),
+                str(transliteration),
+                str(tinai) if tinai != "General" else "",
+                str(category) if category != "General" else "",
+                " ".join(str(c) for c in concepts),
+                " ".join(str(e) for e in entities),
+            ])
+            raw_aux_words = TamilTokenizer.tokenize_words(aux_text, remove_stopwords=False)
+            # Also extract English words directly with word boundaries
+            latin_words = re.findall(r"[a-zA-ZāīūṛṝḷḹēōñṅṇṭṟśṣḻĀĪŪṚṜḶḸĒŌÑṄṆṬṞŚṢḺ]+", aux_text)
+            all_aux_words = list(raw_aux_words) + latin_words
+
+            aux_tokens = [
+                TamilNormalizer.normalize(t).lower()
+                for t in all_aux_words
+                if t.strip() and len(t) > 1
+            ]
+            plain_aux_tokens = [
+                self.strip_diacritics(t).lower()
+                for t in aux_tokens
+                if self.strip_diacritics(t) != t and len(self.strip_diacritics(t)) > 1
+            ]
+            aux_tokens.extend(plain_aux_tokens)
+
+            all_doc_tokens = list(norm_tokens)
+            seen_tokens = set(all_doc_tokens)
+            for at in aux_tokens:
+                if at not in seen_tokens:
+                    all_doc_tokens.append(at)
+                    seen_tokens.add(at)
+
+            all_entities = list(entities)
+            for e in entities:
+                plain_e = self.strip_diacritics(str(e))
+                if plain_e != str(e) and plain_e not in all_entities:
+                    all_entities.append(plain_e)
 
             # 1. Primary Sūtra / Passage Document
             primary_source_metadata = {
@@ -253,8 +327,8 @@ class LexicalSearchEngine:
                 "chapter": chapter,
                 "verse": verse_val,
                 "sutra_number": verse_val,
-                "entity": list(entities),
-                "entities": list(entities),
+                "entity": all_entities,
+                "entities": all_entities,
                 "concept": concepts,
                 "concepts": concepts,
                 "source_identifier": doc_id,
@@ -273,7 +347,7 @@ class LexicalSearchEngine:
             primary_doc = PassageDocument(
                 passage_id=doc_id,
                 text=norm_text,
-                tokens=norm_tokens,
+                tokens=all_doc_tokens,
                 source_metadata=primary_source_metadata,
             )
             docs.append(primary_doc)
@@ -359,6 +433,7 @@ class LexicalSearchEngine:
 
         payload = {
             "version": "1.0.0",
+            "index_version": self.INDEX_VERSION,
             "corpus_hash": self._corpus_hash or self._compute_dataset_hash(),
             "k1": self.k1,
             "b": self.b,
@@ -385,6 +460,10 @@ class LexicalSearchEngine:
         try:
             with open(src, "r", encoding="utf-8") as f:
                 payload = json.load(f)
+
+            if payload.get("index_version") != self.INDEX_VERSION:
+                logger.info("LexicalSearchEngine: Index version updated, rebuilding index...")
+                return False
 
             cached_hash = payload.get("corpus_hash", "")
             current_hash = self._compute_dataset_hash()
@@ -606,6 +685,13 @@ class LexicalSearchEngine:
             for t in raw_query_tokens
             if t.strip()
         ]
+        # Also include diacritic-free query tokens for transliterations
+        plain_query_tokens = [
+            self.strip_diacritics(t)
+            for t in query_tokens
+            if self.strip_diacritics(t) not in query_tokens and len(self.strip_diacritics(t)) > 1
+        ]
+        query_tokens.extend(plain_query_tokens)
 
         # Tokenize exact terms if provided
         exact_token_filters: List[str] = []
@@ -648,18 +734,19 @@ class LexicalSearchEngine:
             # Check matched query terms
             matched_terms = [t for t in query_tokens if t in doc_tokens_set or any(t in dt for dt in doc.tokens)]
 
-            # Check phrase matching
+            # Check phrase matching (across text, translation, and transliteration)
             phrase_matched = False
+            full_searchable_text = f"{doc.text} {doc.source_metadata.get('translation', '')} {doc.source_metadata.get('transliteration', '')}"
             if quoted_phrases:
                 phrase_matches = [
-                    self._check_phrase_in_text(phrase, doc.text)
+                    self._check_phrase_in_text(phrase, full_searchable_text)
                     for phrase in quoted_phrases
                 ]
                 phrase_matched = all(phrase_matches) if phrase_matches else False
                 if require_phrase and not phrase_matched:
                     continue
             elif len(query_tokens) >= 2 and clean_query:
-                phrase_matched = self._check_phrase_in_text(clean_query, doc.text)
+                phrase_matched = self._check_phrase_in_text(clean_query, full_searchable_text)
                 if require_phrase and not phrase_matched:
                     continue
 

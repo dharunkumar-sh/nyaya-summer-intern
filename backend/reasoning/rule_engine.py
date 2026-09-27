@@ -1,4 +1,4 @@
-﻿"""
+"""
 First-Order Logic Horn-Clause Rule Engine for Tolkāppiyam Tiṇai Semiotics.
 
 Evaluates invariant concomitance rules (Vyāpti) linking habitat and aesthetic affect.
@@ -21,7 +21,9 @@ class TinaiRuleEngine:
             "formal_logic": "∀x [MountainTerrain(x) ∧ Midnight(x) ⇒ InvariableAffect(x, Puṇartal)]",
             "antecedents": ["MountainTerrain", "Midnight", "NocturnalMist", "Cēyōṉ", "Vēṅkai"],
             "consequent": "Puṇartal (Intimate Union)",
-            "exemplar_sutra": "Tolkāppiyam Akattiṇaiyiyal Sūtra 5",
+            "exemplar_sutra": "Tolkāppiyam Poruḷatikāram (Akattiṇaiyiyal) Sūtra 5",
+            "exemplar_passage_id": "tol-porul-akam-005",
+            "sutra_number": 5,
             "keywords": ["குறிஞ்சி", "சேயோன்", "மலை", "இரவு", "வேங்கை", "புணர்தல்", "mountain", "midnight", "union", "kurinci"],
         },
         "Mullai": {
@@ -30,7 +32,9 @@ class TinaiRuleEngine:
             "formal_logic": "∀x [ForestTerrain(x) ∧ RainySeason(x) ⇒ InvariableAffect(x, Iruttal)]",
             "antecedents": ["ForestTerrain", "RainySeason", "Evening", "Māyōṉ", "Kondrai"],
             "consequent": "Iruttal (Patient Waiting)",
-            "exemplar_sutra": "Tolkāppiyam Akattiṇaiyiyal Sūtra 5",
+            "exemplar_sutra": "Tolkāppiyam Poruḷatikāram (Akattiṇaiyiyal) Sūtra 5",
+            "exemplar_passage_id": "tol-porul-akam-005",
+            "sutra_number": 5,
             "keywords": ["முல்லை", "மாயோன்", "காடு", "மழை", "இருத்தல்", "forest", "pastoral", "rain", "waiting", "mullai"],
         },
         "Marutam": {
@@ -39,7 +43,9 @@ class TinaiRuleEngine:
             "formal_logic": "∀x [RiverinePlain(x) ∧ Dawn(x) ⇒ InvariableAffect(x, Ūṭal)]",
             "antecedents": ["RiverinePlain", "Dawn", "AgrarianBiota", "Vēntan", "Marutam"],
             "consequent": "Ūṭal (Lovers' Feigned Quarrel)",
-            "exemplar_sutra": "Tolkāppiyam Akattiṇaiyiyal Sūtra 5",
+            "exemplar_sutra": "Tolkāppiyam Poruḷatikāram (Akattiṇaiyiyal) Sūtra 5",
+            "exemplar_passage_id": "tol-porul-akam-005",
+            "sutra_number": 5,
             "keywords": ["மருதம்", "வேந்தன்", "வயல்", "விடியல்", "ஊடல்", "riverine", "plains", "quarrel", "sulking", "marutam"],
         },
         "Neytal": {
@@ -48,7 +54,9 @@ class TinaiRuleEngine:
             "formal_logic": "∀x [LittoralCoast(x) ∧ Sunset(x) ⇒ InvariableAffect(x, Iraṅkal)]",
             "antecedents": ["LittoralCoast", "Sunset", "OceanicBiota", "Varuṇan", "Tālai"],
             "consequent": "Iraṅkal (Melancholic Pining)",
-            "exemplar_sutra": "Tolkāppiyam Akattiṇaiyiyal Sūtra 5",
+            "exemplar_sutra": "Tolkāppiyam Poruḷatikāram (Akattiṇaiyiyal) Sūtra 5",
+            "exemplar_passage_id": "tol-porul-akam-005",
+            "sutra_number": 5,
             "keywords": ["நெய்தல்", "வருணன்", "கடல்", "மாலை", "இரங்கல்", "littoral", "sea", "coast", "pining", "neytal"],
         },
         "Pālai": {
@@ -57,7 +65,9 @@ class TinaiRuleEngine:
             "formal_logic": "∀x [AridWasteland(x) ∧ MiddaySummer(x) ⇒ InvariableAffect(x, Pirital)]",
             "antecedents": ["AridWasteland", "SummerNoon", "ParchedFlora", "Koṟṟavai", "Omai"],
             "consequent": "Pirital (Painful Separation)",
-            "exemplar_sutra": "Tolkāppiyam Akattiṇaiyiyal Sūtra 14",
+            "exemplar_sutra": "Tolkāppiyam Poruḷatikāram (Akattiṇaiyiyal) Sūtra 14",
+            "exemplar_passage_id": "tol-porul-akam-014",
+            "sutra_number": 14,
             "keywords": ["பாலை", "கொற்றவை", "சுரம்", "நண்பகல்", "பிரிதல்", "arid", "desert", "separation", "palai"],
         },
     }
@@ -190,9 +200,34 @@ class TinaiRuleEngine:
     ) -> List[RuleNode]:
         """
         Creates structured RuleNode instances for knowledge graph representation and persistence.
+        Grounded via the dedicated Vyāpti identification stage.
         """
+        from .vyapti_identifier import vyapti_identifier
+
         rule = cls.get_rule_for_tinai(tinai)
         subsumption = cls.evaluate_subsumption(tinai, evidence_items=evidence_items)
+
+        vyapti_result = vyapti_identifier.identify_vyapti(
+            evidence_items=evidence_items,
+            tinai=tinai,
+        )
+        is_established = vyapti_result.get("is_established", False)
+        grounded = vyapti_result.get("grounded_vyapti")
+
+        if is_established and grounded:
+            status = "grounded"
+            validated = subsumption["is_satisfied"]
+            conf = float(grounded.get("confidence", 0.99))
+            ex_sutra = grounded.get("source", rule["exemplar_sutra"])
+            f_logic = grounded.get("rule", rule["formal_logic"])
+            cand_dict = grounded
+        else:
+            status = "Vyāpti unavailable"
+            validated = False
+            conf = 0.0
+            ex_sutra = rule["exemplar_sutra"]
+            f_logic = f"Rule(R1) : Vyāpti unavailable (No canonical Neo4j evidence satisfies validation criteria)"
+            cand_dict = None
 
         rule_node = RuleNode(
             id="R1",
@@ -201,14 +236,16 @@ class TinaiRuleEngine:
             rule_name=rule["rule_name"],
             antecedents=rule["antecedents"],
             consequent=rule["consequent"],
-            formal_logic=rule["formal_logic"],
-            exemplar_sutra=rule["exemplar_sutra"],
+            formal_logic=f_logic,
+            exemplar_sutra=ex_sutra,
             tinai=tinai,
-            vyapti_validated=subsumption["is_satisfied"],
-            matched_antecedents=subsumption["matched_antecedents"],
+            vyapti_validated=validated,
+            vyapti_status=status,
+            candidate_vyapti=cand_dict,
+            matched_antecedents=subsumption["matched_antecedents"] if validated else [],
             missing_antecedents=subsumption["missing_antecedents"],
-            evidence_support_ids=subsumption["evidence_support_ids"],
-            confidence=0.99,
+            evidence_support_ids=subsumption["evidence_support_ids"] if validated else [],
+            confidence=conf,
         )
 
         return [rule_node]

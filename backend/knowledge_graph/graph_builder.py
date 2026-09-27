@@ -578,9 +578,11 @@ class KnowledgeGraphBuilder:
         nodes = [n.to_dict() for n in self.store.get_all_nodes()]
         node_ids = {str(n["id"]) for n in nodes}
 
+        raw_edges = self.store.get_all_edges()
         edges = []
         seen_edge_ids = set()
-        for idx, e in enumerate(self.store.get_all_edges()):
+        pair_counts = {}
+        for e in raw_edges:
             ed = e.to_dict()
             if "type" not in ed:
                 ed["type"] = ed.get("relation", "RELATED_TO")
@@ -598,13 +600,17 @@ class KnowledgeGraphBuilder:
                 tgt = "uriporul"
                 ed["target"] = tgt
 
-            # Validate endpoints exist
+            # Validate endpoints exist (supports self-referential edges where src == tgt)
             if src not in node_ids or tgt not in node_ids:
                 continue
 
+            pair_key = (src, ed.get("type"), tgt)
+            pair_counts[pair_key] = pair_counts.get(pair_key, 0) + 1
+
             edge_id = str(ed.get("id") or "")
             if not edge_id or edge_id in seen_edge_ids:
-                edge_id = f"e_{src}_{ed.get('type')}_{tgt}_{idx}"
+                # Deterministic stable ID without array index
+                edge_id = f"e_{src}_{ed.get('type')}_{tgt}_{pair_counts[pair_key]}"
                 ed["id"] = edge_id
             seen_edge_ids.add(edge_id)
             edges.append(ed)
@@ -618,6 +624,8 @@ class KnowledgeGraphBuilder:
             "logical_layers": TolkappiyamOntology.get_layer_config(),
             "total_nodes": len(nodes),
             "total_edges": len(edges),
+            "backend_node_count": len(nodes),
+            "backend_edge_count": len(raw_edges),
         }
 
 

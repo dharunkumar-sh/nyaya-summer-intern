@@ -5,8 +5,6 @@ import {
   Network,
   Cpu,
   BookOpen,
-  ShieldCheck,
-  Library,
   BarChart3,
   Activity,
   ChevronRight,
@@ -66,34 +64,21 @@ const ROUTE_GROUPS = [
         tamilLabel: "சான்றுத் திரட்டு",
         icon: BookOpen,
       },
-      {
-        id: "sutras",
-        path: "/sutras",
-        label: "Literature & Corpus",
-        tamilLabel: "இலக்கியமும் நூற்பாவும்",
-        icon: Library,
-      },
     ],
   },
   {
-    groupTitle: "Formal Verification",
+    groupTitle: "System & Analytics",
     routes: [
-      {
-        id: "fallacies",
-        path: "/fallacies",
-        label: "Hetvābhāsa Checker",
-        tamilLabel: "ஏதுவாபாச ஆய்வு",
-        icon: ShieldCheck,
-      },
       {
         id: "analytics",
         path: "/analytics",
-        label: "Epistemic Analytics",
-        tamilLabel: "புள்ளிவிவரம் & நலம்",
+        label: "Analytics & KG Health",
+        tamilLabel: "பகுப்பாய்வு & அறிவு ஆரோக்கியம்",
         icon: BarChart3,
       },
     ],
   },
+  /* Formal verification section disabled. */
 ];
 
 export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
@@ -105,14 +90,6 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
     isLoadingStats,
     statsError,
     refreshStats,
-    systemStatus,
-    isLoadingSystemStatus,
-    systemStatusError,
-    refetchSystemStatus,
-    isBackendOnline,
-    isNeo4jOnline,
-    isRetrievalOnline,
-    isSystemDegraded,
   } = useReasoner();
 
   const currentCorpus = corpus || {
@@ -123,61 +100,10 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
     formattedCount: "1,610 Sūtras",
   };
 
-  // Derive dynamic canonical book counts and distribution percentages from live corpus
-  const books = currentCorpus.books || currentCorpus.sections || [];
-  const eluttuBook = books.find(
-    (b) =>
-      b.id === "eluttu" ||
-      (b.name && b.name.toLowerCase().includes("eluttu")) ||
-      (b.english && b.english.toLowerCase().includes("orthography")),
-  );
-  const colBook = books.find(
-    (b) =>
-      b.id === "col" ||
-      (b.name && b.name.toLowerCase().includes("col")) ||
-      (b.english && b.english.toLowerCase().includes("morphology")),
-  );
-  const porulBook = books.find(
-    (b) =>
-      b.id === "porul" ||
-      (b.name && b.name.toLowerCase().includes("porul")) ||
-      (b.english && b.english.toLowerCase().includes("poetics")),
-  );
-
-  const eluttuCount = eluttuBook
-    ? (eluttuBook.canonical_sutras_count ??
-      eluttuBook.sutra_count ??
-      eluttuBook.sutrasCount ??
-      483)
-    : 483;
-  const colCount = colBook
-    ? (colBook.canonical_sutras_count ??
-      colBook.sutra_count ??
-      colBook.sutrasCount ??
-      463)
-    : 463;
-  const porulCount = porulBook
-    ? (porulBook.canonical_sutras_count ??
-      porulBook.sutra_count ??
-      porulBook.sutrasCount ??
-      664)
-    : 664;
-
   const totalSutras =
     currentCorpus.total_sutras_canonical ||
     currentCorpus.totalSutras ||
-    eluttuCount + colCount + porulCount ||
     1610;
-
-  // Canonical distribution percentage in dataset: Eḻuttu (30.0%), Col (28.8%), Poruḷ (41.2%)
-  const eluttuPct =
-    totalSutras > 0 ? ((eluttuCount / totalSutras) * 100).toFixed(1) : "30.0";
-  const colPct =
-    totalSutras > 0 ? ((colCount / totalSutras) * 100).toFixed(1) : "28.8";
-  const porulPct =
-    totalSutras > 0
-      ? (100 - parseFloat(eluttuPct) - parseFloat(colPct)).toFixed(1)
-      : "41.2";
 
   // SVG Circular Gauge calculations for live KG Health
   const radius = 32;
@@ -294,65 +220,6 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
               </Badge>
             </div>
 
-            {/* Atikāram Segmented Distribution Bar */}
-            <div className="mt-3 pt-2.5 border-t border-slate-800/80">
-              <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1.5 font-mono">
-                <span className="whitespace-nowrap">Book Distribution</span>
-                <span className="text-slate-300 whitespace-nowrap">
-                  {books.length || currentCorpus.books_count || 3} Atikārams
-                </span>
-              </div>
-
-              {/* Stacked Progress Bar in Canonical Sequence: Eḻuttu (30.0%), Col (28.8%), Poruḷ (41.2%) */}
-              <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden flex shadow-inner">
-                {/* Eḻuttu */}
-                <div
-                  className="bg-blue-500 h-full transition-all duration-500"
-                  style={{ width: `${eluttuPct}%` }}
-                  title={`Eḻuttatikāram (எழுத்து): ${eluttuCount.toLocaleString()} Sūtras (${eluttuPct}%)`}
-                />
-                {/* Col */}
-                <div
-                  className="bg-indigo-500 h-full transition-all duration-500"
-                  style={{ width: `${colPct}%` }}
-                  title={`Collatikāram (சொல்): ${colCount.toLocaleString()} Sūtras (${colPct}%)`}
-                />
-                {/* Poruḷ */}
-                <div
-                  className="bg-purple-500 h-full transition-all duration-500"
-                  style={{ width: `${porulPct}%` }}
-                  title={`Poruḷatikāram (பொருள்): ${porulCount.toLocaleString()} Sūtras (${porulPct}%)`}
-                />
-              </div>
-
-              {/* 3-Part Micro Grid in Canonical Sequence */}
-              <div className="grid grid-cols-3 gap-1.5 mt-2 text-[10px] text-center font-mono">
-                <div className="bg-slate-950/70 py-1.5 px-1 rounded border border-slate-800/90 flex flex-col items-center justify-center">
-                  <span className="text-slate-400 block text-[10px] font-medium leading-tight">
-                    எழுத்து
-                  </span>
-                  <span className="font-bold text-xs text-blue-300 mt-0.5">
-                    {isLoadingCorpus ? "..." : eluttuCount.toLocaleString()}
-                  </span>
-                </div>
-                <div className="bg-slate-950/70 py-1.5 px-1 rounded border border-slate-800/90 flex flex-col items-center justify-center">
-                  <span className="text-slate-400 block text-[10px] font-medium leading-tight">
-                    சொல்
-                  </span>
-                  <span className="font-bold text-xs text-indigo-300 mt-0.5">
-                    {isLoadingCorpus ? "..." : colCount.toLocaleString()}
-                  </span>
-                </div>
-                <div className="bg-slate-950/70 py-1.5 px-1 rounded border border-slate-800/90 flex flex-col items-center justify-center">
-                  <span className="text-slate-400 block text-[10px] font-medium leading-tight">
-                    பொருள்
-                  </span>
-                  <span className="font-bold text-xs text-purple-300 mt-0.5">
-                    {isLoadingCorpus ? "..." : porulCount.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* SECTION 2: Categorized Navigation Routes */}
@@ -590,176 +457,18 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
               </div>
             )}
 
-            {/* Quick Stats 4-Chip Grid from live backend statistics */}
-            <div className="pt-2 border-t border-slate-800/80 grid grid-cols-2 gap-1.5 text-center font-mono">
-              <div className="bg-slate-950/60 p-1.5 rounded border border-slate-800/80">
-                <span className="text-slate-400 block text-[9px]">
-                  Relations
-                </span>
-                <span className="font-bold text-xs text-slate-200">
-                  {isLoadingStats
-                    ? "..."
-                    : (graphStatistics?.total_edges ??
-                      graphStatistics?.relation_count ??
-                      0)}
-                </span>
-              </div>
-              <div className="bg-slate-950/60 p-1.5 rounded border border-slate-800/80">
-                <span className="text-slate-400 block text-[9px]">
-                  Entities
-                </span>
-                <span className="font-bold text-xs text-slate-200">
-                  {isLoadingStats
-                    ? "..."
-                    : (graphStatistics?.total_nodes ??
-                      graphStatistics?.entity_count ??
-                      0)}
-                </span>
-              </div>
-              <div className="bg-slate-950/60 p-1.5 rounded border border-slate-800/80">
-                <span className="text-slate-400 block text-[9px]">
-                  Concepts
-                </span>
-                <span className="font-bold text-xs text-slate-200">
-                  {isLoadingStats
-                    ? "..."
-                    : (graphStatistics?.layer_distribution?.["Concept Layer"] ??
-                      graphStatistics?.hierarchy_distribution?.L4 ??
-                      graphStatistics?.layer_distribution
-                        ?.Ontological_Concepts ??
-                      0)}
-                </span>
-              </div>
-              <div className="bg-slate-950/60 p-1.5 rounded border border-slate-800/80">
-                <span className="text-slate-400 block text-[9px]">Rules</span>
-                <span className="font-bold text-xs text-purple-300">
-                  {isLoadingStats
-                    ? "..."
-                    : (graphStatistics?.layer_distribution?.[
-                        "Reasoning Layer"
-                      ] ??
-                      (graphStatistics?.hierarchy_distribution?.L4 != null ||
-                      graphStatistics?.hierarchy_distribution?.L5 != null
-                        ? (graphStatistics.hierarchy_distribution.L4 || 0) +
-                          (graphStatistics.hierarchy_distribution.L5 || 0)
-                        : (graphStatistics?.hierarchy_distribution
-                            ?.Axiom_Rules ?? 0)))}
-                </span>
-              </div>
-            </div>
           </div>
 
-          {/* SECTION 4: Live Subsystems & Real-Time Service Health Monitoring */}
-          <div className="rounded-xl bg-slate-900/80 border border-slate-800/90 p-3 shadow-sm text-[10px] text-slate-400 space-y-2.5">
-            {/* Header with overall status badge and ping action */}
-            <div className="flex items-center justify-between pb-1.5 border-b border-slate-800/60">
-              <span className="font-semibold text-slate-200 text-[11px] flex items-center gap-1.5">
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    isLoadingSystemStatus
-                      ? "bg-purple-400 animate-pulse"
-                      : !isBackendOnline || systemStatusError
-                        ? "bg-rose-500 animate-ping"
-                        : isSystemDegraded
-                          ? "bg-amber-400"
-                          : "bg-emerald-400"
-                  }`}
-                />
-                Service Connectivity
-              </span>
-              <div className="flex items-center gap-2">
-                <span
-                  className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase ${
-                    !isBackendOnline || systemStatusError
-                      ? "bg-rose-900/50 text-rose-300 border border-rose-700/50"
-                      : isSystemDegraded
-                        ? "bg-amber-900/50 text-amber-300 border border-amber-700/50"
-                        : "bg-emerald-900/50 text-emerald-300 border border-emerald-700/50"
-                  }`}
-                >
-                  {isLoadingSystemStatus
-                    ? "Syncing"
-                    : !isBackendOnline || systemStatusError
-                      ? "Offline"
-                      : isSystemDegraded
-                        ? "Degraded"
-                        : "Healthy"}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (refetchSystemStatus) refetchSystemStatus();
-                  }}
-                  disabled={isLoadingSystemStatus}
-                  className="text-[9px] text-purple-400 hover:text-purple-300 font-mono transition-colors cursor-pointer"
-                  title="Ping all backend services"
-                >
-                  {isLoadingSystemStatus ? "..." : "↻"}
-                </button>
-              </div>
-            </div>
-
-            {/* Individual Sub-Service Indicators */}
-            <div className="space-y-1.5 font-mono text-[9px]">
-              {/* 1. Flask Core Application */}
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400 font-sans">Flask Core API</span>
-                <span className="flex items-center gap-1">
-                  <span
-                    className={`w-1 h-1 rounded-full ${
-                      isBackendOnline ? "bg-emerald-400" : "bg-rose-500"
-                    }`}
-                  />
-                  <span className={isBackendOnline ? "text-slate-300" : "text-rose-400"}>
-                    {isBackendOnline
-                      ? `${systemStatus?.services?.application?.latency_ms ?? 0} ms`
-                      : "Unreachable"}
-                  </span>
-                </span>
-              </div>
-
-              {/* 2. Neo4j Aura Database */}
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400 font-sans">Neo4j Aura DB</span>
-                <span className="flex items-center gap-1">
-                  <span
-                    className={`w-1 h-1 rounded-full ${
-                      isNeo4jOnline ? "bg-emerald-400" : "bg-amber-400"
-                    }`}
-                  />
-                  <span className={isNeo4jOnline ? "text-slate-300" : "text-amber-400"}>
-                    {isNeo4jOnline
-                      ? `${systemStatus?.services?.database?.database || "Aura"} (${systemStatus?.services?.database?.latency_ms ?? 0}ms)`
-                      : "Disconnected"}
-                  </span>
-                </span>
-              </div>
-
-              {/* 3. Hybrid RAG Retrieval Engine */}
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400 font-sans">RAG Retrieval</span>
-                <span className="flex items-center gap-1">
-                  <span
-                    className={`w-1 h-1 rounded-full ${
-                      isRetrievalOnline ? "bg-emerald-400" : "bg-slate-500"
-                    }`}
-                  />
-                  <span className="text-slate-300">
-                    {isRetrievalOnline
-                      ? `${systemStatus?.services?.retrieval?.faiss_indexed_chunks ?? 0} Chunks`
-                      : "Not Ready"}
-                  </span>
-                </span>
-              </div>
-
-              {/* 4. Active Canonical Corpus */}
-              <div className="flex items-center justify-between pt-1 border-t border-slate-800/40 text-slate-500">
-                <span className="font-sans truncate max-w-28">{currentCorpus.name}</span>
-                <span>
-                  {currentCorpus.indexed_sutras_active ?? 0} Active Sūtras
-                </span>
-              </div>
-            </div>
+          {/* Thirukkural quote at the end of the scrollable sidebar content */}
+          <div className="rounded-xl bg-slate-900/70 border border-slate-800/90 px-4 py-4 text-center shadow-2xs">
+            <p className="tamil-font text-sm leading-8 text-slate-200">
+              “அறிவுடையார் எல்லாம்
+              <br />
+              உடையுடையார் வெள்ளாம்”
+            </p>
+            <p className="mt-2 text-[11px] font-serif text-slate-400">
+              — திருக்குறள் (391)
+            </p>
           </div>
         </div>
       </aside>

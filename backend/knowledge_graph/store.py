@@ -470,22 +470,52 @@ class NetworkXGraphStore(GraphStore):
         hops: int = 1,
         layer_filter: Optional[str] = None,
         hierarchy_filter: Optional[str] = None,
+        rel_types: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
-        """Extracts k-hop neighborhood around node(s) with layer and hierarchy filtering."""
+        """Extracts k-hop neighborhood around node(s) with layer, hierarchy, and relationship filtering."""
         valid_seeds = [nid for nid in node_ids if self.has_node(nid)]
         if not valid_seeds:
-            return {"nodes": [], "edges": [], "total_nodes": 0, "total_edges": 0}
+            return {
+                "center_nodes": [],
+                "hops": hops,
+                "nodes": [],
+                "edges": [],
+                "total_nodes": 0,
+                "total_edges": 0,
+            }
+
+        rel_types_set = {r.upper() for r in rel_types} if rel_types else None
 
         undirected_g = self.graph.to_undirected()
         subgraph_nodes: Set[str] = set(valid_seeds)
+        hop_distance: Dict[str, int] = {s: 0 for s in valid_seeds}
 
         current_frontier = set(valid_seeds)
-        for _ in range(min(hops, 4)):
+        for h in range(1, min(hops, 5) + 1):
             next_frontier = set()
             for n in current_frontier:
-                if n in undirected_g:
-                    neighbors = set(undirected_g.neighbors(n))
-                    next_frontier.update(neighbors)
+                if n in self.graph:
+                    # Check both outgoing and incoming neighbors in the directed graph
+                    for neighbor in set(self.graph.successors(n)).union(set(self.graph.predecessors(n))):
+                        # If rel_types filter is given, verify at least one edge matches
+                        if rel_types_set:
+                            has_matching_edge = False
+                            if self.graph.has_edge(n, neighbor):
+                                for ed in self.graph.get_edge_data(n, neighbor).values():
+                                    if (ed.get("relation") or ed.get("type", "")).upper() in rel_types_set:
+                                        has_matching_edge = True
+                                        break
+                            if not has_matching_edge and self.graph.has_edge(neighbor, n):
+                                for ed in self.graph.get_edge_data(neighbor, n).values():
+                                    if (ed.get("relation") or ed.get("type", "")).upper() in rel_types_set:
+                                        has_matching_edge = True
+                                        break
+                            if not has_matching_edge:
+                                continue
+
+                        if neighbor not in hop_distance:
+                            hop_distance[neighbor] = h
+                            next_frontier.add(neighbor)
             subgraph_nodes.update(next_frontier)
             current_frontier = next_frontier
 
@@ -511,32 +541,58 @@ class NetworkXGraphStore(GraphStore):
 
             filtered_node_ids.add(nid)
 
-        # Ensure seed nodes remain in subgraph
+        # Ensure seed nodes remain in subgraph even if isolated
         filtered_node_ids.update(valid_seeds)
 
-        # Build node and edge output
-        nodes_out = [
-            self.get_node(nid).to_dict()
-            for nid in filtered_node_ids
-            if self.get_node(nid) is not None
-        ]
-
+        # Build edge output, ensuring endpoints exist in filtered_node_ids
         edges_out = []
+        node_degrees: Dict[str, int] = {nid: 0 for nid in filtered_node_ids}
         for u, v, k, data in self.graph.edges(keys=True, data=True):
             if u in filtered_node_ids and v in filtered_node_ids:
                 edge_dict = dict(data)
+                rel_val = (edge_dict.get("relation") or edge_dict.get("type", "RELATED_TO")).upper()
+                if rel_types_set and rel_val not in rel_types_set:
+                    continue
                 edge_dict["source"] = u
                 edge_dict["target"] = v
+                edge_dict["type"] = edge_dict.get("relation", "RELATED_TO")
+                edge_dict["relation"] = edge_dict.get("relation", "RELATED_TO")
                 edge_dict["id"] = edge_dict.get("id", f"e_{u}_{v}_{k}")
                 edges_out.append(edge_dict)
+                node_degrees[u] = node_degrees.get(u, 0) + 1
+                node_degrees[v] = node_degrees.get(v, 0) + 1
+
+        # Build node output with provenance & relevance metadata
+        nodes_out = []
+        for nid in filtered_node_ids:
+            node_obj = self.get_node(nid)
+            if not node_obj:
+                continue
+            nd = node_obj.to_dict()
+            is_seed = nid in valid_seeds
+            dist = hop_distance.get(nid, 0 if is_seed else 1)
+            deg = node_degrees.get(nid, 0)
+            nd["is_seed"] = is_seed
+            nd["hop_distance"] = dist
+            nd["degree"] = deg
+            nd["is_isolated"] = deg == 0
+            nd["relevance_reason"] = (
+                "Direct Seed Node from Query / Hybrid Retrieval"
+                if is_seed
+                else f"Multi-hop Graph Context (Hop Distance: {dist})"
+            )
+            nd["relevance_score"] = round(1.0 / (1.0 + dist), 4)
+            nodes_out.append(nd)
 
         return {
             "center_nodes": valid_seeds,
             "hops": hops,
             "nodes": nodes_out,
             "edges": edges_out,
+            "relationships": edges_out,
             "total_nodes": len(nodes_out),
             "total_edges": len(edges_out),
+            "isolated_nodes_count": len([n for n in nodes_out if n.get("is_isolated")]),
         }
 
     def merge_nodes(self, canonical_id: str, alias_ids: List[str]) -> KGNode:

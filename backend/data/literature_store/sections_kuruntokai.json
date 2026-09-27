@@ -1,0 +1,14 @@
+[
+  {
+    "id": "kuruntokai-kurinji",
+    "work_id": "kuruntokai",
+    "order_index": 1,
+    "name_tamil": "kurinji",
+    "name_english": "kurinji",
+    "section_type": "section",
+    "parent_section_id": null,
+    "total_passages": 1,
+    "description": null,
+    "metadata": {}
+  }
+]

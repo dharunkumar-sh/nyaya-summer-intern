@@ -43,11 +43,14 @@ def _tokenize_query(query: str, min_len: int = 2) -> List[str]:
     """Tokenizes query into normalized content terms, removing punctuation and short stopwords."""
     norm = _normalize_text(query)
     tokens = re.findall(r"[\w\u0B80-\u0BFF]+", norm)
-    # Exclude basic grammatical English stopwords
     stopwords = {
+        # English grammatical stopwords
         "a", "an", "the", "and", "or", "in", "on", "at", "to", "for", "with", "by",
         "of", "from", "is", "are", "was", "were", "what", "which", "who", "whom",
         "how", "where", "when", "why", "that", "this", "these", "those", "into", "about",
+        # Tamil functional/grammatical words
+        "என", "என்ற", "என்று", "ஆகும்", "ஆகிய", "ஆன", "மற்றும்", "அல்லது", "அதாவது",
+        "அது", "இது", "அவை", "இவை", "ஒரு", "பல", "படும்", "முறை",
     }
     return [t for t in tokens if len(t) >= min_len and t not in stopwords]
 

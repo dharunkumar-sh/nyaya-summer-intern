@@ -7,6 +7,7 @@ from ingestion.metadata_manager import MetadataManager
 from knowledge_graph.graph_validator import KnowledgeGraphValidator
 from knowledge_graph.graph_builder import kg_instance
 from services.neo4j_service import neo4j_service
+from knowledge_graph.neo4j_repository import neo4j_repository
 from core.logger import logger
 
 
@@ -94,20 +95,42 @@ class AnalyticsService:
             except Exception as e:
                 logger.warning(f"Failed to query live Neo4j metrics for dashboard: {e}")
 
-        # Relation distribution from in-memory KG store
-        store = kg_instance.store
-        relation_distribution = {}
-        for edge in store.get_all_edges():
-            rel = edge.relation
-            relation_distribution[rel] = relation_distribution.get(rel, 0) + 1
-
-        # Use canonical counts
-        canonical_nodes = kg_health.get("node_count", 33)
-        canonical_edges = kg_health.get("edge_count", 46)
-        kg_density = kg_health.get("density", 0.087)
-        is_connected = kg_health.get("is_connected", True)
-        hierarchy = kg_health.get("hierarchy_distribution", {})
-        layer = kg_health.get("layer_distribution", {})
+        # Knowledge Graph statistics (authoritatively from Neo4j Aura)
+        if neo4j_service.is_connected():
+            try:
+                live_kg_stats = neo4j_repository.get_kg_statistics()
+                relation_distribution = live_kg_stats.get("relation_distribution", {})
+                canonical_nodes = live_kg_stats.get("total_nodes", 33)
+                canonical_edges = live_kg_stats.get("total_edges", 46)
+                kg_density = live_kg_stats.get("density", 0.087)
+                is_connected = live_kg_stats.get("is_connected", True)
+                hierarchy = live_kg_stats.get("hierarchy_distribution", {})
+                layer = live_kg_stats.get("layer_distribution", {})
+            except Exception as e:
+                logger.warning(f"Failed to query live Neo4j KG statistics for dashboard: {e}")
+                store = kg_instance.store
+                relation_distribution = {}
+                for edge in store.get_all_edges():
+                    rel = edge.relation
+                    relation_distribution[rel] = relation_distribution.get(rel, 0) + 1
+                canonical_nodes = kg_health.get("node_count", 33)
+                canonical_edges = kg_health.get("edge_count", 46)
+                kg_density = kg_health.get("density", 0.087)
+                is_connected = kg_health.get("is_connected", True)
+                hierarchy = kg_health.get("hierarchy_distribution", {})
+                layer = kg_health.get("layer_distribution", {})
+        else:
+            store = kg_instance.store
+            relation_distribution = {}
+            for edge in store.get_all_edges():
+                rel = edge.relation
+                relation_distribution[rel] = relation_distribution.get(rel, 0) + 1
+            canonical_nodes = kg_health.get("node_count", 33)
+            canonical_edges = kg_health.get("edge_count", 46)
+            kg_density = kg_health.get("density", 0.087)
+            is_connected = kg_health.get("is_connected", True)
+            hierarchy = kg_health.get("hierarchy_distribution", {})
+            layer = kg_health.get("layer_distribution", {})
 
         # Canonical books breakdown
         books = summary.get("books", [])

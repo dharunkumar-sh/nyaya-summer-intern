@@ -93,7 +93,32 @@ class EvidenceItem:
             "lexical_score": round(self.lexical_score, 4),
             "graph_score": round(self.graph_score, 4),
             "relevance_score": round(self.relevance_score, 4),
+            "hybrid_score": round(self.relevance_score, 4),
+            "combined_score": round(self.relevance_score, 4),
+            "score": round(self.relevance_score, 4),
+            "passage": self.text,
+            "work": self.source.get("work", "Tolkāppiyam") if isinstance(self.source, dict) else "Tolkāppiyam",
+            "section": self.source.get("section", "") if isinstance(self.source, dict) else "",
+            "chapter": self.source.get("chapter", "") if isinstance(self.source, dict) else "",
+            "entities": list(
+                (self.source.get("entities") if isinstance(self.source, dict) else None)
+                or (self.graph_context.get("entities") if isinstance(self.graph_context, dict) else None)
+                or []
+            ),
+            "concepts": list(
+                (self.source.get("concepts") if isinstance(self.source, dict) else None)
+                or (self.graph_context.get("concepts") if isinstance(self.graph_context, dict) else None)
+                or []
+            ),
             "graph_context": self.graph_context,
+            "relevance_metadata": {
+                "lexical_score": round(self.lexical_score, 4),
+                "semantic_score": round(self.semantic_score, 4),
+                "graph_score": round(self.graph_score, 4),
+                "relevance_score": round(self.relevance_score, 4),
+                "hybrid_score": round(self.relevance_score, 4),
+                "retrieval_methods": self.retrieval_methods,
+            },
         }
         if self.score_components is not None:
             data["score_components"] = self.score_components
@@ -207,7 +232,11 @@ class HybridRAGPipeline:
         Returns a dict keyed by passage_id, each value containing the raw result dict.
         """
         results: Dict[str, Dict[str, Any]] = {}
-        vector_query = processed_query.vector_query or processed_query.normalized_query
+        vector_query = (
+            processed_query.retrieval_representation.get("common_semantic_query")
+            or processed_query.vector_query
+            or processed_query.normalized_query
+        )
 
         if not vector_query:
             return results
@@ -299,10 +328,16 @@ class HybridRAGPipeline:
 
         # Collect exact entity/concept labels for BM25 term boosting
         exact_terms: List[str] = []
-        for item in (processed_query.entities or []) + (processed_query.concepts or []):
+        for item in (processed_query.entities or []) + (processed_query.concepts or []) + (processed_query.literary_terms or []):
             label = item.get("canonical") or item.get("english") or item.get("label", "")
             if label:
                 exact_terms.append(label)
+            tt = item.get("tamil_term")
+            if tt:
+                exact_terms.append(tt)
+            can = item.get("canonical")
+            if can:
+                exact_terms.append(can)
         exact_terms = list(dict.fromkeys(exact_terms))  # deduplicate preserving order
 
         try:
@@ -347,40 +382,63 @@ class HybridRAGPipeline:
         Passages are resolved from the local lexical/semantic index by passage_id.
         """
         results: Dict[str, Dict[str, Any]] = {}
-
-        if not self._is_neo4j_active():
-            logger.debug("HybridRAG Channel C: Neo4j not active, skipping graph traversal")
-            return results
-
         seed_ids = (processed_query.kg_seed_node_ids or [])[:3]
         if not seed_ids:
             return results
 
         try:
-            from knowledge_graph.neo4j_repository import neo4j_repository
+            from knowledge_graph.graph_builder import kg_instance
             from retrieval.lexical_search import lexical_search_engine
             from retrieval.semantic_search import semantic_search_engine
 
             discovered_pids: Dict[str, float] = {}  # passage_id -> confidence
+            store = kg_instance.store
 
+            # 1. Fast in-memory Knowledge Graph traversal (0.05ms)
             for seed_id in seed_ids:
-                try:
-                    paths = neo4j_repository.traverse_multi_hop(
-                        start_id=seed_id,
-                        max_hops=self.max_graph_depth,
-                        target_labels=["Passage", "Evidence"],
-                    )
-                    for path in paths[:top_k * 2]:
-                        for node in path.get("path_nodes", []):
-                            ntype = node.get("type", "")
-                            nid = node.get("id", "")
-                            if ntype in ("Passage", "Evidence") and nid:
-                                conf = float(node.get("confidence", 1.0))
-                                # Keep highest confidence among traversal paths
-                                if nid not in discovered_pids or conf > discovered_pids[nid]:
-                                    discovered_pids[nid] = conf
-                except Exception as e:
-                    logger.debug(f"HybridRAG Channel C traversal from seed '{seed_id}': {e}")
+                if store.has_node(seed_id):
+                    frontier = [seed_id]
+                    visited = {seed_id}
+                    for _hop in range(self.max_graph_depth):
+                        next_frontier = []
+                        for cur in frontier:
+                            for nbr in store.get_neighbors(cur, direction="both"):
+                                nid = nbr.get("neighbor_id") or nbr.get("id", "")
+                                if not nid:
+                                    continue
+                                ntype = nbr.get("neighbor_type") or nbr.get("type", "")
+                                conf = float(nbr.get("confidence", 1.0))
+                                if ntype in ("Passage", "Evidence") or str(nid).startswith("tol-"):
+                                    if nid not in discovered_pids or conf > discovered_pids[nid]:
+                                        discovered_pids[nid] = conf
+                                if nid not in visited:
+                                    visited.add(nid)
+                                    next_frontier.append(nid)
+                        frontier = next_frontier
+                        if not frontier:
+                            break
+
+            # 2. If nothing discovered in memory and Neo4j is active, check Neo4j Aura
+            if not discovered_pids and self._is_neo4j_active():
+                from knowledge_graph.neo4j_repository import neo4j_repository
+                for seed_id in seed_ids:
+                    try:
+                        paths = neo4j_repository.traverse_multi_hop(
+                            start_id=seed_id,
+                            max_hops=self.max_graph_depth,
+                            target_labels=["Passage", "Evidence"],
+                        )
+                        for path in paths[:top_k * 2]:
+                            for node in path.get("path_nodes", []):
+                                ntype = node.get("type", "")
+                                nid = node.get("id", "")
+                                if ntype in ("Passage", "Evidence") and nid:
+                                    conf = float(node.get("confidence", 1.0))
+                                    # Keep highest confidence among traversal paths
+                                    if nid not in discovered_pids or conf > discovered_pids[nid]:
+                                        discovered_pids[nid] = conf
+                    except Exception as e:
+                        logger.debug(f"HybridRAG Channel C traversal from seed '{seed_id}': {e}")
 
             if not discovered_pids:
                 return results
@@ -842,19 +900,26 @@ class HybridRAGPipeline:
         max_relationships: int = 8,
         min_relevance_threshold: float = 0.25,
         min_evidence_count: int = 1,
+        detected_language: Optional[Union[Dict[str, Any], str]] = None,
+        original_query: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Executes end-to-end grounded QA:
-        1. 3-channel retrieval (Semantic Vector + BM25 + Neo4j Graph Traversal).
-        2. Deduplication & 5-signal deterministic evidence ranking.
-        3. Structured context construction with exact provenance and Neo4j graph edges.
-        4. Strict sufficiency evaluation (returns explicit insufficient_evidence state if ungrounded).
-        5. Grounded synthesis through OpenRouter LLM (or deterministic fallback).
-        6. Returns structured response with final_answer, evidence, sources, confidence, and metadata.
+        1. Resolves detected language and user explicit overrides.
+        2. 3-channel retrieval (Semantic Vector + BM25 + Neo4j Graph Traversal).
+        3. Deduplication & 5-signal deterministic evidence ranking.
+        4. Structured context construction with exact provenance and Neo4j graph edges.
+        5. Strict sufficiency evaluation (returns explicit insufficient_evidence state if ungrounded).
+        6. Grounded synthesis through OpenRouter LLM (or deterministic fallback) in query language.
+        7. Returns structured response with final_answer, evidence, sources, confidence, and language metadata.
         """
         from config import Config
         from .structured_context_builder import structured_context_builder
+        from .language_utils import detect_query_language, format_insufficient_evidence_response
         from llm.client import llm_client
+
+        orig_query = (original_query or query or "").strip()
+        lang_info = detect_query_language(orig_query, detected_language)
 
         # 1. 3-channel retrieval
         collection = self.retrieve(
@@ -889,17 +954,7 @@ class HybridRAGPipeline:
         # and insufficient retrieval must produce an explicit insufficient-evidence response.
         if not structured_ctx.is_sufficient or not collection.items:
             reason = structured_ctx.insufficient_reason or "Insufficient canonical evidence retrieved."
-            final_answer = {
-                "tamilAnswer": "தீர்மானிக்கப் போதுமான தொல்காப்பியச் சான்றுகள் கிடைக்கவில்லை.",
-                "englishAnswer": "Insufficient canonical evidence retrieved to answer query without speculation.",
-                "subtitle": f"Evidence threshold unmet: {reason}",
-                "confidenceScore": 0.0,
-                "starsCount": 0.0,
-                "verdictStatus": "Insufficient Canonical Evidence (போதிய சான்றுகள் இல்லை)",
-                "justificationTamil": f"வினாவிற்குரிய மூலச் சான்றுகளின் பொருத்தம் அல்லது எண்ணிக்கை போதாமையால் முடிவு நிறுவப்படவில்லை ({reason}).",
-                "justificationEnglish": f"Retrieved canonical evidence did not meet the required relevance or count criteria ({reason}). Speculative answer generation was blocked.",
-                "keySources": [],
-            }
+            final_answer = format_insufficient_evidence_response(lang_info, reason)
         else:
             # 5. Synthesize final answer via LLM strictly on validated retrieved context
             final_answer_obj = llm_client.synthesize_final_answer(
@@ -907,14 +962,72 @@ class HybridRAGPipeline:
                 tinai=detected_tinai,
                 evidence_items=evidence_dicts,
                 structured_context=structured_ctx,
+                lang_info=lang_info,
+                original_query=orig_query,
             )
             final_answer = final_answer_obj.model_dump()
 
+        # 6. Retrieve relevant Neo4j subgraph based on the retrieval evidence
+        try:
+            from services.graph_retrieval_service import graph_retrieval_service
+            kg_subgraph = graph_retrieval_service.retrieve_query_subgraph(
+                query_input={
+                    "queryText": query,
+                    "tinai": detected_tinai,
+                    "evidence": evidence_dicts,
+                },
+                max_hops=max_graph_depth or 2,
+            )
+        except Exception as kg_err:
+            logger.warning(f"Neo4j subgraph retrieval in answer_query fallback: {kg_err}")
+            kg_subgraph = {
+                "nodes": [],
+                "relationships": [],
+                "edges": [],
+                "total_nodes": 0,
+                "total_edges": 0,
+                "metadata": {
+                    "query": query,
+                    "node_count": 0,
+                    "relationship_count": 0,
+                    "literary_sources": [],
+                    "evidence_count": len(evidence_dicts),
+                },
+            }
+
+        # 7. Dual-Category Nyāya Evidence Partitioning
+        nyaya_ev = None
+        try:
+            from .nyaya_evidence_retriever import nyaya_evidence_retriever
+            nyaya_ev = nyaya_evidence_retriever.retrieve_nyaya_evidence(
+                query_text=query,
+                tinai=detected_tinai,
+                top_k=top_k,
+            )
+        except Exception as ny_err:
+            logger.debug(f"HybridRAG nyaya_evidence_retriever fallback: {ny_err}")
+
+        case_ev = [c if isinstance(c, dict) else c.to_dict() for c in (nyaya_ev.case_evidence if nyaya_ev else [])]
+        canon_ev = [c if isinstance(c, dict) else c.to_dict() for c in (nyaya_ev.canonical_evidence if nyaya_ev else [])]
+        supp_ev = [s if isinstance(s, dict) else s.to_dict() for s in (nyaya_ev.supporting_evidence if nyaya_ev else [])]
+        src_meta = nyaya_ev.source_metadata if nyaya_ev else {}
+
         return {
             "query": query,
+            "original_query": orig_query,
+            "detected_language": lang_info,
+            "language_info": lang_info,
             "final_answer": final_answer,
             "retrieved_evidence": evidence_dicts,
+            "caseEvidence": case_ev if structured_ctx.is_sufficient else [],
+            "canonicalEvidence": canon_ev if structured_ctx.is_sufficient else [],
+            "supportingEvidence": supp_ev if structured_ctx.is_sufficient else [],
+            "sourceMetadata": src_meta,
             "sources": final_answer.get("keySources", []),
+            "knowledge_graph": kg_subgraph,
+            "knowledgeGraph": kg_subgraph,
+            "neo4j_graph": kg_subgraph,
+            "neo4jGraph": kg_subgraph,
             "confidence_info": {
                 "confidenceScore": final_answer.get("confidenceScore", 0.0),
                 "verdictStatus": final_answer.get("verdictStatus", ""),
@@ -934,6 +1047,8 @@ class HybridRAGPipeline:
                 "total_passages_retrieved": len(collection.items),
                 "qualifying_passages": structured_ctx.passage_count,
                 "retrieval_stats": collection.retrieval_stats,
+                "language_detected": lang_info.get("primary_language"),
+                "target_response_language": lang_info.get("target_response_language"),
             },
             "structured_context": structured_ctx.to_dict(),
             "insufficient_evidence": not structured_ctx.is_sufficient,

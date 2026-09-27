@@ -518,6 +518,8 @@ class RAGRetrievalEngine:
         max_relationships: int = 8,
         min_relevance_threshold: float = 0.25,
         min_evidence_count: int = 1,
+        detected_language: Optional[Union[Dict[str, Any], str]] = None,
+        original_query: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Executes end-to-end grounded QA returning final answer, evidence, sources,
@@ -533,6 +535,8 @@ class RAGRetrievalEngine:
             max_relationships=max_relationships,
             min_relevance_threshold=min_relevance_threshold,
             min_evidence_count=min_evidence_count,
+            detected_language=detected_language,
+            original_query=original_query,
         )
 
 

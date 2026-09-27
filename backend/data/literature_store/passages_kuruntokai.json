@@ -1,0 +1,30 @@
+[
+  {
+    "id": "kuruntokai-kurinji-0001",
+    "work_id": "kuruntokai",
+    "section_id": "kuruntokai-kurinji",
+    "order_index": 1,
+    "passage_number": 1,
+    "original_text": "யாயும் ஞாயும் யாராகியரோ\nஎந்தையும் நுந்தையும் எம்முறைக் கேளிர்",
+    "normalized_search_text": "யாயும் ஞாயும் யாராகியரோ\nஎந்தையும் நுந்தையும் எம்முறைக் கேளிர்",
+    "transliteration": null,
+    "english_translation": "What were my mother and your mother to each other?",
+    "category": null,
+    "tinai": null,
+    "lines": [],
+    "commentaries": [],
+    "entities": [],
+    "triples": [],
+    "metadata": {},
+    "provenance": {
+      "source_filename": "kuruntokai_sample.csv",
+      "file_format": "csv",
+      "checksum": "987ef8205037c3a7a098b15b86f9ee031ace91b6b1f83bbf3bdede6a8513dba6",
+      "ingested_at": "2026-09-25T06:12:28.565929+00:00",
+      "editor_or_compiler": "U. V. Swaminatha Iyer",
+      "edition": "First Critical Edition 1937",
+      "source_url": "https://tamilheritage.org/kuruntokai",
+      "raw_content_length": 310
+    }
+  }
+]

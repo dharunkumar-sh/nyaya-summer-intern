@@ -220,16 +220,113 @@ class GraphRetrievalService:
             entities_input = [e.get("term") if isinstance(e, dict) else e for e in query_input.entities]
             concepts_input = [c.get("term") if isinstance(c, dict) else c for c in query_input.concepts]
             source_refs_input = [s.get("citation") if isinstance(s, dict) else s for s in query_input.source_references]
-            pre_resolved_seeds = list(query_input.kg_seed_node_ids or [])
+            has_real_signals = bool(
+                entities_input
+                or concepts_input
+                or source_refs_input
+                or (detected_tinai and detected_tinai != "General")
+            )
+            if has_real_signals:
+                pre_resolved_seeds = list(query_input.kg_seed_node_ids or [])
 
         elif isinstance(query_input, dict):
             raw_text = query_input.get("queryText") or query_input.get("query", "")
-            entities_input = query_input.get("entities", [])
-            concepts_input = query_input.get("concepts", [])
-            source_refs_input = query_input.get("source_references", []) or query_input.get("sources", [])
+            entities_input = list(query_input.get("entities", []))
+            concepts_input = list(query_input.get("concepts", []))
+            events_input = list(query_input.get("events", []))
+            rules_input = list(query_input.get("rules", []) or query_input.get("rule_ids", []))
+            evidence_input = list(query_input.get("evidence", []) or query_input.get("evidence_items", []))
+            passages_input = list(query_input.get("passages", []) or query_input.get("passage_ids", []))
+            source_refs_input = list(query_input.get("source_references", []) or query_input.get("sources", []))
             detected_tinai = query_input.get("tinai") or query_input.get("detected_tinai", "General")
-            pre_resolved_seeds = list(query_input.get("seed_node_ids", []))
+            pre_resolved_seeds = list(
+                query_input.get("seed_ids", [])
+                or query_input.get("seedIds", [])
+                or query_input.get("seed_node_ids", [])
+                or query_input.get("node_ids", [])
+            )
             normalized_text = query_input.get("normalized_query", raw_text)
+
+            # Deep Query Understanding: Extract entities, concepts, events, and citations if query text is present
+            if raw_text and str(raw_text).strip():
+                clean_q = str(raw_text).strip()
+                try:
+                    processed = query_preprocessor.preprocess(clean_q)
+                    if not normalized_text or normalized_text == raw_text:
+                        normalized_text = processed.normalized_query
+                    if detected_tinai == "General" and processed.detected_tinai:
+                        detected_tinai = processed.detected_tinai
+                    for e in processed.entities:
+                        eterm = e.get("term") if isinstance(e, dict) else str(e)
+                        if eterm and eterm not in entities_input:
+                            entities_input.append(eterm)
+                    for c in processed.concepts:
+                        cterm = c.get("term") if isinstance(c, dict) else str(c)
+                        if cterm and cterm not in concepts_input:
+                            concepts_input.append(cterm)
+                    for s in processed.source_references:
+                        scitation = s.get("citation") if isinstance(s, dict) else str(s)
+                        if scitation and scitation not in source_refs_input:
+                            source_refs_input.append(scitation)
+                    has_real_signals = bool(
+                        processed.entities
+                        or processed.concepts
+                        or processed.source_references
+                        or (processed.detected_tinai and processed.detected_tinai != "General")
+                    )
+                    if has_real_signals:
+                        for kg_s in (processed.kg_seed_node_ids or []):
+                            if kg_s and kg_s not in pre_resolved_seeds:
+                                pre_resolved_seeds.append(kg_s)
+                except Exception as prep_err:
+                    logger.debug(f"Query preprocessor fallback on raw_text: {prep_err}")
+
+                try:
+                    from extraction.entity_extractor import entity_extractor
+                    extracted_ents = entity_extractor.extract_entities(clean_q)
+                    for ent in extracted_ents:
+                        c_form = ent.canonical_form.lower()
+                        t_form = ent.transliteration.lower()
+                        if c_form and c_form not in pre_resolved_seeds:
+                            pre_resolved_seeds.append(c_form)
+                        if t_form and t_form not in pre_resolved_seeds:
+                            pre_resolved_seeds.append(t_form)
+                except Exception as ee_err:
+                    logger.debug(f"Entity extractor fallback on raw_text: {ee_err}")
+
+            # Extract terms from dict objects if passed
+            for p in passages_input:
+                pid = p.get("passage_id") or p.get("id") if isinstance(p, dict) else str(p)
+                if pid:
+                    pre_resolved_seeds.append(str(pid))
+            for r in rules_input:
+                rid = r.get("rule_id") or r.get("id") if isinstance(r, dict) else str(r)
+                if rid:
+                    pre_resolved_seeds.append(str(rid))
+            for ev in evidence_input:
+                if isinstance(ev, dict):
+                    evid = ev.get("passage_id") or ev.get("id") or ev.get("citation")
+                    if evid:
+                        pre_resolved_seeds.append(str(evid))
+                    if ev.get("entities") and isinstance(ev["entities"], list):
+                        for ent in ev["entities"]:
+                            if ent and str(ent) not in entities_input:
+                                entities_input.append(str(ent))
+                    if ev.get("concepts") and isinstance(ev["concepts"], list):
+                        for c in ev["concepts"]:
+                            if c and str(c) not in concepts_input:
+                                concepts_input.append(str(c))
+                    s_ref = ev.get("source_reference") or ev.get("source") or ev.get("reference") or ev.get("work")
+                    if s_ref and str(s_ref) not in source_refs_input:
+                        source_refs_input.append(str(s_ref))
+                    if ev.get("tinai") and detected_tinai == "General":
+                        detected_tinai = ev["tinai"]
+                elif ev:
+                    pre_resolved_seeds.append(str(ev))
+            for evnt in events_input:
+                evnt_term = evnt.get("term") or evnt.get("id") if isinstance(evnt, dict) else str(evnt)
+                if evnt_term:
+                    concepts_input.append(evnt_term)
 
         elif isinstance(query_input, str):
             raw_text = query_input
@@ -239,10 +336,37 @@ class GraphRetrievalService:
             entities_input = [e.get("term") for e in processed.entities]
             concepts_input = [c.get("term") for c in processed.concepts]
             source_refs_input = [s.get("citation") for s in processed.source_references]
-            pre_resolved_seeds = list(processed.kg_seed_node_ids or [])
+            has_real_signals = bool(
+                entities_input
+                or concepts_input
+                or source_refs_input
+                or (detected_tinai and detected_tinai != "General")
+            )
+            pre_resolved_seeds = list(processed.kg_seed_node_ids or []) if has_real_signals else []
 
-        seed_node_ids: Set[str] = set(pre_resolved_seeds)
+            try:
+                from extraction.entity_extractor import entity_extractor
+                extracted_ents = entity_extractor.extract_entities(query_input)
+                for ent in extracted_ents:
+                    c_form = ent.canonical_form.lower()
+                    t_form = ent.transliteration.lower()
+                    if c_form and c_form not in pre_resolved_seeds:
+                        pre_resolved_seeds.append(c_form)
+                    if t_form and t_form not in pre_resolved_seeds:
+                        pre_resolved_seeds.append(t_form)
+            except Exception as ee_err:
+                logger.debug(f"Entity extractor fallback on str: {ee_err}")
+
+        seed_node_ids: Set[str] = set()
         passage_ids: Set[str] = set()
+
+        for s in pre_resolved_seeds:
+            if not s:
+                continue
+            s_str = str(s).strip()
+            seed_node_ids.add(s_str)
+            if s_str.startswith("tol-porul-"):
+                passage_ids.add(s_str)
 
         # Check explicit source references
         full_query_context = f"{raw_text} {normalized_text} {' '.join(str(s) for s in source_refs_input)}"
@@ -262,7 +386,15 @@ class GraphRetrievalService:
                     seed_node_ids.add(pid)
 
         # Resolve entity and concept terms
-        combined_terms = list(entities_input) + list(concepts_input)
+        combined_terms = []
+        for itm in list(entities_input) + list(concepts_input):
+            if isinstance(itm, dict):
+                term = itm.get("term") or itm.get("id") or itm.get("name")
+                if term:
+                    combined_terms.append(str(term))
+            elif itm:
+                combined_terms.append(str(itm))
+
         for term_item in combined_terms:
             if not term_item:
                 continue
@@ -281,13 +413,17 @@ class GraphRetrievalService:
                 continue
 
             # Check for direct ID match in synonym keys
+            found_syn = False
             for k, v in SYNONYM_KG_MAP.items():
                 if k in term_str or term_str in k:
                     seed_node_ids.add(v)
+                    found_syn = True
                     break
+            if not found_syn:
+                seed_node_ids.add(term_str)
 
-        # Fallback to tiṇai seeds if no seeds were detected
-        if not seed_node_ids:
+        # Fallback to tiṇai seeds ONLY if an explicit tiṇai was identified (never fallback for General or unrelated queries)
+        if not seed_node_ids and detected_tinai and detected_tinai.lower() not in ("general", "all", ""):
             tinai_lower = detected_tinai.lower()
             if "kurin" in tinai_lower:
                 seed_node_ids.update(["kurinci", "ceyon"])
@@ -299,8 +435,6 @@ class GraphRetrievalService:
                 seed_node_ids.update(["neytal", "varunan"])
             elif "palai" in tinai_lower:
                 seed_node_ids.update(["palai", "kotravai"])
-            else:
-                seed_node_ids.update(["mutalporul", "uriporul"])
 
         query_meta = {
             "original_query": raw_text,
@@ -449,6 +583,19 @@ class GraphRetrievalService:
                             discovered_passage_ids.add(nid)
                 if ep.get("ground_id") and str(ep.get("ground_id")).startswith("tol-porul-"):
                     discovered_passage_ids.add(ep["ground_id"])
+
+        # Ensure all seed nodes exist in all_nodes_dict (preserving isolated seeds)
+        for seed_id in seed_node_ids:
+            if seed_id not in all_nodes_dict:
+                all_nodes_dict[seed_id] = {
+                    "id": seed_id,
+                    "label": seed_id,
+                    "name": seed_id,
+                    "type": "Passage" if str(seed_id).startswith("tol-porul-") else "Concept",
+                    "hierarchy_level": "L3" if str(seed_id).startswith("tol-porul-") else "L4",
+                    "is_seed": True,
+                    "is_isolated": True,
+                }
 
         # 3. Retrieve detailed literary context and provenance for all discovered passages
         passages_list: List[Dict[str, Any]] = []
@@ -778,6 +925,262 @@ class GraphRetrievalService:
             "invariant_relations": invariant_relations,
             "grounded_axioms": grounded_axioms,
         }
+
+    # -------------------------------------------------------------------------
+    # 6. Query-Aware Knowledge Graph Subgraph Retrieval
+    # -------------------------------------------------------------------------
+
+    def retrieve_query_subgraph(
+        self,
+        query_input: Union[ProcessedQuery, Dict[str, Any], str],
+        max_hops: int = 2,
+        limit: int = 150,
+        rel_types: Optional[List[str]] = None,
+        include_isolated: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Dynamically retrieves a focused, query-aware Knowledge Graph subgraph
+        reflecting the user's current query and hybrid retrieval evidence.
+
+        1. Resolves all query identifiers (passages, entities, concepts, events, rules).
+        2. Retrieves from Neo4j Aura using get_query_subgraph with controlled depth and rel_types.
+        3. Gracefully falls back to the in-memory graph store when Neo4j is disconnected or returns empty.
+        4. Preserves isolated seed nodes and ensures strict endpoint validity for all relationships.
+        """
+        safe_hops = min(max(int(max_hops), 1), 5)
+        safe_limit = min(max(int(limit), 10), 1000)
+
+        query_meta, seed_node_ids, seed_passage_ids = self.resolve_seed_nodes(query_input)
+        all_seed_ids = sorted(list(set(seed_node_ids).union(set(seed_passage_ids))))
+
+        # If query contains no recognized entities or concepts, return strictly empty result (zero mock fallback)
+        if not all_seed_ids:
+            raw_q = query_meta.get("original_query", "")
+            return {
+                "nodes": [],
+                "relationships": [],
+                "edges": [],
+                "total_nodes": 0,
+                "total_edges": 0,
+                "total_relationships": 0,
+                "seed_ids": [],
+                "matched_seeds": [],
+                "depth": safe_hops,
+                "source": "neo4j_aura",
+                "metadata": {
+                    "query": raw_q,
+                    "node_count": 0,
+                    "relationship_count": 0,
+                    "depth": safe_hops,
+                    "literary_sources": [],
+                    "evidence_count": 0,
+                    "extracted_entities": [],
+                    "extracted_concepts": [],
+                    "extracted_sources": [],
+                    "detected_tinai": query_meta.get("detected_tinai", "General"),
+                    "message": "No relevant Knowledge Graph entities identified for query.",
+                },
+                "query_summary": query_meta,
+                "categories": TolkappiyamOntology.get_category_config(),
+                "hierarchy_levels": TolkappiyamOntology.get_hierarchy_config(),
+                "logical_layers": TolkappiyamOntology.get_layer_config(),
+            }
+
+        result: Optional[Dict[str, Any]] = None
+
+        if self.repo.is_available() and all_seed_ids:
+            try:
+                neo4j_res = self.repo.get_query_subgraph(
+                    seed_ids=all_seed_ids,
+                    max_hops=safe_hops,
+                    limit=safe_limit,
+                    rel_types=rel_types,
+                    include_isolated=include_isolated,
+                )
+                if neo4j_res and neo4j_res.get("nodes"):
+                    result = neo4j_res
+                    # If include_isolated is True, ensure seeds present in local store but missing in Neo4j are preserved
+                    if include_isolated:
+                        existing_ids = {n["id"] for n in result["nodes"]}
+                        for sid in all_seed_ids:
+                            if sid not in existing_ids:
+                                nd = {
+                                    "id": sid,
+                                    "label": sid,
+                                    "name": sid,
+                                    "type": "Seed",
+                                    "is_seed": True,
+                                    "hop_distance": 0,
+                                    "degree": 0,
+                                    "is_isolated": True,
+                                    "relevance_reason": "Direct Seed Node from Query / Hybrid Retrieval",
+                                    "relevance_score": 1.0,
+                                }
+                                result["nodes"].append(nd)
+                                result["total_nodes"] = len(result["nodes"])
+                                if "matched_seeds" in result and sid not in result["matched_seeds"]:
+                                    result["matched_seeds"].append(sid)
+                                result["isolated_node_count"] = len([n for n in result["nodes"] if n.get("is_isolated")])
+            except Exception as e:
+                logger.warning(f"Neo4j query subgraph retrieval failed: {e}. Falling back to in-memory store.")
+                result = None
+
+        # Fallback to in-memory store
+        if result is None:
+            expanded = kg_instance.store.expand_subgraph(
+                node_ids=all_seed_ids,
+                hops=safe_hops,
+                rel_types=rel_types,
+            )
+            nodes = expanded.get("nodes", [])[:safe_limit]
+            node_ids = {n["id"] for n in nodes}
+            edges = [
+                e for e in expanded.get("edges", [])
+                if e["source"] in node_ids and e["target"] in node_ids
+            ]
+            result = {
+                "nodes": nodes,
+                "relationships": edges,
+                "edges": edges,
+                "total_nodes": len(nodes),
+                "total_edges": len(edges),
+                "total_relationships": len(edges),
+                "seed_ids": all_seed_ids,
+                "matched_seeds": [s for s in all_seed_ids if s in node_ids],
+                "isolated_node_count": len([n for n in nodes if n.get("is_isolated")]),
+                "depth": safe_hops,
+                "source": "in_memory_kg",
+            }
+
+        node_count = len(result.get("nodes", []))
+        rel_count = len(result.get("relationships", []))
+
+        # Collect unique literary sources across metadata, passages, and nodes
+        lit_sources = []
+        for s in query_meta.get("extracted_source_references", []):
+            if s and s not in lit_sources:
+                lit_sources.append(s)
+        for n in result.get("nodes", []):
+            n_src = n.get("source") or n.get("source_reference") or n.get("work")
+            if n_src and n_src not in lit_sources:
+                lit_sources.append(n_src)
+        if not lit_sources and (node_count > 0 or all_seed_ids):
+            lit_sources.append("Tolkāppiyam (தொல்காப்பியம்)")
+
+        ev_count = len(seed_passage_ids)
+        if isinstance(query_input, dict):
+            ev_input_list = query_input.get("evidence", []) or query_input.get("evidence_items", []) or query_input.get("passages", [])
+            if ev_input_list:
+                ev_count = max(ev_count, len(ev_input_list))
+
+        # Identify evidence connections and annotate nodes/relationships
+        evidence_passage_set = set(str(pid).lower() for pid in seed_passage_ids)
+        evidence_entities_set = set(str(e).lower() for e in query_meta.get("extracted_entities", []))
+        evidence_concepts_set = set(str(c).lower() for c in query_meta.get("extracted_concepts", []))
+
+        # Map each passage ID to its source reference
+        passage_source_map = {}
+        if isinstance(query_input, dict):
+            ev_list = query_input.get("evidence", []) or query_input.get("evidence_items", []) or query_input.get("passages", [])
+            for ev in ev_list:
+                if isinstance(ev, dict):
+                    pid = str(ev.get("passage_id") or ev.get("id") or "").lower()
+                    sref = ev.get("source_reference") or ev.get("source") or ev.get("work") or ""
+                    if pid:
+                        evidence_passage_set.add(pid)
+                        if sref:
+                            passage_source_map[pid] = sref
+                    for ent in ev.get("entities", []):
+                        if ent:
+                            evidence_entities_set.add(str(ent).lower())
+                    for c in ev.get("concepts", []):
+                        if c:
+                            evidence_concepts_set.add(str(c).lower())
+
+        contributed_evidence_nodes = 0
+        for n in result.get("nodes", []):
+            nid = str(n.get("id", "")).lower()
+            nname = str(n.get("name") or n.get("label") or "").lower()
+            ncanon = str(n.get("canonical_form") or n.get("transliteration") or "").lower()
+
+            is_ev = False
+            ev_ids = list(n.get("evidence_ids", []))
+
+            if nid in evidence_passage_set:
+                is_ev = True
+                if nid not in ev_ids:
+                    ev_ids.append(nid)
+                if nid in passage_source_map and not n.get("source_reference"):
+                    n["source_reference"] = passage_source_map[nid]
+
+            if (
+                nid in evidence_entities_set
+                or nname in evidence_entities_set
+                or ncanon in evidence_entities_set
+                or nid in evidence_concepts_set
+                or nname in evidence_concepts_set
+                or ncanon in evidence_concepts_set
+            ):
+                is_ev = True
+                for pid in evidence_passage_set:
+                    if pid not in ev_ids:
+                        ev_ids.append(pid)
+
+            if n.get("is_seed") and all_seed_ids:
+                is_ev = True
+
+            n["contributed_to_evidence"] = bool(n.get("contributed_to_evidence", False) or is_ev)
+            n["contributed_to_reasoning"] = bool(n.get("contributed_to_reasoning", False))
+            n["evidence_ids"] = ev_ids
+            if not n.get("source_reference"):
+                n["source_reference"] = n.get("source") or (lit_sources[0] if lit_sources else "Tolkāppiyam")
+
+            if n["contributed_to_evidence"]:
+                contributed_evidence_nodes += 1
+
+        # Annotate relationships
+        node_lookup = {str(n.get("id", "")).lower(): n for n in result.get("nodes", [])}
+        for rel in result.get("relationships", []):
+            s_id = str(rel.get("source") or rel.get("source_id", "")).lower()
+            t_id = str(rel.get("target") or rel.get("target_id", "")).lower()
+            s_node = node_lookup.get(s_id)
+            t_node = node_lookup.get(t_id)
+
+            rel_ev_ids = list(rel.get("evidence_ids", []))
+            if s_node and s_node.get("contributed_to_evidence"):
+                rel["contributed_to_evidence"] = True
+                for eid in s_node.get("evidence_ids", []):
+                    if eid not in rel_ev_ids:
+                        rel_ev_ids.append(eid)
+            if t_node and t_node.get("contributed_to_evidence"):
+                rel["contributed_to_evidence"] = True
+                for eid in t_node.get("evidence_ids", []):
+                    if eid not in rel_ev_ids:
+                        rel_ev_ids.append(eid)
+
+            rel.setdefault("contributed_to_evidence", False)
+            rel.setdefault("contributed_to_reasoning", False)
+            rel["evidence_ids"] = rel_ev_ids
+
+        result["metadata"] = {
+            "query": query_meta.get("original_query", ""),
+            "node_count": node_count,
+            "relationship_count": rel_count,
+            "depth": safe_hops,
+            "literary_sources": lit_sources,
+            "evidence_count": ev_count,
+            "contributed_to_evidence_count": contributed_evidence_nodes,
+            "extracted_entities": query_meta.get("extracted_entities", []),
+            "extracted_concepts": query_meta.get("extracted_concepts", []),
+            "extracted_sources": query_meta.get("extracted_source_references", []),
+            "detected_tinai": query_meta.get("detected_tinai", "General"),
+            "source": result.get("source", "neo4j_aura"),
+        }
+        result["query_summary"] = query_meta
+        result["categories"] = TolkappiyamOntology.get_category_config()
+        result["hierarchy_levels"] = TolkappiyamOntology.get_hierarchy_config()
+        result["logical_layers"] = TolkappiyamOntology.get_layer_config()
+        return result
 
 
 # Singleton service instance

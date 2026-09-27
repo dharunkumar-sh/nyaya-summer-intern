@@ -46,6 +46,15 @@ class HybridSearchResult:
     semantic_score: float
     combined_score: float
     score: float = field(init=False)
+    hybrid_score: float = field(init=False)
+    passage: str = field(init=False)
+    work: str = field(init=False)
+    section: str = field(init=False)
+    chapter: str = field(init=False)
+    source: str = field(init=False)
+    entities: List[str] = field(default_factory=list)
+    concepts: List[str] = field(default_factory=list)
+    relevance_metadata: Dict[str, Any] = field(default_factory=dict)
     cosine_similarity: float = 0.0
     matched_terms: List[str] = field(default_factory=list)
     phrase_matched: bool = False
@@ -62,21 +71,55 @@ class HybridSearchResult:
             self.score = self.final_score
         else:
             self.score = self.combined_score
+        self.hybrid_score = self.combined_score
+        self.passage = self.text
+        self.work = str(self.source_metadata.get("work") or "Tolkāppiyam")
+        self.section = str(self.source_metadata.get("section") or "")
+        self.chapter = str(self.source_metadata.get("chapter") or "")
+        self.source = str(
+            self.source_metadata.get("source_reference")
+            or self.source_metadata.get("source")
+            or f"{self.work} {self.section} {self.chapter}".strip()
+        )
+        if not self.entities:
+            raw_ent = self.source_metadata.get("entities") or self.source_metadata.get("entity") or []
+            self.entities = list(raw_ent) if isinstance(raw_ent, (list, tuple, set)) else []
+        if not self.concepts:
+            raw_con = self.source_metadata.get("concepts") or self.source_metadata.get("concept") or []
+            self.concepts = list(raw_con) if isinstance(raw_con, (list, tuple, set)) else []
 
     def to_dict(self) -> Dict[str, Any]:
         """Returns JSON-serializable dictionary with transparent score breakdown."""
         data: Dict[str, Any] = {
             "passage_id": self.passage_id,
             "text": self.text,
+            "passage": self.passage,
+            "work": self.work,
+            "section": self.section,
+            "chapter": self.chapter,
+            "source": self.source,
+            "entities": self.entities,
+            "concepts": self.concepts,
             "source_metadata": self.source_metadata,
             "lexical_score": round(self.lexical_score, 4),
             "semantic_score": round(self.semantic_score, 4),
             "combined_score": round(self.combined_score, 4),
+            "hybrid_score": round(self.hybrid_score, 4),
             "score": round(self.score, 4),
             "cosine_similarity": round(self.cosine_similarity, 4),
             "matched_terms": self.matched_terms,
             "phrase_matched": self.phrase_matched,
             "retrieval_method": self.retrieval_method,
+            "relevance_metadata": self.relevance_metadata or {
+                "lexical_score": round(self.lexical_score, 4),
+                "semantic_score": round(self.semantic_score, 4),
+                "combined_score": round(self.combined_score, 4),
+                "hybrid_score": round(self.hybrid_score, 4),
+                "cosine_similarity": round(self.cosine_similarity, 4),
+                "matched_terms": self.matched_terms,
+                "phrase_matched": self.phrase_matched,
+                "retrieval_method": self.retrieval_method,
+            },
         }
         if self.final_score is not None:
             data["final_score"] = round(self.final_score, 4)
@@ -159,7 +202,16 @@ class HybridSearchService:
         Returns:
             List of HybridSearchResult instances sorted descending by score.
         """
-        clean_query = query.strip()
+        # Preprocess multilingual query using QueryPreprocessingService
+        from query.query_preprocessor import QueryPreprocessingService, ProcessedQuery
+
+        if isinstance(query, ProcessedQuery):
+            processed_query = query
+            clean_query = processed_query.normalized_query or processed_query.original_query
+        else:
+            clean_query = str(query).strip() if query is not None else ""
+            processed_query = QueryPreprocessingService.preprocess(clean_query) if clean_query else None
+
         if not clean_query and not exact_terms and not filters:
             return []
 
@@ -217,27 +269,44 @@ class HybridSearchService:
         # 2. Execute both retrieval methods for candidate generation
         pool_size = max(top_k * candidate_pool_factor, 10)
 
-        # Lexical Retrieval Channel
+        # Lexical Retrieval Channel: Use normalized BM25 query and extracted entity/concept terms
         lexical_results: List[LexicalSearchResult] = []
         if w_lex > 0.0 or not clean_query:
             try:
+                lexical_query = (processed_query.bm25_query or clean_query) if processed_query else clean_query
+                combined_exact_terms: List[str] = list(exact_terms or [])
+                if processed_query:
+                    for item in (processed_query.entities or []) + (processed_query.concepts or []) + (processed_query.literary_terms or []):
+                        tt = item.get("tamil_term")
+                        can = item.get("canonical")
+                        if tt and tt not in combined_exact_terms:
+                            combined_exact_terms.append(tt)
+                        if can and can not in combined_exact_terms:
+                            combined_exact_terms.append(can)
+
                 lexical_results = self.lexical_engine.search(
-                    query=clean_query,
+                    query=lexical_query,
                     top_k=pool_size,
                     filters=filters,
-                    exact_terms=exact_terms,
+                    exact_terms=combined_exact_terms or None,
                     require_phrase=require_phrase,
                     primary_passages_only=primary_passages_only,
                 )
             except Exception as e:
                 logger.error(f"HybridSearchService: Lexical search error: {e}")
 
-        # Semantic Retrieval Channel
+        # Semantic Retrieval Channel: Use common cross-lingual semantic query in shared vector space
         semantic_results: List[SemanticSearchResult] = []
         if w_sem > 0.0 and clean_query:
             try:
+                semantic_query = (
+                    processed_query.retrieval_representation.get("common_semantic_query")
+                    or processed_query.vector_query
+                    or clean_query
+                ) if processed_query else clean_query
+
                 semantic_results = self.semantic_engine.search(
-                    query=clean_query,
+                    query=semantic_query,
                     top_k=pool_size,
                     filters=filters,
                 )
@@ -279,6 +348,22 @@ class HybridSearchService:
             combined_score = (norm_w_lex * lex_score) + (norm_w_sem * sem_score)
             clamped_combined = min(1.0, max(0.0, combined_score))
 
+            relevance_metadata = {
+                "lexical_score": round(lex_score, 4),
+                "semantic_score": round(sem_score, 4),
+                "combined_score": round(clamped_combined, 4),
+                "hybrid_score": round(clamped_combined, 4),
+                "cosine_similarity": round(cos_sim, 4),
+                "weights": {
+                    "lexical_weight": round(norm_w_lex, 4),
+                    "semantic_weight": round(norm_w_sem, 4),
+                },
+                "detected_language": processed_query.detected_language if processed_query else "unknown",
+                "matched_terms": matched_terms,
+                "phrase_matched": phrase_matched,
+                "retrieval_method": "hybrid_search",
+            }
+
             candidate = HybridSearchResult(
                 passage_id=pid,
                 text=text,
@@ -289,11 +374,14 @@ class HybridSearchService:
                 cosine_similarity=round(cos_sim, 4),
                 matched_terms=matched_terms,
                 phrase_matched=phrase_matched,
+                relevance_metadata=relevance_metadata,
             )
             merged_candidates.append(candidate)
 
         # 5. Sort descending by combined_score, with passage_id as deterministic tie-breaker
         merged_candidates.sort(key=lambda r: (-r.combined_score, -r.semantic_score, r.passage_id))
+        for idx, candidate in enumerate(merged_candidates[:top_k], start=1):
+            candidate.rank = idx
 
         # 6. Apply Second-Stage Re-ranking if requested
         if rerank:
@@ -306,6 +394,16 @@ class HybridSearchService:
             )
             final_results: List[HybridSearchResult] = []
             for item in reranked:
+                rel_meta = {
+                    "lexical_score": round(item.score_components.lexical_score, 4),
+                    "semantic_score": round(item.score_components.semantic_score, 4),
+                    "combined_score": round(item.score_components.initial_combined_score, 4),
+                    "hybrid_score": round(item.final_score, 4),
+                    "cosine_similarity": round(item.score_components.semantic_similarity, 4),
+                    "detected_language": processed_query.detected_language if processed_query else "unknown",
+                    "matched_terms": item.explanation.matched_keywords,
+                    "retrieval_method": "hybrid_with_rerank",
+                }
                 res = HybridSearchResult(
                     passage_id=item.passage_id,
                     text=item.text,
@@ -321,6 +419,7 @@ class HybridSearchService:
                     rank=item.rank,
                     score_components=item.score_components.to_dict(),
                     explanation=item.explanation.to_dict(),
+                    relevance_metadata=rel_meta,
                 )
                 final_results.append(res)
             return final_results

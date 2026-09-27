@@ -539,6 +539,11 @@ class RAGRetrievalEngine:
             original_query=original_query,
         )
 
+    def clear_runtime_cache(self) -> None:
+        """Flushes all transient runtime and graph caches."""
+        from .hybrid_rag_pipeline import hybrid_rag_pipeline
+        hybrid_rag_pipeline.clear_runtime_cache()
+
 
 # Global singleton instance
 rag_engine = RAGRetrievalEngine()

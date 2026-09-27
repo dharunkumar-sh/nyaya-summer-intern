@@ -226,6 +226,12 @@ class Neo4jService:
         self._connectivity_cache_time = now
         return res
 
+    def clear_cache(self) -> None:
+        """Flushes transient connectivity cache."""
+        self._connectivity_cache = None
+        self._connectivity_cache_time = 0.0
+        logger.debug("Neo4jService: Transient connectivity cache cleared.")
+
     def startup_check(self, raise_on_failure: bool = False) -> Dict[str, Any]:
         """
         Performs a startup connectivity verification for the Flask application.

@@ -698,5 +698,27 @@ def answer_query():
     except Exception as e:
         logger.error(f"Error synthesizing grounded answer: {e}", exc_info=True)
         return error_response(f"Answer synthesis failed: {str(e)}", status_code=500)
+    finally:
+        try:
+            rag_engine.clear_runtime_cache()
+        except Exception as cache_err:
+            logger.debug(f"Failed clearing runtime cache post answer: {cache_err}")
+
+
+@retrieval_bp.route("/clear-cache", methods=["POST"])
+def clear_cache_endpoint():
+    """
+    Explicitly flushes in-memory passage graph caches, Neo4j connectivity caches,
+    and transient query buffers.
+    """
+    try:
+        rag_engine.clear_runtime_cache()
+        return success_response(
+            data={"cleared": True},
+            message="Runtime caches successfully cleared",
+        )
+    except Exception as e:
+        logger.error(f"Error clearing runtime caches: {e}", exc_info=True)
+        return error_response(f"Cache clearance failed: {str(e)}", status_code=500)
 
 

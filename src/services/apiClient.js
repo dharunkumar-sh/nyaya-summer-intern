@@ -138,6 +138,9 @@ export async function apiRequest(endpoint, {
 
   const requestHeaders = {
     'Accept': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
     ...(body && typeof body === 'object' && !(body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
     ...headers,
   };
@@ -146,6 +149,7 @@ export async function apiRequest(endpoint, {
     const response = await fetch(targetUrl, {
       method,
       headers: requestHeaders,
+      cache: 'no-store',
       body: body && typeof body === 'object' && !(body instanceof FormData) ? JSON.stringify(body) : body,
       signal: controller.signal,
       ...customOptions,
@@ -724,6 +728,14 @@ export const ragApi = {
   },
 
   /**
+   * Explicitly clears runtime passage graph caches and transient buffers on backend.
+   * Endpoint: POST /api/retrieval/clear-cache
+   */
+  clearCache: ({ signal = null, timeoutMs = 10000 } = {}) => {
+    return http.post('/api/retrieval/clear-cache', {}, { signal, timeoutMs });
+  },
+
+  /**
    * 3-channel Hybrid RAG retrieval without text generation.
    * Endpoint: POST /api/retrieval/hybrid-rag
    */
@@ -1060,3 +1072,4 @@ export const getQuerySubgraph = graphApi.getQuerySubgraph;
 export const mutateGraph = graphApi.mutateGraph;
 export const upsertEntity = graphApi.upsertEntity;
 export const upsertRelationship = graphApi.upsertRelationship;
+export const clearCache = ragApi.clearCache;

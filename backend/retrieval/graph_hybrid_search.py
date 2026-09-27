@@ -189,6 +189,12 @@ class GraphHybridSearchService:
         self.default_max_depth = int(default_max_depth)
         self._graph_context_cache: Dict[Tuple[str, int], GraphContext] = {}
 
+    def clear_cache(self) -> None:
+        """Clears in-memory passage graph context cache."""
+        count = len(self._graph_context_cache)
+        self._graph_context_cache.clear()
+        logger.debug(f"GraphHybridSearchService: Cleared {count} cached graph contexts.")
+
     def is_neo4j_active(self) -> bool:
         """Returns True if the backend is successfully connected to Neo4j Aura."""
         try:

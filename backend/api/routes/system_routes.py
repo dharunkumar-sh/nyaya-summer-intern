@@ -152,3 +152,18 @@ def get_system_status():
     }
 
     return success_response(data=data, message=f"System status: {system_overall.upper()}")
+
+
+@system_bp.route("/clear-cache", methods=["POST"])
+def clear_system_cache():
+    """Flushes transient system and retrieval runtime caches."""
+    try:
+        from retrieval.rag_service import rag_engine
+        rag_engine.clear_runtime_cache()
+        return success_response(
+            data={"cleared": True},
+            message="System runtime caches cleared successfully",
+        )
+    except Exception as e:
+        logger.error(f"Error clearing system caches: {e}", exc_info=True)
+        return error_response(f"System cache clearance failed: {str(e)}", status_code=500)

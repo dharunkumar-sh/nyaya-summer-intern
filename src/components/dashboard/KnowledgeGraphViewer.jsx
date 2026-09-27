@@ -1937,12 +1937,12 @@ export default function KnowledgeGraphViewer({
       queueMicrotask(() => setIsSimulating(false));
     } else {
       // Force simulations ("force", "cose", "cola")
-      const linkDist = isLargeGraph ? 110 : 140;
+      const linkDist = isLargeGraph ? 130 : 165;
       const chargeStrength = isVeryLargeGraph
-        ? -260
+        ? -300
         : isLargeGraph
-          ? -340
-          : -420;
+          ? -380
+          : -480;
       const alphaDecay = isVeryLargeGraph ? 0.08 : isLargeGraph ? 0.055 : 0.035;
       const alphaMinCutoff = isLargeGraph ? 0.007 : 0.003;
       queueMicrotask(() => setIsSimulating(true));
@@ -1962,7 +1962,7 @@ export default function KnowledgeGraphViewer({
           d3
             .forceManyBody()
             .strength(chargeStrength)
-            .distanceMax(isLargeGraph ? 450 : 550),
+            .distanceMax(isLargeGraph ? 480 : 600),
         )
         .force("center", d3.forceCenter(width / 2, height / 2).strength(0.08))
         .force("x", d3.forceX(width / 2).strength(0.04))
@@ -1971,7 +1971,7 @@ export default function KnowledgeGraphViewer({
           "collide",
           d3
             .forceCollide()
-            .radius((d) => (d.radius || 28) + (isLargeGraph ? 10 : 18))
+            .radius((d) => (d.radius || 28) + (isLargeGraph ? 16 : 26))
             .iterations(isLargeGraph ? 1 : 2),
         )
         .alpha(isLargeGraph ? 0.6 : 0.8)
@@ -3423,21 +3423,6 @@ export default function KnowledgeGraphViewer({
                     <span>Traverse ({expansionDepth} Hops)</span>
                   </button>
                 )}
-                <button
-                  type="button"
-                  onClick={() => setIsNodeInspectorOpen((prev) => !prev)}
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-semibold border cursor-pointer transition-colors ${
-                    isNodeInspectorOpen
-                      ? "bg-purple-100 text-purple-900 border-purple-300"
-                      : "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
-                  }`}
-                  title="Toggle multi-hop exploration inspector"
-                >
-                  <Layers className="w-3 h-3" />
-                  <span>
-                    {isNodeInspectorOpen ? "Hide Inspector" : "Inspector"}
-                  </span>
-                </button>
                 {expansionFeedback && (
                   <span
                     className={`px-2 py-0.5 rounded-md text-[10px] font-medium border ${
@@ -3518,6 +3503,43 @@ export default function KnowledgeGraphViewer({
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Selected Edge Information HUD Strip (Docked cleanly above canvas without blocking graph) */}
+          {selectedEdgeData && !selectedNodeDetails && (
+            <div className="px-4 sm:px-5 py-2 bg-indigo-50/90 border-t border-indigo-200/80 text-xs flex items-center justify-between gap-3 flex-wrap animate-in fade-in duration-150">
+              <div className="flex items-center gap-2 flex-wrap min-w-0">
+                <span className="font-bold text-slate-900 tamil-font">
+                  {selectedEdgeData.sourceLabel || selectedEdgeData.source}
+                </span>
+                <span className="inline-flex items-center gap-1 font-mono font-bold text-purple-700 bg-white px-2 py-0.5 rounded border border-purple-200 text-[10px] shadow-2xs">
+                  <ArrowRight className="w-3 h-3 text-purple-500" />
+                  <span>{selectedEdgeData.type || selectedEdgeData.relation}</span>
+                  <ArrowRight className="w-3 h-3 text-purple-500" />
+                </span>
+                <span className="font-bold text-slate-900 tamil-font">
+                  {selectedEdgeData.targetLabel || selectedEdgeData.target}
+                </span>
+                {selectedEdgeData.sourceReference && (
+                  <span className="text-slate-600 text-[10px] font-mono bg-white px-2 py-0.5 rounded border border-slate-200">
+                    Ref: {selectedEdgeData.sourceReference}
+                  </span>
+                )}
+                {selectedEdgeData.confidence !== undefined && (
+                  <span className="text-purple-700 text-[10px] font-mono font-bold bg-white px-2 py-0.5 rounded border border-purple-200">
+                    Confidence: {Math.round(selectedEdgeData.confidence * 100)}%
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedEdgeData(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white cursor-pointer transition-colors"
+                title="Deselect edge"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
 
@@ -3866,823 +3888,110 @@ export default function KnowledgeGraphViewer({
           </div>
         )}
 
-        {/* Dynamic Neo4j Selected Node & Multi-Hop Connected Subgraph Inspector */}
-        {selectedNode && isNodeInspectorOpen && (
-          <div
-            onClick={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-            className="absolute bottom-3 right-3 sm:w-[440px] max-w-[94vw] max-h-[82vh] bg-white/95 backdrop-blur-md rounded-2xl border border-purple-200/90 shadow-2xl p-3.5 z-30 animate-in fade-in slide-in-from-bottom-2 duration-150 text-xs flex flex-col overflow-hidden"
-          >
-            {/* Header */}
-            <div className="flex items-start justify-between pb-2 mb-2 border-b border-slate-100 gap-2 shrink-0">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{
-                      backgroundColor: selectedNodeDetails?.color || "#7c3aed",
-                    }}
-                  />
-                  <h4 className="font-bold text-slate-900 text-sm truncate tamil-font">
-                    {selectedNode.tamilLabel ||
-                      selectedNode.label ||
-                      selectedNode.name}
-                  </h4>
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">
-                    {selectedNode.type || selectedNode.category || "Entity"}
-                  </span>
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    Neo4j Aura
-                  </span>
-                </div>
-                {selectedNode.transliteration && (
-                  <p className="text-[10px] font-mono text-slate-500 italic mt-0.5 truncate">
-                    {selectedNode.transliteration}
-                  </p>
-                )}
-                <p className="text-[10px] font-mono text-slate-400 truncate mt-0.5">
-                  ID: {selectedNode.id}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsNodeInspectorOpen(false)}
-                  className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
-                  title="Minimize Inspector"
-                >
-                  <Minimize2 className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleClearSelection}
-                  className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
-                  title="Deselect Node & Reset Traversal"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Traversal Controls Section */}
-            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 mb-2 shrink-0 space-y-2 text-[11px]">
-              {/* Row 1: Hops Depth + Action Button */}
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div className="flex items-center gap-1.5">
-                  <GitBranch className="w-3.5 h-3.5 text-purple-600" />
-                  <span className="font-bold text-slate-700">
-                    Traversal Depth:
-                  </span>
-                  <div className="flex items-center gap-0.5 bg-white p-0.5 rounded-lg border border-slate-200 shadow-2xs">
-                    {[1, 2, 3, 4, 5].map((d) => (
-                      <button
-                        key={d}
-                        type="button"
-                        onClick={() => {
-                          setExpansionDepth(d);
-                          expandSelectedNode(selectedNode, { hops: d });
-                        }}
-                        className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
-                          expansionDepth === d
-                            ? "bg-purple-600 text-white shadow-2xs"
-                            : "text-slate-600 hover:bg-slate-100"
-                        }`}
-                        title={`Traverse ${d} hops from this node`}
-                      >
-                        {d}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => expandSelectedNode(selectedNode)}
-                  disabled={isExpandingNode}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 cursor-pointer transition-colors shadow-2xs ml-auto"
-                >
-                  {isExpandingNode ? (
-                    <>
-                      <RefreshCw className="w-3 h-3 animate-spin" />
-                      <span>Traversing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="w-3 h-3" />
-                      <span>Traverse</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Row 2: Direction & Type Filters */}
-              <div className="flex items-center justify-between gap-2 flex-wrap pt-1 border-t border-slate-200/60">
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] font-semibold text-slate-500">
-                    Dir:
-                  </span>
-                  {[
-                    { id: "both", label: "Both" },
-                    { id: "outgoing", label: "Out →" },
-                    { id: "incoming", label: "← In" },
-                  ].map((dir) => (
-                    <button
-                      key={dir.id}
-                      type="button"
-                      onClick={() => {
-                        setExpansionDirection(dir.id);
-                        expandSelectedNode(selectedNode, { direction: dir.id });
-                      }}
-                      className={`px-1.5 py-0.5 rounded text-[9px] font-semibold transition-colors cursor-pointer border ${
-                        expansionDirection === dir.id
-                          ? "bg-purple-100 text-purple-900 border-purple-300 font-bold"
-                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                      }`}
-                    >
-                      {dir.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Exclude Type Quick Chips */}
-                <div className="flex items-center gap-1 flex-wrap">
-                  <span className="text-[10px] font-semibold text-slate-500">
-                    Filter:
-                  </span>
-                  {[
-                    "Passage",
-                    "Literature",
-                    "Concept",
-                    "Entity",
-                    "Event",
-                    "Rule",
-                  ].map((t) => {
-                    const isExcluded = expansionExcludedTypes.includes(t);
-                    return (
-                      <button
-                        key={t}
-                        type="button"
-                        onClick={() => {
-                          const next = isExcluded
-                            ? expansionExcludedTypes.filter((x) => x !== t)
-                            : [...expansionExcludedTypes, t];
-                          setExpansionExcludedTypes(next);
-                          expandSelectedNode(selectedNode, {
-                            excludedTypes: next,
-                          });
-                        }}
-                        className={`px-1 py-0.5 rounded text-[9px] font-medium border transition-colors cursor-pointer ${
-                          isExcluded
-                            ? "bg-rose-50 text-rose-700 border-rose-300 line-through opacity-75 font-semibold"
-                            : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
-                        }`}
-                        title={isExcluded ? `Include ${t}` : `Filter out ${t}`}
-                      >
-                        {t}
-                      </button>
-                    );
-                  })}
-                  {expansionExcludedTypes.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setExpansionExcludedTypes([]);
-                        expandSelectedNode(selectedNode, { excludedTypes: [] });
-                      }}
-                      className="text-[9px] text-purple-700 hover:underline cursor-pointer ml-0.5 font-bold"
-                      title="Reset type exclusions"
-                    >
-                      Reset
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* View Mode Tabs */}
-            <div className="flex items-center gap-1.5 border-b border-slate-200 pb-1 mb-1.5 text-[11px] font-semibold shrink-0">
-              <button
-                type="button"
-                onClick={() => setExpansionActiveTab("details")}
-                className={`pb-1 px-2 border-b-2 cursor-pointer transition-colors ${
-                  expansionActiveTab === "details"
-                    ? "border-purple-600 text-purple-900 font-bold"
-                    : "border-transparent text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                Details & Provenance
-              </button>
-              <button
-                type="button"
-                onClick={() => setExpansionActiveTab("lineage")}
-                className={`pb-1 px-2 border-b-2 cursor-pointer transition-colors ${
-                  expansionActiveTab === "lineage"
-                    ? "border-purple-600 text-purple-900 font-bold"
-                    : "border-transparent text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                Lineage Paths ({nodeConnectedData?.connected_nodes?.length || 0}
-                )
-              </button>
-              <button
-                type="button"
-                onClick={() => setExpansionActiveTab("relations")}
-                className={`pb-1 px-2 border-b-2 cursor-pointer transition-colors ${
-                  expansionActiveTab === "relations"
-                    ? "border-purple-600 text-purple-900 font-bold"
-                    : "border-transparent text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                Relationships ({nodeConnectedData?.relationships?.length || 0})
-              </button>
-            </div>
-
-            {/* Scrollable Content Body */}
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[120px]">
-              {expansionActiveTab === "details" ? (
-                /* Details & Provenance View */
-                <div className="space-y-2.5">
-                  {isExpandingNode && (
-                    <div className="px-2.5 py-1.5 rounded-lg bg-purple-50 border border-purple-200 text-[10px] text-purple-800 flex items-center gap-1.5 animate-pulse">
-                      <RefreshCw className="w-3 h-3 animate-spin text-purple-600 shrink-0" />
-                      <span>Retrieving live Neo4j Aura {expansionDepth}-hop graph...</span>
-                    </div>
-                  )}
-
-                  {/* Prominent Tamil Text Card */}
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-amber-50/80 via-orange-50/40 to-amber-50/70 border border-amber-200/90 shadow-2xs space-y-1.5">
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-[9px] uppercase tracking-wider font-bold text-amber-900/80 flex items-center gap-1">
-                        <BookOpen className="w-3 h-3 text-amber-700" />
-                        <span>Tamil Canonical Text</span>
-                      </span>
-                      <span className="px-1.5 py-0.2 rounded font-mono font-bold text-[8px] bg-amber-100 text-amber-900 border border-amber-300">
-                        Neo4j Canonical
-                      </span>
-                    </div>
-                    <div className="font-bold text-slate-900 tamil-font text-sm leading-relaxed">
-                      {selectedNodeDetails?.tamilText ||
-                        selectedNodeDetails?.tamilLabel ||
-                        selectedNodeDetails?.label ||
-                        selectedNodeDetails?.name}
-                    </div>
-                    {selectedNodeDetails?.transliteration && (
-                      <div className="text-[10px] font-mono text-slate-600 italic">
-                        {selectedNodeDetails.transliteration}
-                      </div>
-                    )}
-                    {(selectedNodeDetails?.translation ||
-                      selectedNodeDetails?.meaning ||
-                      selectedNodeDetails?.description ||
-                      selectedNodeDetails?.text) && (
-                      <div className="text-[10px] text-slate-700 border-t border-amber-200/60 pt-1.5 leading-snug">
-                        {selectedNodeDetails.translation ||
-                          selectedNodeDetails.meaning ||
-                          selectedNodeDetails.description ||
-                          selectedNodeDetails.text}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Provenance & Taxonomy Grid */}
-                  <div className="grid grid-cols-2 gap-2 text-[10px]">
-                    {/* Classification / Taxonomy */}
-                    <div className="p-2 rounded-lg bg-slate-50 border border-slate-200/90 space-y-1">
-                      <span className="text-[9px] text-slate-400 uppercase font-semibold">
-                        Taxonomy Type
-                      </span>
-                      <div className="font-bold text-slate-800 flex items-center gap-1.5">
-                        <span
-                          className="w-2 h-2 rounded-full shrink-0"
-                          style={{
-                            backgroundColor:
-                              selectedNodeDetails?.color || "#7c3aed",
-                          }}
-                        />
-                        <span className="truncate">
-                          {selectedNodeDetails?.taxonomyType ||
-                            selectedNodeDetails?.type ||
-                            "Entity"}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Source Corpus */}
-                    <div className="p-2 rounded-lg bg-slate-50 border border-slate-200/90 space-y-1">
-                      <span className="text-[9px] text-slate-400 uppercase font-semibold">
-                        Source Corpus
-                      </span>
-                      <div className="font-bold text-slate-800 truncate">
-                        {selectedNodeDetails?.sourceCorpus || "Tolkāppiyam"}
-                      </div>
-                    </div>
-
-                    {/* Canonical Reference */}
-                    <div className="p-2 rounded-lg bg-slate-50 border border-slate-200/90 space-y-1 col-span-2">
-                      <span className="text-[9px] text-slate-400 uppercase font-semibold">
-                        Canonical Reference / Citation
-                      </span>
-                      <div className="font-mono text-purple-900 font-bold truncate">
-                        {selectedNodeDetails?.sourceReference ||
-                          selectedNodeDetails?.passageId ||
-                          selectedNodeDetails?.source_reference ||
-                          "Tolkāppiyam Canonical Sūtra Tradition"}
-                      </div>
-                    </div>
-
-                    {/* Validation Status */}
-                    <div className="p-2 rounded-lg bg-emerald-50/70 border border-emerald-200/80 space-y-1">
-                      <span className="text-[9px] text-emerald-800 uppercase font-semibold flex items-center gap-1">
-                        <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
-                        <span>Validation Status</span>
-                      </span>
-                      <div className="font-bold text-emerald-900 capitalize truncate">
-                        {String(
-                          selectedNodeDetails?.validationLevel ||
-                            "corpus_validated",
-                        ).replace(/_/g, " ")}
-                      </div>
-                    </div>
-
-                    {/* Confidence Score Bar */}
-                    <div className="p-2 rounded-lg bg-slate-50 border border-slate-200/90 space-y-1">
-                      <div className="flex items-center justify-between text-[9px]">
-                        <span className="text-slate-400 uppercase font-semibold">
-                          Confidence
-                        </span>
-                        <span className="font-mono font-bold text-purple-700">
-                          {Math.round(
-                            (selectedNodeDetails?.confidence ?? 1.0) * 100,
-                          )}
-                          %
-                        </span>
-                      </div>
-                      <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                        <div
-                          className="bg-purple-600 h-full rounded-full transition-all duration-300"
-                          style={{
-                            width: `${Math.round((selectedNodeDetails?.confidence ?? 1.0) * 100)}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Context / Tiṇai if present */}
-                    {selectedNodeDetails?.contextTinai && (
-                      <div className="p-2 rounded-lg bg-indigo-50/60 border border-indigo-200/80 space-y-1 col-span-2">
-                        <span className="text-[9px] text-indigo-800 uppercase font-semibold">
-                          Linguistic / Literary Context (Tiṇai)
-                        </span>
-                        <div className="font-bold text-indigo-900 truncate">
-                          {selectedNodeDetails.contextTinai}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Connectivity & Quick Navigation */}
-                  <div className="p-2.5 rounded-xl bg-purple-50/50 border border-purple-200/80 space-y-2">
-                    <div className="flex items-center justify-between text-[10px]">
-                      <span className="font-bold text-purple-950 flex items-center gap-1">
-                        <Network className="w-3 h-3 text-purple-600" />
-                        <span>Neo4j Graph Connectivity</span>
-                      </span>
-                      <span className="font-mono font-bold text-purple-800 text-[9px]">
-                        {selectedNodeDetails?.totalDegree || 0} Incident Edges (
-                        {selectedNodeDetails?.inDegree || 0} IN /{" "}
-                        {selectedNodeDetails?.outDegree || 0} OUT)
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2 pt-1 border-t border-purple-200/60">
-                      <button
-                        type="button"
-                        onClick={() => setExpansionActiveTab("lineage")}
-                        className="flex-1 py-1 px-2 rounded-lg text-[10px] font-bold bg-white text-purple-700 border border-purple-200 hover:bg-purple-100 cursor-pointer transition-colors shadow-2xs text-center"
-                      >
-                        Lineage Paths (
-                        {nodeConnectedData?.connected_nodes?.length || 0})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setExpansionActiveTab("relations")}
-                        className="flex-1 py-1 px-2 rounded-lg text-[10px] font-bold bg-purple-600 text-white hover:bg-purple-700 cursor-pointer transition-colors shadow-2xs text-center"
-                      >
-                        Relationships (
-                        {nodeConnectedData?.relationships?.length || 0})
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : isExpandingNode ? (
-                <div className="p-6 text-center text-slate-500 space-y-2">
-                  <RefreshCw className="w-6 h-6 animate-spin mx-auto text-purple-600" />
-                  <p className="text-[11px] font-medium">
-                    Performing bounded {expansionDepth}-hop Cypher traversal
-                    from Neo4j Aura...
-                  </p>
-                </div>
-              ) : expansionActiveTab === "lineage" ? (
-                /* Lineage & Multi-Hop Path View */
-                (() => {
-                  const connectedNodes =
-                    nodeConnectedData?.connected_nodes || [];
-                  if (connectedNodes.length === 0) {
-                    return (
-                      <div className="p-4 text-center text-slate-400 text-[11px]">
-                        No connected nodes found within {expansionDepth} hops
-                        matching the active filters.
-                      </div>
-                    );
-                  }
-
-                  // Group nodes by hop_distance
-                  const hopGroups = new Map();
-                  connectedNodes.forEach((n) => {
-                    const h = n.hop_distance || 1;
-                    if (!hopGroups.has(h)) hopGroups.set(h, []);
-                    hopGroups.get(h).push(n);
-                  });
-                  const sortedHops = Array.from(hopGroups.keys()).sort(
-                    (a, b) => a - b,
-                  );
-
-                  return (
-                    <div className="space-y-3">
-                      {sortedHops.map((hopNum) => {
-                        const hopNodes = hopGroups.get(hopNum);
-                        return (
-                          <div key={hopNum} className="space-y-1.5">
-                            <div className="flex items-center gap-1.5 px-1 py-0.5 bg-purple-50/80 rounded border border-purple-200/60">
-                              <span className="w-2 h-2 rounded-full bg-purple-600" />
-                              <span className="font-bold text-[10px] text-purple-950 uppercase tracking-wider">
-                                {hopNum === 1
-                                  ? `Hop 1 • Direct Neighbors (${hopNodes.length})`
-                                  : `Hop ${hopNum} • Extended Lineage (${hopNodes.length})`}
-                              </span>
-                            </div>
-
-                            <div className="space-y-1">
-                              {hopNodes.map((cNode) => {
-                                const cName =
-                                  cNode.tamilLabel ||
-                                  cNode.label ||
-                                  cNode.name ||
-                                  cNode.id;
-                                const isOut =
-                                  cNode.parent_rel_direction === "outgoing";
-                                const parentNode =
-                                  connectedNodes.find(
-                                    (cn) => cn.id === cNode.parent_id,
-                                  ) ||
-                                  (cNode.parent_id === selectedNode.id
-                                    ? selectedNode
-                                    : null);
-                                const parentName =
-                                  parentNode?.tamilLabel ||
-                                  parentNode?.label ||
-                                  parentNode?.name ||
-                                  cNode.parent_id;
-
-                                return (
-                                  <div
-                                    key={cNode.id}
-                                    className="p-2 rounded-lg bg-slate-50 hover:bg-purple-50/60 border border-slate-200/90 transition-colors text-[10px] space-y-1"
-                                  >
-                                    <div className="flex items-center justify-between gap-1">
-                                      <div className="flex items-center gap-1.5 min-w-0">
-                                        <span className="px-1.5 py-0.2 rounded font-mono font-bold text-[9px] bg-purple-100 text-purple-900 border border-purple-200 shrink-0">
-                                          Hop {cNode.hop_distance || hopNum}
-                                        </span>
-                                        <span className="px-1.5 py-0.2 rounded font-semibold text-[9px] bg-white text-slate-700 border border-slate-200 shrink-0">
-                                          {cNode.type || "Entity"}
-                                        </span>
-                                        {cNode.parent_rel_direction && (
-                                          <span
-                                            className={`px-1 py-0.2 rounded font-mono font-bold text-[8px] border ${
-                                              isOut
-                                                ? "bg-blue-50 text-blue-700 border-blue-200"
-                                                : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                            }`}
-                                          >
-                                            {isOut ? "OUT →" : "← IN"}
-                                          </span>
-                                        )}
-                                      </div>
-
-                                      <div className="flex items-center gap-1 shrink-0">
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            if (setSelectedNodeId)
-                                              setSelectedNodeId(cNode.id);
-                                            setFocusedCenterId(cNode.id);
-                                          }}
-                                          className="text-[9px] text-purple-700 hover:text-purple-900 font-bold hover:underline cursor-pointer"
-                                          title="Focus this node in the graph"
-                                        >
-                                          Focus
-                                        </button>
-                                        <span>•</span>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            if (setSelectedNodeId)
-                                              setSelectedNodeId(cNode.id);
-                                            setFocusedCenterId(cNode.id);
-                                            expandSelectedNode(cNode);
-                                          }}
-                                          className="text-[9px] text-indigo-700 hover:text-indigo-900 font-bold hover:underline cursor-pointer"
-                                          title="Explore outward from this node"
-                                        >
-                                          Traverse
-                                        </button>
-                                      </div>
-                                    </div>
-
-                                    {/* Node Name */}
-                                    <div className="font-semibold text-slate-900 tamil-font truncate text-[11px]">
-                                      {cName}
-                                    </div>
-
-                                    {/* Parent Lineage Path */}
-                                    {parentName && (
-                                      <div className="flex items-center gap-1 text-[9px] text-slate-500 font-mono truncate">
-                                        <span className="text-slate-400">
-                                          Via:
-                                        </span>
-                                        <span className="font-semibold text-slate-700 truncate max-w-[120px]">
-                                          {parentName}
-                                        </span>
-                                        {cNode.parent_rel_type && (
-                                          <span className="bg-purple-100/70 text-purple-800 px-1 rounded text-[8px] font-bold">
-                                            [{cNode.parent_rel_type}]
-                                          </span>
-                                        )}
-                                        <ChevronRight className="w-2.5 h-2.5 text-slate-400 shrink-0" />
-                                        <span className="text-purple-700 font-bold truncate max-w-[120px]">
-                                          {cName}
-                                        </span>
-                                      </div>
-                                    )}
-
-                                    {/* Full Path Breadcrumb (if multi-hop) */}
-                                    {Array.isArray(cNode.path_from_root) &&
-                                      cNode.path_from_root.length > 2 && (
-                                        <div className="text-[8px] text-slate-400 font-mono truncate pt-0.5">
-                                          Lineage:{" "}
-                                          {cNode.path_from_root.join(" → ")}
-                                        </div>
-                                      )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()
-              ) : /* Direct Relationships Tab */
-              nodeConnectedData?.relationships &&
-                nodeConnectedData.relationships.length > 0 ? (
-                nodeConnectedData.relationships.map((rel, idx) => {
-                  const isOut = rel.direction === "outgoing";
-                  const neighborId = isOut ? rel.target : rel.source;
-                  const neighborNode =
-                    (nodeConnectedData.connected_nodes || []).find(
-                      (cn) => cn.id === neighborId,
-                    ) || {};
-                  const neighborName =
-                    neighborNode.tamilLabel ||
-                    neighborNode.label ||
-                    neighborNode.name ||
-                    neighborId;
-
-                  return (
-                    <div
-                      key={rel.id || idx}
-                      className="p-2 rounded-lg bg-slate-50 hover:bg-purple-50/60 border border-slate-200/90 transition-colors text-[10px] space-y-1"
-                    >
-                      <div className="flex items-center justify-between gap-1">
-                        <span
-                          className={`px-1.5 py-0.5 rounded font-mono font-bold text-[9px] border ${
-                            isOut
-                              ? "bg-blue-50 text-blue-700 border-blue-200"
-                              : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                          }`}
-                        >
-                          {isOut ? "OUT →" : "← IN"}
-                        </span>
-                        <span className="font-mono font-bold text-purple-700 bg-purple-100/70 px-1.5 py-0.5 rounded truncate max-w-[150px]">
-                          {rel.type || rel.relation}
-                        </span>
-                        <span className="font-mono text-slate-500 font-semibold">
-                          {Math.round((rel.confidence ?? 1.0) * 100)}%
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between gap-2 pt-0.5">
-                        <span className="font-semibold text-slate-800 tamil-font truncate max-w-[240px]">
-                          {neighborName}
-                        </span>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (setSelectedNodeId)
-                                setSelectedNodeId(neighborId);
-                              setFocusedCenterId(neighborId);
-                            }}
-                            className="text-[9px] text-purple-600 hover:text-purple-800 font-semibold hover:underline cursor-pointer"
-                          >
-                            Focus
-                          </button>
-                          <span>•</span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (setSelectedNodeId)
-                                setSelectedNodeId(neighborId);
-                              setFocusedCenterId(neighborId);
-                              const found = filteredNodes.find(
-                                (n) => n.id === neighborId,
-                              );
-                              if (found) expandSelectedNode(found);
-                            }}
-                            className="text-[9px] text-indigo-600 hover:text-indigo-800 font-semibold hover:underline cursor-pointer"
-                          >
-                            Traverse
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="p-4 text-center text-slate-400 text-[11px]">
-                  No relationships found within {expansionDepth} hops for this
-                  node.
-                </div>
-              )}
-            </div>
-
-            {/* Footer Metadata */}
-            {nodeConnectedData?.metadata && (
-              <div className="pt-2 mt-2 border-t border-slate-100 flex items-center justify-between text-[9px] text-slate-400 font-mono shrink-0">
-                <span>
-                  Source: {nodeConnectedData.metadata.source || "Neo4j Aura"}
-                </span>
-                <span>
-                  {nodeConnectedData.metadata.max_hops || expansionDepth} Hops ·{" "}
-                  {nodeConnectedData.connected_nodes?.length || 0} nodes ·{" "}
-                  {nodeConnectedData.relationships?.length || 0} rels
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Edge Inspection Overlay */}
-        {selectedEdgeData && !selectedNode && (
-          <div
-            style={
-              popoverPos
-                ? {
-                    left: `${popoverPos.left}px`,
-                    top: `${popoverPos.top}px`,
-                    width: `${popoverPos.width}px`,
-                  }
-                : undefined
-            }
-            onClick={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-            className={`absolute ${
-              popoverPos ? "" : "bottom-3 left-3 right-3 sm:right-auto sm:w-92"
-            } bg-white/95 backdrop-blur-md rounded-xl border border-purple-200 shadow-2xl p-3 z-30 animate-in fade-in zoom-in-95 duration-150 text-xs max-h-[85%] overflow-y-auto`}
-          >
-            <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
-              <div className="flex items-center gap-1.5 font-bold text-slate-900">
-                <Info className="w-3.5 h-3.5 text-purple-600" />
-                <span>NEO4J RELATIONSHIP PROVENANCE</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedEdgeData(null);
-                  setPopoverPos(null);
-                }}
-                className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
-                title="Close"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-200 text-[11px] mb-2">
-              <span className="font-semibold text-slate-800 tamil-font truncate max-w-[38%]">
-                {selectedEdgeData.sourceLabel}
-              </span>
-              <div className="flex items-center gap-1 font-mono text-purple-700 font-bold text-[10px] px-1.5 py-0.5 bg-purple-50 rounded border border-purple-200 shrink-0">
-                <ArrowRight className="w-3 h-3 text-purple-500" />
-                <span>
-                  {selectedEdgeData.type || selectedEdgeData.relation}
-                </span>
-                <ArrowRight className="w-3 h-3 text-purple-500" />
-              </div>
-              <span className="font-semibold text-slate-800 tamil-font truncate max-w-[38%]">
-                {selectedEdgeData.targetLabel}
-              </span>
-            </div>
-
-            <div className="space-y-1 bg-slate-50 rounded-lg p-2 border border-slate-200 text-[10px] text-slate-600 mb-1">
-              {selectedEdgeData.sourceCorpus && (
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-700">Corpus:</span>
-                  <span className="font-mono text-slate-800">
-                    {selectedEdgeData.sourceCorpus}
-                  </span>
-                </div>
-              )}
-              {selectedEdgeData.sourceReference && (
-                <div className="flex items-start justify-between gap-1">
-                  <span className="font-semibold text-slate-700">
-                    Source Reference:
-                  </span>
-                  <span className="font-mono text-purple-700 text-right truncate">
-                    {selectedEdgeData.sourceReference}
-                  </span>
-                </div>
-              )}
-              {selectedEdgeData.validationLevel && (
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-700">
-                    Validation Level:
-                  </span>
-                  <span className="font-mono bg-emerald-50 text-emerald-700 px-1 rounded border border-emerald-200">
-                    {selectedEdgeData.validationLevel}
-                  </span>
-                </div>
-              )}
-              {selectedEdgeData.confidence !== undefined && (
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-700">
-                    Edge Confidence:
-                  </span>
-                  <span className="font-mono text-slate-800 font-bold">
-                    {Math.round(selectedEdgeData.confidence * 100)}%
-                  </span>
-                </div>
-              )}
-              {selectedEdgeData.passageId && (
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-700">
-                    Passage ID:
-                  </span>
-                  <span className="font-mono text-purple-700">
-                    {selectedEdgeData.passageId}
-                  </span>
-                </div>
-              )}
-              {(selectedEdgeData.contributed_to_reasoning ||
-                selectedEdgeData.contributedToReasoning ||
-                selectedEdgeData.contributed_to_evidence ||
-                selectedEdgeData.contributedToEvidence ||
-                (Array.isArray(selectedEdgeData.evidence_ids) &&
-                  selectedEdgeData.evidence_ids.length > 0)) && (
-                <div className="pt-1 mt-1 border-t border-slate-200 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-amber-900">
-                      Pipeline Role:
-                    </span>
-                    {selectedEdgeData.contributed_to_reasoning ||
-                    selectedEdgeData.contributedToReasoning ? (
-                      <span className="px-1 py-0.5 rounded bg-amber-100 text-amber-800 font-mono text-[9px] font-semibold border border-amber-300">
-                        Reasoning Path
-                      </span>
-                    ) : (
-                      <span className="px-1 py-0.5 rounded bg-emerald-100 text-emerald-800 font-mono text-[9px] font-semibold border border-emerald-300">
-                        Evidence Link
-                      </span>
-                    )}
-                  </div>
-                  {Array.isArray(selectedEdgeData.evidence_ids) &&
-                    selectedEdgeData.evidence_ids.length > 0 && (
-                      <div className="text-[9px] text-slate-500 font-mono">
-                        Evidence Ref:{" "}
-                        {selectedEdgeData.evidence_ids.slice(0, 3).join(", ")}
-                        {selectedEdgeData.evidence_ids.length > 3 &&
-                          ` +${selectedEdgeData.evidence_ids.length - 3} more`}
-                      </div>
-                    )}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* 5. Comprehensive Graph Notations & Ontological Legend Bar */}
+      {showLegend && (
+        <div className="border-t border-slate-200/90 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-4 sm:px-5 py-3 text-xs shrink-0 select-none shadow-xs">
+          <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-slate-200/70 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-purple-900 bg-purple-100/90 px-2.5 py-0.5 rounded-md border border-purple-200 shadow-2xs">
+                Graph Notations & Ontological Legend (குறிகள் விளக்கம்)
+              </span>
+              <span className="text-[11px] text-slate-500 hidden sm:inline">
+                Entity taxonomy, canonical verse provenance paths, and Nyāya deduction edges
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3">
+            {/* Column A: Node Taxonomy & Symbols - 7 cols on lg */}
+            <div className="lg:col-span-7 space-y-1.5">
+              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
+                Node Taxonomy (முனைய வகைகள்):
+              </span>
+              <div className="flex items-center gap-2 flex-wrap text-[11px]">
+                {/* Verse / Sūtra */}
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-900 shadow-2xs">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-emerald-600 shrink-0" />
+                  <span className="font-bold">Verse / Sūtra</span>
+                  <span className="text-[10px] text-emerald-700 tamil-font font-medium">(பாடல் / நூற்பா)</span>
+                </div>
+
+                {/* Mutalporuḷ / Primary Ground */}
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-300 text-blue-900 shadow-2xs">
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500 border border-blue-600 shrink-0" />
+                  <span className="font-bold">Primary Ground</span>
+                  <span className="text-[10px] text-blue-700 tamil-font font-medium">(முதற்பொருள் - நிலம்/பொழுது)</span>
+                </div>
+
+                {/* Concepts / Karu & Uri */}
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-50 border border-purple-300 text-purple-900 shadow-2xs">
+                  <span className="w-2.5 h-2.5 rounded-full bg-purple-500 border border-purple-600 shrink-0" />
+                  <span className="font-bold">Concepts / Uri</span>
+                  <span className="text-[10px] text-purple-700 tamil-font font-medium">(கருப்பொருள் / உரிப்பொருள்)</span>
+                </div>
+
+                {/* Entities & Deities */}
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-300 text-amber-950 shadow-2xs">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 border border-amber-600 shrink-0" />
+                  <span className="font-bold">Entity / Deity</span>
+                  <span className="text-[10px] text-amber-800 tamil-font font-medium">(தெய்வம் / மாந்தர்)</span>
+                </div>
+
+                {/* Literature / Work */}
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-300 text-slate-900 shadow-2xs">
+                  <span className="w-2.5 h-2 rounded bg-slate-800 shrink-0" />
+                  <span className="font-bold">Literature / Work</span>
+                  <span className="text-[10px] text-slate-600 tamil-font font-medium">(தொல்காப்பியம் / நூல்)</span>
+                </div>
+
+                {/* Nyāya Rule / Inference */}
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-300 text-indigo-950 shadow-2xs">
+                  <span className="w-3.5 h-2 rounded-full bg-indigo-600 shrink-0" />
+                  <span className="font-bold">Nyāya Rule / Step</span>
+                  <span className="text-[10px] text-indigo-700 tamil-font font-medium">(நியாய விதி / ஏது)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Column B: Relationship & Edge Notations - 5 cols on lg */}
+            <div className="lg:col-span-5 space-y-1.5 border-t md:border-t-0 md:border-l border-slate-200/80 md:pl-3">
+              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
+                Relationship & Edge Notations (இணைப்புக் குறிகள்):
+              </span>
+              <div className="flex items-center gap-2 flex-wrap text-[10px]">
+                {/* Canonical Provenance (Solid green) */}
+                <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-50/80 border border-emerald-200 font-mono text-emerald-950">
+                  <span className="font-bold text-emerald-600">──▶</span>
+                  <span className="font-bold">GROUNDED_IN</span>
+                  <span className="text-emerald-700 font-sans font-medium">(சான்றுப் பிணைப்பு)</span>
+                </div>
+
+                {/* Landscape Association (Solid slate) */}
+                <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 border border-slate-200 font-mono text-slate-800">
+                  <span className="font-bold text-slate-600">──▶</span>
+                  <span className="font-bold">MENTIONS / ASSOC</span>
+                  <span className="text-slate-600 font-sans font-medium">(இயைபுத் தொடர்பு)</span>
+                </div>
+
+                {/* Nyāya Epistemic Inference (Dashed amber) */}
+                <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50/80 border border-amber-200 font-mono text-amber-950">
+                  <span className="font-bold text-amber-600">- -▶</span>
+                  <span className="font-bold">DEFEASIBLE_RULE</span>
+                  <span className="text-amber-800 font-sans font-medium">(அனுமான வழி)</span>
+                </div>
+
+                {/* Selection Ring */}
+                <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-50/80 border border-purple-200 text-purple-900 font-sans">
+                  <span className="w-2.5 h-2.5 rounded-full border-2 border-dashed border-indigo-600 shrink-0" />
+                  <span className="font-medium text-[10px]">Selection Ring (தேர்ந்தெடுத்த முனையம்)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Diagnostics HUD Popover for KnowledgeGraphViewer */}
       {isDiagnosticsOpen && (

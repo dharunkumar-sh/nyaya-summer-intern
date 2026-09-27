@@ -320,3 +320,9 @@ def get_grounded_answer():
     except Exception as e:
         logger.error(f"Error in /api/reasoning/answer: {e}", exc_info=True)
         return error_response(str(e), error_code="ANSWER_SYNTHESIS_FAILED", status_code=500)
+    finally:
+        try:
+            from retrieval.rag_service import rag_engine
+            rag_engine.clear_runtime_cache()
+        except Exception:
+            pass

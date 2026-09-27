@@ -5,7 +5,7 @@ Registers blueprints, configures CORS, handles exceptions, and provides /api/hea
 import os
 import sys
 from pathlib import Path
-from flask import Flask, jsonify
+from flask import Flask, jsonify, Response
 from flask_cors import CORS
 
 # Add backend directory to sys.path so modules can import cleanly
@@ -132,6 +132,18 @@ def create_app(config_name: str = None) -> Flask:
             neo4j_service.startup_check(raise_on_failure=False)
         except Exception as e:
             logger.warning(f"Non-fatal error during Neo4j startup check: {e}")
+
+    # 6. Global Response Cache-Busting Headers
+    @app.after_request
+    def set_no_cache_headers(response: Response) -> Response:
+        """
+        Enforce strict no-cache policy on all API responses so clients, proxies,
+        and browsers never retain or serve stale generated responses.
+        """
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
 
     logger.info(f"Initialized Nyāya Reasoner Flask Application in [{config_name}] mode")
     return app

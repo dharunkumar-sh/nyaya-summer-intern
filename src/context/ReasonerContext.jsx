@@ -12,6 +12,7 @@ import {
   getDashboardSummary,
   getSystemStatus,
   graphApi,
+  clearCache,
 } from '../services/apiClient';
 import { normalizeGraphData } from '../services/graphNormalization';
 import {
@@ -1334,6 +1335,10 @@ export function ReasonerProvider({ children }) {
     } finally {
       setIsAnalyzing(false);
       activeAbortControllerRef.current = null;
+      // Proactively ensure runtime cache is cleared after every response generated
+      clearCache().catch((err) => {
+        console.debug('Runtime cache clearance background warning:', err);
+      });
     }
   }, [queryText, depth, queryType, searchMode, topK, filterTinai, filterSection, recalculateConfidence, setConfidenceEvaluation]);
 
@@ -1477,6 +1482,15 @@ export function ReasonerProvider({ children }) {
     setRawBackendResponse(null);
     setGraphVersion(Date.now());
   }, [setConfidenceEvaluation]);
+
+  // Explicit Cache Clearance Handler
+  const clearAllCaches = useCallback(async () => {
+    try {
+      await clearCache();
+    } catch (e) {
+      console.warn('Backend cache clearance warning:', e);
+    }
+  }, []);
 
   // Handler for selecting research example
   const handleSelectExample = useCallback((ex) => {
@@ -1852,6 +1866,7 @@ export function ReasonerProvider({ children }) {
     workflowStages: REASONING_WORKFLOW_STAGES,
     runAnalyze,
     resetToDefault,
+    clearAllCaches,
     queryStatus,
     queryError,
     queryStats,

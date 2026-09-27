@@ -929,11 +929,35 @@ class HybridRAGPipeline:
             max_graph_depth=max_graph_depth,
         )
 
-        # 2. Extract detected tiṇai if present
-        detected_tinai = "Kuṟiñci"
-        if collection.items:
+        # 2. Extract detected tiṇai from query preprocessor, explicit query terms, or retrieved evidence
+        detected_tinai = None
+        if filters and isinstance(filters, dict) and filters.get("tinai") and filters["tinai"].lower() not in ("all", "general"):
+            detected_tinai = filters["tinai"]
+
+        if not detected_tinai and hasattr(collection, "processed_query") and collection.processed_query:
+            pq_tinai = getattr(collection.processed_query, "detected_tinai", None)
+            if pq_tinai and pq_tinai.lower() not in ("general", "all", "unknown"):
+                detected_tinai = pq_tinai
+
+        if not detected_tinai:
+            query_lower = (orig_query or query).lower()
+            tinai_keywords = [
+                ("முல்லை", "Mullai"), ("mullai", "Mullai"), ("மாயோன்", "Mullai"), ("mayon", "Mullai"), ("காடு", "Mullai"), ("இருத்தல்", "Mullai"),
+                ("மருதம்", "Marutam"), ("marutam", "Marutam"), ("marudham", "Marutam"), ("வேந்தன்", "Marutam"), ("ஊடல்", "Marutam"),
+                ("நெய்தல்", "Neytal"), ("neytal", "Neytal"), ("neithal", "Neytal"), ("வருணன்", "Neytal"), ("இரங்கல்", "Neytal"),
+                ("பாலை", "Pālai"), ("palai", "Pālai"), ("கொற்றவை", "Pālai"), ("பிரிதல்", "Pālai"),
+                ("குறிஞ்சி", "Kuṟiñci"), ("kurinci", "Kuṟiñci"), ("kurinji", "Kuṟiñci"), ("சேயோன்", "Kuṟiñci"), ("புணர்தல்", "Kuṟiñci"),
+            ]
+            for kw, t_name in tinai_keywords:
+                if kw in query_lower:
+                    detected_tinai = t_name
+                    break
+
+        if not detected_tinai and collection.items:
             first_src = collection.items[0].source or {}
             detected_tinai = first_src.get("tinai") or "Kuṟiñci"
+
+        detected_tinai = detected_tinai or "Kuṟiñci"
 
         # 3. Transform into compact structured context
         structured_ctx = structured_context_builder.build_context(
@@ -1012,7 +1036,7 @@ class HybridRAGPipeline:
         supp_ev = [s if isinstance(s, dict) else s.to_dict() for s in (nyaya_ev.supporting_evidence if nyaya_ev else [])]
         src_meta = nyaya_ev.source_metadata if nyaya_ev else {}
 
-        return {
+        result_payload = {
             "query": query,
             "original_query": orig_query,
             "detected_language": lang_info,
@@ -1053,6 +1077,28 @@ class HybridRAGPipeline:
             "structured_context": structured_ctx.to_dict(),
             "insufficient_evidence": not structured_ctx.is_sufficient,
         }
+
+        # Clear transient dynamic query and context caches after response generation
+        self.clear_runtime_cache()
+
+        return result_payload
+
+    def clear_runtime_cache(self) -> None:
+        """
+        Clears all in-memory dynamic context and transient query caches across
+        retrieval services after every response generation.
+        """
+        try:
+            from .graph_hybrid_search import graph_hybrid_search_service
+            graph_hybrid_search_service.clear_cache()
+        except Exception as e:
+            logger.debug(f"Failed clearing graph context cache: {e}")
+
+        try:
+            from services.neo4j_service import neo4j_service
+            neo4j_service.clear_cache()
+        except Exception as e:
+            logger.debug(f"Failed clearing neo4j connectivity cache: {e}")
 
 
 

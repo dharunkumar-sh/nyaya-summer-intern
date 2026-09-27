@@ -69,11 +69,19 @@ class Config:
 
     # OpenRouter LLM Configuration
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
-    OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemma-4-31b-it:free")
+    OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "nvidia/nemotron-3-super-120b-a12b:free")
+    OPENROUTER_FALLBACK_MODELS = [
+        m.strip()
+        for m in os.getenv(
+            "OPENROUTER_FALLBACK_MODELS",
+            "nvidia/nemotron-3-ultra-550b-a55b:free,nvidia/nemotron-3.5-lightning:free,google/gemma-4-31b-it:free",
+        ).split(",")
+        if m.strip()
+    ]
     OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
     LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", 0.1))
-    LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", 1024))
-    LLM_TIMEOUT = float(os.getenv("LLM_TIMEOUT", 30.0))
+    LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", 1500))
+    LLM_TIMEOUT = float(os.getenv("LLM_TIMEOUT", 45.0))
 
     # Neo4j Aura Configuration
     NEO4J_URI = os.getenv("NEO4J_URI", "")

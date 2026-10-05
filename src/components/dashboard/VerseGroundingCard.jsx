@@ -19,7 +19,6 @@ export default function VerseGroundingCard({ currentQuery: propQuery }) {
   const currentQuery = propQuery || reasoner.currentQuery;
   const [copied, setCopied] = useState(false);
 
-  // Determine active evidence: from current reasoning stage -> selectedEvidenceId -> first evidence item
   const stages = reasoner.reasoningStages || [];
   const currentStage = stages[reasoner.selectedStageIndex] || null;
   const activeLinkedEvId = currentStage?.linkedEvidenceId;
@@ -59,7 +58,6 @@ export default function VerseGroundingCard({ currentQuery: propQuery }) {
     }
   };
 
-  // Clean empty state if no text available
   if (!tamilText) {
     return (
       <Card
@@ -111,7 +109,6 @@ export default function VerseGroundingCard({ currentQuery: propQuery }) {
       }
     >
       <div className="space-y-4">
-        {/* Original Classical Tamil Verse */}
         <div className="relative p-4 sm:p-5 rounded-xl bg-gradient-to-r from-blue-50/60 via-indigo-50/40 to-purple-50/30 border border-blue-200/70">
           <Quote className="absolute top-3 right-3 w-8 h-8 text-blue-200/60 pointer-events-none" />
           <div className="text-xs font-semibold text-blue-900/80 uppercase tracking-wider mb-2 flex items-center justify-between">
@@ -130,9 +127,7 @@ export default function VerseGroundingCard({ currentQuery: propQuery }) {
           </p>
         </div>
 
-        {/* Transliteration & English Translation */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-          {/* ISO Transliteration */}
           {transliteration ? (
             <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200/80">
               <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
@@ -155,7 +150,6 @@ export default function VerseGroundingCard({ currentQuery: propQuery }) {
             </div>
           )}
 
-          {/* Translation */}
           <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200/80">
             <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
               <Sparkles className="w-3.5 h-3.5 text-blue-600" />
@@ -167,7 +161,6 @@ export default function VerseGroundingCard({ currentQuery: propQuery }) {
           </div>
         </div>
 
-        {/* Real Extracted Ontological Entities & Concepts */}
         {(entities.length > 0 || concepts.length > 0) && (
           <div>
             <div className="text-xs font-semibold text-slate-700 mb-2 flex items-center justify-between">
@@ -211,7 +204,6 @@ export default function VerseGroundingCard({ currentQuery: propQuery }) {
           </div>
         )}
 
-        {/* Knowledge Graph Quick Action */}
         <div className="pt-1 flex items-center justify-between border-t border-slate-100 text-xs text-slate-500">
           <span>Tolkāppiyam Knowledge Graph Node: {activeEvidence?.passageId || activeEvidence?.id || verseId}</span>
           <button
@@ -227,4 +219,3 @@ export default function VerseGroundingCard({ currentQuery: propQuery }) {
     </Card>
   );
 }
-

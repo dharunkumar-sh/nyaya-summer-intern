@@ -976,9 +976,7 @@ export function ReasonerProvider({ children }) {
           evidenceCount: evidenceCount,
           timestamp: Date.now(),
         });
-        const primaryId = epistemicContext?.primary_entity_id ||
-          (normalizedGraph.nodes.length > 0 ? normalizedGraph.nodes[0].id : null);
-        setSelectedGraphNodeId(primaryId);
+        setSelectedGraphNodeId(null);
       } else {
         // Complete clean replacement: Query B shows 0 nodes if not matched, never keeps Query A's nodes
         setGraphNodes([]);
@@ -1147,9 +1145,8 @@ export function ReasonerProvider({ children }) {
             : (typeof generatedFinalAnswer.stars_count === 'number'
               ? generatedFinalAnswer.stars_count
               : Number(((topItem?.confidence ?? 0.95) * 5).toFixed(1))),
-          verdictStatus: generatedFinalAnswer.verdictStatus || generatedFinalAnswer.verdict_status || answerData.confidence_info?.verdictStatus || answerData.confidence_info?.verdict_status || `Sound Canonical Grounding (${items.length} Verses)`,
-          justificationTamil: generatedFinalAnswer.justificationTamil || generatedFinalAnswer.justification_tamil || '',
-          justificationEnglish: generatedFinalAnswer.justificationEnglish || generatedFinalAnswer.justification_english || '',
+          justificationTamil: generatedFinalAnswer.justificationTamil || generatedFinalAnswer.justification_tamil || generatedFinalAnswer.tamilJustification || generatedFinalAnswer.tamil_justification || '',
+          justificationEnglish: generatedFinalAnswer.justificationEnglish || generatedFinalAnswer.justification_english || generatedFinalAnswer.englishJustification || generatedFinalAnswer.english_justification || '',
           keySources: (generatedFinalAnswer.keySources && generatedFinalAnswer.keySources.length > 0)
             ? generatedFinalAnswer.keySources
             : ((generatedFinalAnswer.key_sources && generatedFinalAnswer.key_sources.length > 0)

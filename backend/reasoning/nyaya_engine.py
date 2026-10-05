@@ -1,14 +1,3 @@
-"""
-Nyāya Neuro-Symbolic Reasoner synthesizing five-member syllogistic deduction (Pañcāvayava).
-Produces formal logic representations, Pramāṇa grounds, and Hetvābhāsa fallacy checks for all 5 stages:
-1. Pratijñā (Target Proposition)
-2. Hetu (Reason / Middle Ground)
-3. Udāharaṇa (Universal Rule / Vyāpti & Exemplar)
-4. Upanaya (Application / Subsumption)
-5. Nigamana (Conclusion / Q.E.D.)
-
-Operates strictly on retrieved, validated evidence and canonical Tolkāppiyam rules without fabrication.
-"""
 from __future__ import annotations
 
 from typing import List, Dict, Any, Optional

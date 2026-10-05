@@ -1,20 +1,16 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Trees,
   Mountain,
   Waves,
   SunMedium,
   Compass,
-  ArrowRight,
   Heart,
   Calendar,
-  Sparkles,
   Church,
 } from "lucide-react";
 import Card from "../../common/Card";
 import Badge from "../../common/Badge";
-import { useReasoner } from "../../../context/ReasonerContext";
 
 const TINAIS = [
   {
@@ -141,16 +137,9 @@ const TINAIS = [
 ];
 
 export default function OverviewTinaiLandscapeExplorer() {
-  const navigate = useNavigate();
-  const { setQueryText } = useReasoner();
   const [selectedTinaiId, setSelectedTinaiId] = useState("kurinchi");
 
   const activeTinai = TINAIS.find((t) => t.id === selectedTinaiId) || TINAIS[0];
-
-  const handleTestTinaiInReasoner = (tinai) => {
-    setQueryText(tinai.sampleQueryText);
-    navigate("/query-center");
-  };
 
   return (
     <Card
@@ -270,18 +259,6 @@ export default function OverviewTinaiLandscapeExplorer() {
                   physical terrain and climate deterministically ground human
                   emotional interiority.
                 </p>
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleTestTinaiInReasoner(activeTinai)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-700 hover:bg-purple-600 text-white text-xs font-semibold shadow-xs transition-colors shrink-0 cursor-pointer self-start sm:self-auto"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Load in Query Center</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
               </div>
             </div>
           </div>

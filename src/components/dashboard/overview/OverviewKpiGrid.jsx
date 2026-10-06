@@ -2,8 +2,6 @@ import {
   Database,
   Network,
   BrainCircuit,
-  AlertCircle,
-  RefreshCw,
 } from 'lucide-react';
 import Badge from '../../common/Badge';
 import { useReasoner } from '../../../context/ReasonerContext';
@@ -19,8 +17,6 @@ export default function OverviewKpiGrid() {
     isLoadingDashboard,
     isLoadingStats,
     isLoadingCorpus,
-    dashboardError,
-    refetchDashboard,
   } = useReasoner();
 
   // 1. Corpus metrics derived from real backend data (corpus / dashboardSummary.corpus)
@@ -128,27 +124,9 @@ export default function OverviewKpiGrid() {
   ];
 
   return (
-    <div className="space-y-3">
-      {dashboardError && !dashboardSummary && (
-        <div className="flex items-center justify-between p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-            <span>Using cached canonical dataset values ({dashboardError}).</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => refetchDashboard && refetchDashboard()}
-            className="flex items-center gap-1 font-semibold text-amber-800 hover:text-amber-950 px-2 py-0.5 rounded bg-amber-100/80 cursor-pointer"
-          >
-            <RefreshCw className="w-3 h-3" />
-            <span>Retry</span>
-          </button>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
-        {kpis.map((kpi) => {
-          const IconComp = kpi.icon;
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+      {kpis.map((kpi) => {
+        const IconComp = kpi.icon;
         return (
           <div
             key={kpi.id}
@@ -202,6 +180,5 @@ export default function OverviewKpiGrid() {
         );
       })}
     </div>
-  </div>
   );
 }

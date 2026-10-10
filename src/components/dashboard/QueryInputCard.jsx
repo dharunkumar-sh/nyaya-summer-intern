@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Sparkles,
   ArrowRight,
@@ -19,6 +20,7 @@ import Button from "../common/Button";
 import { useReasoner } from "../../context/ReasonerContext";
 
 export default function QueryInputCard() {
+  const navigate = useNavigate();
   const {
     queryText,
     setQueryText,
@@ -122,7 +124,7 @@ export default function QueryInputCard() {
                   </button>
                 </div>
 
-                <div className="max-h-80 overflow-y-auto space-y-1.5 pr-1">
+                <div className="max-h-72 overflow-y-auto space-y-1.5 pr-1">
                   {(researchExamples || []).map((ex) => {
                     const corpusLabel = (
                       ex?.corpusName ||
@@ -157,6 +159,24 @@ export default function QueryInputCard() {
                       </button>
                     );
                   })}
+                </div>
+
+                {/* Direct link to Query Library */}
+                <div className="pt-2 mt-1.5 border-t border-purple-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExamplesOpen(false);
+                      navigate("/query-library");
+                    }}
+                    className="w-full py-2 px-3 rounded-xl bg-linear-to-r from-purple-600 to-indigo-600 text-white font-semibold text-xs flex items-center justify-between hover:from-purple-700 hover:to-indigo-700 transition-all shadow-xs cursor-pointer"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+                      <span>Browse Bilingual Query Library</span>
+                    </span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             )}
@@ -379,7 +399,6 @@ export default function QueryInputCard() {
                 <ChevronDown className="w-4 h-4 text-purple-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
-
           </div>
 
           {/* Row 2: Epistemic Nyāya Configuration */}
@@ -471,7 +490,6 @@ export default function QueryInputCard() {
                 <ChevronDown className="w-4 h-4 text-purple-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
-
           </div>
         </div>
 

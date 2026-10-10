@@ -16,6 +16,7 @@ import EpistemicMetricsCard from './EpistemicMetricsCard';
 import AnalyticsVisualizations from './AnalyticsVisualizations';
 import { useReasoner } from '../../context/ReasonerContext';
 import OverviewDashboard from './overview/OverviewDashboard';
+import QueryLibraryView from './QueryLibraryView';
 
 function QueryCenterView({ selectedEvidenceId, setSelectedEvidenceId }) {
   return (
@@ -118,6 +119,14 @@ export default function MainDashboard() {
               />
             }
           />
+
+          {/* ROUTE 2B: DEDICATED CANONICAL BILINGUAL QUERY LIBRARY */}
+          <Route
+            path="/query-library"
+            element={<QueryLibraryView />}
+          />
+          <Route path="/queries" element={<Navigate to="/query-library" replace />} />
+          <Route path="/library" element={<Navigate to="/query-library" replace />} />
 
           {/* ROUTE 3: KNOWLEDGE GRAPH VIEW */}
           <Route

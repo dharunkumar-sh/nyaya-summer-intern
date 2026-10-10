@@ -151,6 +151,125 @@ def get_canonical_examples():
     )
 
 
+@query_bp.route("/canonical-1000", methods=["GET"])
+def get_canonical_1000_queries():
+    """
+    Returns the curated 1,000 mixed Tamil and English research queries.
+    Supports filtering by search keyword, category, difficulty, queryType,
+    and pagination (page, limit).
+    """
+    import json
+    from pathlib import Path
+
+    queries_file = Path(__file__).resolve().parent.parent.parent / "data" / "processed" / "canonical_1000_queries.json"
+    if not queries_file.exists():
+        return error_response("Canonical 1000 queries file not found", error_code="FILE_NOT_FOUND", status_code=404)
+
+    try:
+        with open(queries_file, "r", encoding="utf-8") as f:
+            all_queries = json.load(f)
+
+        # Filters
+        search_term = request.args.get("search", "").strip().lower()
+        category = request.args.get("category", "").strip().lower()
+        difficulty = request.args.get("difficulty", "").strip().lower()
+        query_type = request.args.get("queryType", "").strip().lower()
+        theme = request.args.get("theme", "").strip().lower()
+        is_all = request.args.get("all", "false").lower() in ("true", "1")
+
+        filtered = all_queries
+
+        if search_term:
+            filtered = [
+                q for q in filtered
+                if search_term in q.get("query", "").lower()
+                or search_term in q.get("tamilQuery", "").lower()
+                or search_term in q.get("title", "").lower()
+                or search_term in q.get("tamilConcept", "").lower()
+                or search_term in q.get("englishConcept", "").lower()
+                or any(search_term in k.lower() for k in q.get("keywords", []))
+            ]
+
+        if category and category != "all":
+            filtered = [q for q in filtered if category in q.get("category", "").lower()]
+
+        if theme and theme != "all":
+            filtered = [q for q in filtered if theme == q.get("theme", "").lower()]
+
+        if difficulty and difficulty != "all":
+            filtered = [q for q in filtered if difficulty == q.get("difficulty", "").lower()]
+
+        if query_type and query_type != "all":
+            filtered = [q for q in filtered if query_type in q.get("queryType", "").lower()]
+
+        total_matching = len(filtered)
+
+        if is_all:
+            return success_response(
+                data={
+                    "total": total_matching,
+                    "queries": filtered,
+                },
+                message=f"Retrieved all {total_matching} canonical bilingual queries",
+            )
+
+        page = max(1, int(request.args.get("page", 1)))
+        limit = max(1, min(100, int(request.args.get("limit", 24))))
+        start_idx = (page - 1) * limit
+        end_idx = start_idx + limit
+        paginated = filtered[start_idx:end_idx]
+
+        return success_response(
+            data={
+                "total": total_matching,
+                "page": page,
+                "limit": limit,
+                "totalPages": (total_matching + limit - 1) // limit if total_matching > 0 else 1,
+                "queries": paginated,
+            },
+            message=f"Retrieved {len(paginated)} queries (page {page} of {(total_matching + limit - 1) // limit if total_matching > 0 else 1})",
+        )
+    except Exception as e:
+        logger.error(f"Error reading canonical 1000 queries: {e}", exc_info=True)
+        return error_response(str(e), error_code="LOAD_FAILED", status_code=500)
+
+
+@query_bp.route("/canonical-1000/stats", methods=["GET"])
+def get_canonical_1000_stats():
+    """Returns statistical distribution of the 1,000 mixed Tamil and English queries."""
+    import json
+    from pathlib import Path
+    from collections import Counter
+
+    queries_file = Path(__file__).resolve().parent.parent.parent / "data" / "processed" / "canonical_1000_queries.json"
+    if not queries_file.exists():
+        return error_response("Canonical 1000 queries file not found", error_code="FILE_NOT_FOUND", status_code=404)
+
+    try:
+        with open(queries_file, "r", encoding="utf-8") as f:
+            all_queries = json.load(f)
+
+        themes = Counter(q.get("theme") for q in all_queries)
+        categories = Counter(q.get("category") for q in all_queries)
+        difficulties = Counter(q.get("difficulty") for q in all_queries)
+        query_types = Counter(q.get("queryType") for q in all_queries)
+
+        return success_response(
+            data={
+                "total": len(all_queries),
+                "themes": dict(themes),
+                "categories": dict(categories),
+                "difficulties": dict(difficulties),
+                "queryTypes": dict(query_types),
+            },
+            message="Canonical 1000 query statistics retrieved successfully",
+        )
+    except Exception as e:
+        logger.error(f"Error computing canonical 1000 query stats: {e}", exc_info=True)
+        return error_response(str(e), error_code="STATS_FAILED", status_code=500)
+
+
+
 @query_bp.route("/graph-retrieval", methods=["POST"])
 def retrieve_grounded_graph():
     """

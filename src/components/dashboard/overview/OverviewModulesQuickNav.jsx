@@ -7,6 +7,7 @@ import {
   BookOpen,
   BarChart3,
   ArrowUpRight,
+  Library,
 } from 'lucide-react';
 import Card from '../../common/Card';
 import Badge from '../../common/Badge';
@@ -15,20 +16,17 @@ import { useReasoner } from '../../../context/ReasonerContext';
 export default function OverviewModulesQuickNav() {
   const navigate = useNavigate();
   const {
-    corpus,
     graphStatistics,
     graphHealth,
     evidenceRecords,
     reasoningStages,
     queryStatus,
-    queryStats,
     dashboardSummary,
     isLoadingStats,
     isLoadingDashboard,
   } = useReasoner();
 
   const kgData = dashboardSummary?.knowledge_graph;
-  const corpusData = dashboardSummary?.corpus || corpus;
   const totalNodes = kgData?.active_nodes ?? graphHealth?.node_count ?? graphStatistics?.total_nodes ?? 33;
   const totalEdges = kgData?.active_edges ?? graphHealth?.edge_count ?? graphStatistics?.total_edges ?? 46;
 
@@ -93,6 +91,18 @@ export default function OverviewModulesQuickNav() {
         badge: evidenceRecords?.length > 0 ? `${evidenceRecords.length} Retrieved` : 'Top-5 Sūtras',
         badgeVariant: 'green',
         description: 'Ranked canonical passages with cross-attention weights, confidence scores, and translations.',
+      },
+      {
+        id: 'query-library',
+        path: '/query-library',
+        title: 'Query Library',
+        tamilTitle: 'இருமொழி வினா களஞ்சியம்',
+        icon: Library,
+        color: 'indigo',
+        iconBg: 'bg-indigo-100 text-indigo-700',
+        badge: 'Bilingual Library',
+        badgeVariant: 'purple',
+        description: 'Bilingual library of canonical research inquiries across Grammar and Tiṇai poetics.',
       },
       /* Formal verification module disabled. */
       {

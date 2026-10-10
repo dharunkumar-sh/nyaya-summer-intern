@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Database,
   RefreshCw,
+  Library,
 } from "lucide-react";
 import Badge from "../common/Badge";
 import { NavLink } from "react-router-dom";
@@ -57,6 +58,14 @@ const ROUTE_GROUPS = [
   {
     groupTitle: "Corpus & Evidence",
     routes: [
+      {
+        id: "query-library",
+        path: "/query-library",
+        label: "Query Library",
+        tamilLabel: "இருமொழி வினா களஞ்சியம்",
+        icon: Library,
+        defaultBadge: "Prompts",
+      },
       {
         id: "evidence",
         path: "/evidence",

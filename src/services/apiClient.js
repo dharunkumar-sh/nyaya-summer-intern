@@ -676,6 +676,30 @@ export const searchApi = {
    */
   preprocessQuery: ({ query = '', focus = 'Relationship', signal = null, timeoutMs = 10000 } = {}) =>
     http.post('/api/query/preprocess', { query, focus }, { signal, timeoutMs }),
+
+  /**
+   * Retrieves curated 1,000 mixed Tamil and English research queries.
+   * Endpoint: GET /api/query/canonical-1000
+   */
+  getCanonical1000Queries: ({ page = 1, limit = 24, search = '', category = '', difficulty = '', queryType = '', all = false, signal = null, timeoutMs = 15000 } = {}) => {
+    const params = {
+      page,
+      limit,
+      ...(search ? { search } : {}),
+      ...(category && category !== 'all' ? { category } : {}),
+      ...(difficulty && difficulty !== 'all' ? { difficulty } : {}),
+      ...(queryType && queryType !== 'all' ? { queryType } : {}),
+      ...(all ? { all: 'true' } : {}),
+    };
+    return http.get('/api/query/canonical-1000', { params, signal, timeoutMs });
+  },
+
+  /**
+   * Retrieves metadata and statistical distribution of the 1,000 bilingual queries.
+   * Endpoint: GET /api/query/canonical-1000/stats
+   */
+  getCanonical1000Stats: ({ signal = null, timeoutMs = 10000 } = {}) =>
+    http.get('/api/query/canonical-1000/stats', { signal, timeoutMs }),
 };
 
 /**
